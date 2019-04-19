@@ -1,34 +1,39 @@
 CC = gcc
 CFLAGS = -std=gnu90
-ODIR = obj
-SDIR = src
+ODIR = ./obj
+SDIR = ./src
+BIN = ./bin
 VPATH = $(SDIR)
 
 .PHONY: clean help
 DEFAULT: help
 
-all : centralina
+#Lista di tutti gli eseguibili da compilare
+LIST = centralina
+
+all : $(LIST)
 
 #Contiene la lista di tutti i possibili file oggetto separati da spazio es. /obj/centralina.o
 OBJ_FILES = $(patsubst src/%.c, obj/%.o, $(wildcard src/*.c))
 
-#I file oggetto hanno bisogno della directori $(ODIR)
+#I file oggetto hanno bisogno della directory $(ODIR)
 $(OBJ_FILES): | $(ODIR)
+#I file eseguibili hanno bisono della directory $(BIN)
+$(LIST): | $(BIN)
 
-$(ODIR):
+$(ODIR) $(BIN):
 	@mkdir -p $@
-
 
 $(ODIR)/centralina.o: centralina.c centralina.h
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 centralina: $(ODIR)/centralina.o
-	${CC} ${CFLAGS} -o $@ $(ODIR)/centralina.o
+	${CC} ${CFLAGS} -o $(BIN)/$@ $(ODIR)/centralina.o
 
 build: all
 
 clean:
-	rm -f $(ODIR)/*.o all
+	rm -f -R $(ODIR) $(BIN)
 
 help:
 	@echo Ciao
