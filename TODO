@@ -1,0 +1,34 @@
+Dobbiamo decidere se fare un un eseguibile per ogni device quindi ad esempio bulb.c contiene il codice della lampadina
+e include device.h per usare le funzioni comuni ad ogni device, oppure un singolo eseguibile per ogni device ed in base al parametro passato
+questo assume le funzionalità del device scelto.
+
+Alla fine molto probabilmente la add <device> crea il device e lo linka anche alla centralina.
+
+I dispositivi collegati alla centralina penso che parleranno con le pipe. Ad esempio per la info <device> non so se la centralina
+può comunicare direttamente (con le pipe) ad una lampadina se essa è attaccata ad un hub.
+
+Centralina:
+    l'eseguibile centralina consiste in ciclo che legge in input e interpreta i comandi.
+    Bisogna scrivere il codice che rileva i comandi e per ogni comando viene eseguita una funzione
+    Funzioni da implementare:
+        list():
+        add_device(char* device): in base al tipo di device farà la fork e la exec(./bulb) o exec(./device bulb) 
+                                    corrispondente al device passato come parametro. Ci sarà una serie di
+                                    if(strcmp("bulb",device) == ). Al device appena creato bisogna assegnare anche un id.
+        
+        delete_device(int device_id): controlla se il device_id è un id valido, se si, rimuove il device dai device attivi e killa i 
+                                        processi dei device mandando un signal o boh...
+                                        
+        link_devices(int device_id_1, int device_id_2): è abbastanza complicata questa boh...
+
+        switch_device(int device_id, char* label_interruttore, char* pos): anche questa complicata l'interruttore ha anche un label
+                                                                            nel pdf quello della finestra è open ma ad esempio quello della lampadina
+                                                                            sarà diverso. la funzione penso che userà le pipe per switchare il device
+        get_info(int device_id): interroga il device, probabilmente con le pipe...
+        
+        
+Un eseguibile es. manualcontrol che simula i comandi manuali dei dispositivi senza passare per la centralina.
+Si utilizzeranno gli args del main come comandi per switchare lo stato dei device manualmente.
+Il manualcontrol userà i segnali per comunicare con i processi dei devices quindi bisogna sapere i PID loro pid.
+Il problema con i segnali è che non si possono passare dei parametri quindi ad esempio per il timer non si può settare
+il tempo di inizio e di fine. Quindi boo...
