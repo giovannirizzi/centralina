@@ -24,7 +24,7 @@ $(LIST): | $(BIN)
 $(ODIR) $(BIN):
 	@mkdir -p $@
 
-$(ODIR)/centralina.o: centralina.c centralina.h
+$(ODIR)/centralina.o: centralina.c centralina.h devices.h
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 centralina: $(ODIR)/centralina.o
@@ -33,7 +33,7 @@ centralina: $(ODIR)/centralina.o
 build: all
 
 clean:
-	rm -f -R $(ODIR) $(BIN)
+	rm -f -r $(ODIR)/* $(BIN)/*
 
 help:
-	@echo Ciao
+	@echo Help
