@@ -2,12 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "centralina.h"
+#include "devices.h"
 
 
 int main(int argc, char *argv[]){
 
     //ESEMPIO DI CODICE PER IMPLEMENTARE IL PARSING DEI COMANDI
-
+    
     char *line = NULL;
     size_t len = 0;
     ssize_t nread;
@@ -55,7 +56,7 @@ void list(){
     printf("Lista devices: \n");
 }
 
-int add_device(DEVICE_NAME device){
+int add_device(device_name device){
     if(strcmp(device,"hub")==0)
         printf("Adding %s...\n",device);
     if(strcmp(device,"timer")==0)
@@ -68,14 +69,14 @@ int add_device(DEVICE_NAME device){
         printf("Adding %s...\n",device);
 }
 
-int delete_device(DEVICE_ID device){
+int delete_device(device_id device){
     printf("Delete %d\n",device);
 }
 
-int link_device(DEVICE_ID device1, DEVICE_ID device2){
+int link_device(device_id device1, device_id device2){
     printf("Link %d to %d\n",device1,device2);
 }
 
-int get_info(DEVICE_ID device){
+int get_info(device_id device){
     printf("Info %d\n",device);
 }

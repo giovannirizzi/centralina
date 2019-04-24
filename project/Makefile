@@ -26,9 +26,12 @@ $(ODIR) $(BIN):
 
 $(ODIR)/centralina.o: centralina.c centralina.h devices.h
 	$(CC) $(CFLAGS) -c $< -o $@
-	
-centralina: $(ODIR)/centralina.o
-	${CC} ${CFLAGS} -o $(BIN)/$@ $(ODIR)/centralina.o
+
+$(ODIR)/devices.o: devices.c devices.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+centralina: $(ODIR)/centralina.o $(ODIR)/devices.o
+	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
 build: all
 

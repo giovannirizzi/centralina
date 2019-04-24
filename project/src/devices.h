@@ -1,17 +1,20 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-typedef int DEVICE_ID;
-typedef char* DEVICE_NAME;
+typedef int device_id;
+typedef char* device_name;
 
 
- //pensavo di usare numeri negativi per i dispositivi di controlloe positivi per quelli di iterazione
- //cosi è facile fare il check se è un dispositivo di controllo
-typedef enum {CENTRALINA = -1} DEVICE_TYPE;
+//Numeri negativi per i dispositivi controllo e positivi per quelli d'iterazione
+typedef enum {
+    INVALID_TYPE = 0,
+    CENTRALINA = -1,
+    BULB = 1
+} DeviceType;
 
 typedef struct{
 
-    DEVICE_TYPE type;
+    DeviceType type;
 
     // 0 spento 1 acceso
     char state;
@@ -21,7 +24,9 @@ typedef struct{
     char* interruttori_struct;
     char* data_struct;
 
-} Base_Device;
+} DeviceBase;
 
+DeviceType device_string_to_type(const char* device_string);
+const char* device_type_to_string(DeviceType device_type);
 
 #endif // DEVICES_H
