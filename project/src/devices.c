@@ -1,5 +1,6 @@
 #include "devices.h"
 #include <string.h>
+#include <stdio.h>
 
 const char* device_type_to_string(DeviceType device_type){
 
@@ -23,4 +24,10 @@ DeviceType device_string_to_type(const char* device_string){
         return BULB;
     else
         return INVALID_TYPE;
+}
+
+int string_to_device_id(const char* string, device_id *id){
+
+    int n;
+    return sscanf(string, "%d %n", id, &n) == 1 && !string[n];
 }

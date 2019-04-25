@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include "centralina.h"
 #include "devices.h"
 
@@ -12,6 +13,10 @@ int main(int argc, char *argv[]){
     char *line = NULL;
     size_t len = 0;
     ssize_t nread;
+    char *args[3];
+    device_id id;
+
+    printf("#>");
 
     //Legge una riga finche non si verifica un errore 
     while ((nread = getline(&line, &len, stdin)) != -1) {
@@ -19,74 +24,35 @@ int main(int argc, char *argv[]){
         if(nread != -1)
             line[nread-1] = '\0';
 
-        //printf("line: %s\n", line);
+        //Interprento la riga letta come: comando arg0 arg1 arg2
+        size_t num_args = divide_line_into_substrings(line, args, sizeof(args)/sizeof(char*));
+        
+        int code = interpret_command((const char*)line, args, num_args);
+        
+        if(code == -1)
+            fprintf(stderr, "unknown command %s\n", line);
+        else if(code == 1)
+            break;
 
-        char a[4][20];
-        int i=0;
-        char *tok = line, *end = line;
-        while (tok != NULL) {
-            //Sostituisce nella linea letta il primo " " che incontra con \0
-            strsep(&end, " ");
-            strcpy(a[i],tok);
-            //printf("Step: %s\n",tok);
-            tok = end;
-            i++;
-        }
-        control_device(line, a);
-        /*
-        if(strcmp(line,"list")==0)
-            list();
-        if(strstr(line, "add") != NULL)
-            add_device(a[1]);
-        if(strstr(line, "del") != NULL)
-            delete_device(atoi(a[1]));
-        if(strstr(line, "link") != NULL)
-            link_device(atoi(a[1]),atoi(a[3]));
-        if(strstr(line, "switch") != NULL)
-            printf("Comando: switch %s %s %s\n",a[1],a[2],a[3]);
-        if(strstr(line, "info") != NULL)
-            get_info(atoi(a[1]));
-        */
+        printf("#>");
     }
 
     free(line);
     exit(EXIT_SUCCESS);
 }
 
-int control_device(char *line, char a[4][20]){
-    device_name device = a[1];
-    if(strcmp(line,"list")==0)
-        list();
-    if(strstr(line, "add") != NULL)
-        if(strcmp(device,"hub")==0)
-            add_device(device);
-        if(strcmp(device,"timer")==0)
-            add_device(device);
-        if(strcmp(device,"bulb")==0)
-            add_device(device);
-        if(strcmp(device,"window")==0)
-            add_device(device);
-        if(strcmp(device,"fridge")==0)
-            add_device(device);
-    if(strstr(line, "del") != NULL)
-        delete_device(atoi(a[1]));
-    if(strstr(line, "link") != NULL)
-        link_device(atoi(a[1]),atoi(a[3]));
-    if(strstr(line, "switch") != NULL)
-        printf("Comando: switch %s %s %s\n",a[1],a[2],a[3]);
-    if(strstr(line, "info") != NULL)
-        get_info(atoi(a[1]));
-}
-
 void list(){
     printf("Lista devices: \n");
 }
 
-int add_device(device_name device){
-    printf("Adding %s...\n",device);
+int add_device(DeviceType device){
+    printf("Adding %s...\n", device_type_to_string(device));
 }
 
 int delete_device(device_id device){
+
+    //Se è la centralina non posso eliminarla
+
     printf("Delete %d\n",device);
 }
 
@@ -94,6 +60,109 @@ int link_device(device_id device1, device_id device2){
     printf("Link %d to %d\n",device1,device2);
 }
 
+int switch_device(device_id device, const char* label, const char* pos){
+    printf("Switch device %d, label: %s, pos: %s\n", device, label, pos);
+}
+
 int get_info(device_id device){
     printf("Info %d\n",device);
+}
+
+size_t divide_line_into_substrings(char* line, char* args[], size_t max_args){
+
+    char *start = line, *end = line;
+    size_t num_args = 0;
+
+    if(start != NULL){
+        strsep(&end, " ");
+        start = end;
+
+        while (start != NULL && num_args < max_args) {
+            //Sostituisce nella stringa il primo " " che incontra con \0
+            strsep(&end, " ");
+            args[num_args++] = start;
+            start = end;
+        }
+    }
+    
+    return num_args;
+}
+
+int interpret_command(const char* command, char* args[], const size_t num_args){
+
+    if(strcmp(command, "list") == 0){
+        list();
+    }
+    else if(strcmp(command, "help") == 0){
+        printf("Help...\n");
+    }
+    else if(strcmp(command, "exit") == 0){
+        return 1;
+    }
+    else if(strcmp(command, "add") == 0){
+        
+        if(num_args != 1)
+            fprintf(stderr, "usage: add <device>\n");
+        else{
+            DeviceType device = device_string_to_type(args[0]);
+            if(device != INVALID_TYPE && device != CENTRALINA)
+                add_device(device);
+            else
+                fprintf(stderr, "invalid device %s\n", args[0]);
+        }
+    }
+    else if(strcmp(command, "del") == 0){
+
+        if(num_args != 1)
+            fprintf(stderr, "usage: del <id>\n");
+        else{
+            device_id id;
+            if(!string_to_device_id(args[0], &id))
+                fprintf(stderr, "invalid id %s\n", args[0]);
+            else
+                delete_device(id);
+        }
+    }
+    else if(strcmp(command, "link") == 0){
+
+        if(num_args != 3 || strcmp(args[1], "to") != 0)
+            fprintf(stderr, "usage: link <id> to <id>\n");
+        else{
+            device_id id1, id2;
+            if(!string_to_device_id(args[0], &id1))
+                fprintf(stderr, "invalid id %s\n", args[0]);
+            else if(!string_to_device_id(args[2], &id2))
+                fprintf(stderr, "invalid id %s\n", args[2]);
+            else
+                link_device(id1, id2);     
+        }
+    }
+    else if(strcmp(command, "switch") == 0){
+
+        if(num_args != 3)
+            fprintf(stderr, "usage: switch <id> <label> <pos>\n");
+        else{
+            device_id id;
+            if(!string_to_device_id(args[0], &id))
+                fprintf(stderr, "invalid id %s\n", args[0]);
+            else
+                switch_device(id, args[1], args[2]);
+        }
+    }
+    else if(strcmp(command, "info") == 0){
+
+        if(num_args != 1)
+            fprintf(stderr, "usage: info <id>\n");
+        else{
+            device_id id;
+            if(!string_to_device_id(args[0], &id))
+                fprintf(stderr, "invalid id %s\n", args[0]);
+            else
+                get_info(id);
+        }
+    }
+    else
+        return -1;
+
+    return 0;
 }
