@@ -32,7 +32,8 @@ int main(int argc, char *argv[]){
             tok = end;
             i++;
         }
-
+        control_device(line, a);
+        /*
         if(strcmp(line,"list")==0)
             list();
         if(strstr(line, "add") != NULL)
@@ -45,11 +46,36 @@ int main(int argc, char *argv[]){
             printf("Comando: switch %s %s %s\n",a[1],a[2],a[3]);
         if(strstr(line, "info") != NULL)
             get_info(atoi(a[1]));
-        
+        */
     }
 
     free(line);
     exit(EXIT_SUCCESS);
+}
+
+int control_device(char *line, char a[4][20]){
+    device_name device = a[1];
+    if(strcmp(line,"list")==0)
+        list();
+    if(strstr(line, "add") != NULL)
+        if(strcmp(device,"hub")==0)
+            add_device(device);
+        if(strcmp(device,"timer")==0)
+            add_device(device);
+        if(strcmp(device,"bulb")==0)
+            add_device(device);
+        if(strcmp(device,"window")==0)
+            add_device(device);
+        if(strcmp(device,"fridge")==0)
+            add_device(device);
+    if(strstr(line, "del") != NULL)
+        delete_device(atoi(a[1]));
+    if(strstr(line, "link") != NULL)
+        link_device(atoi(a[1]),atoi(a[3]));
+    if(strstr(line, "switch") != NULL)
+        printf("Comando: switch %s %s %s\n",a[1],a[2],a[3]);
+    if(strstr(line, "info") != NULL)
+        get_info(atoi(a[1]));
 }
 
 void list(){
@@ -57,16 +83,7 @@ void list(){
 }
 
 int add_device(device_name device){
-    if(strcmp(device,"hub")==0)
-        printf("Adding %s...\n",device);
-    if(strcmp(device,"timer")==0)
-        printf("Adding %s...\n",device);
-    if(strcmp(device,"bulb")==0)
-        printf("Adding %s...\n",device);
-    if(strcmp(device,"window")==0)
-        printf("Adding %s...\n",device);
-    if(strcmp(device,"fridge")==0)
-        printf("Adding %s...\n",device);
+    printf("Adding %s...\n",device);
 }
 
 int delete_device(device_id device){
