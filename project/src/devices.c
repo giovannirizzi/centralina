@@ -1,6 +1,36 @@
-#include "devices.h"
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <signal.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/signalfd.h>
+#include <sys/types.h>
+#include "devices.h"
+
+int create_signalfd(int fd, SignalType signal1, ...){
+
+    va_list ap;
+    int i;
+    sigset_t mask;
+
+    sigemptyset(&mask);
+
+    va_start(ap, signal1); 
+
+    for (i = signal1; i >= 0; i = va_arg(ap, int))
+        sigaddset(&mask, SIGRTMIN + i);
+
+    va_end(ap);
+
+    /* Block signals so that they aren't handled
+        according to their default dispositions */
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
+        handle_error("sigprocmask");
+
+    return signalfd(fd, &mask, 0);
+}
 
 const char* device_type_to_string(DeviceType device_type){
 

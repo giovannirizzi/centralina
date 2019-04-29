@@ -1,6 +1,9 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
+#define handle_error(msg) \
+            do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
 typedef int device_id;
 typedef char* device_name;
 
@@ -22,12 +25,21 @@ typedef struct{
     // 0 spento 1 acceso
     char state;
 
-
     //Questi sono puntatori ad altre strutture, possono cambiare in base al tipo di device
     char* interruttori_struct;
     char* data_struct;
 
 } DeviceBase;
+
+/* Segnali real-time usati per simulare il controllo manuale
+    Per ogni segnale si utilizza anche il valore intero associato ad esso
+    (sival_int) inviato con la syscall sigqueue().
+*/
+typedef enum{
+    SIG_POWER,
+    SIG_OPEN,
+    SIG_CLOSE
+} SignalType;
 
 /*
 * Mappa i nomi dei device al loro device type
@@ -46,5 +58,12 @@ const char* device_type_to_string(DeviceType device_type);
 * @return 1 se la conversione è andata a buon fine altrimenti 0
 */
 int string_to_device_id(const char* string, device_id *id);
+
+/*
+ TODO
+*/
+int create_signalfd(int fd, SignalType signal1, ...);
+
+
 
 #endif // DEVICES_H
