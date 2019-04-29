@@ -47,12 +47,12 @@ void list(){
 
 int add_device(DeviceType device){
     printf("Adding %s...\n", device_type_to_string(device));
+
 }
 
 int delete_device(device_id device){
 
     //Se è la centralina non posso eliminarla
-
     printf("Delete %d\n",device);
 }
 

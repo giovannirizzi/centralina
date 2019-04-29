@@ -6,9 +6,13 @@ typedef char* device_name;
 
 //Numeri negativi per i dispositivi controllo e positivi per quelli d'iterazione
 typedef enum {
-    INVALID_TYPE = 0,
+    TIMER = -3,
+    HUB = -2,
     CENTRALINA = -1,
-    BULB = 1
+    INVALID_TYPE = 0,
+    BULB = 1,
+    WINDOW = 2,
+    FRIDGE = 3
 } DeviceType;
 
 typedef struct{
