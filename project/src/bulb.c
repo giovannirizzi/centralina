@@ -12,13 +12,17 @@ int main(int argc, char *argv[]){
     int sfd;
     struct signalfd_siginfo fdsi;
     ssize_t s;
+    sigset_t mask;
 
     printf("PID: %d\n", getpid());
 
-    sfd = create_signalfd(-1, SIG_POWER, SIG_OPEN, SIG_CLOSE);
+    mask = update_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
+
+    sfd = signalfd(-1, &mask, 0);
 
     if (sfd == -1)
         handle_error("signalfd");
+
 
     // Test invio segnale a me stesso
     union sigval val_union = {.sival_int = 45 };

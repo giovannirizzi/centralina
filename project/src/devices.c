@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include "devices.h"
 
-int create_signalfd(int fd, SignalType signal1, ...){
+sigset_t update_signal_mask(SignalType signal1, ...){
 
     va_list ap;
     int i;
@@ -17,19 +17,19 @@ int create_signalfd(int fd, SignalType signal1, ...){
 
     sigemptyset(&mask);
 
-    va_start(ap, signal1); 
+    va_start(ap, signal1);
 
     for (i = signal1; i >= 0; i = va_arg(ap, int))
         sigaddset(&mask, SIGRTMIN + i);
 
     va_end(ap);
 
-    /* Block signals so that they aren't handled
-        according to their default dispositions */
+    /* Blocca i segnali settati nella mask cosi da prevenire
+     * la chiamata del handler di default */
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
         handle_error("sigprocmask");
 
-    return signalfd(fd, &mask, 0);
+    return mask;
 }
 
 const char* device_type_to_string(DeviceType device_type){

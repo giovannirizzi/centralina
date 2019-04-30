@@ -8,6 +8,18 @@
 #include "manualcontrol.h"
 
 
+/*
+ * Possibile utilizzo:
+ *
+ * manualcontrol whois <id> (Se usiamo gli id e non i PID)
+ * per restituire il PID dato un id
+ *
+ * manaulcontrol switch <id/PID> <label interruttore> <posizione>
+ * per inviare un segnale...
+ *
+ */
+
+
 int main(int argc, char *argv[]){
 
     //Test invio segnale a me stesso
