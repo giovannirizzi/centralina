@@ -1,35 +1,16 @@
-Alla fine molto probabilmente la add <device> crea il device e lo linka anche alla centralina.
-
-I dispositivi collegati alla centralina penso che parleranno con le pipe (normali o named???).
-La centralina comunica direttamente ai dispositivi non collegati direttamente ad essa???? es centralina - hub - bulb
-
-Centralina:
-    Funzioni da implementare:
-        list():
-        add_device(char* device): in base al tipo di device farà la fork e la exec(./bulb) o exec(./device bulb) 
-                                    corrispondente al device passato come parametro. Ci sarà una serie di
-                                    if(strcmp("bulb",device) == ). Al device appena creato bisogna assegnare anche un id.
-        
-        delete_device(int device_id): controlla se il device_id è un id valido, se si, rimuove il device dai device attivi e killa i 
-                                        processi dei device mandando un signal o boh...
-                                        
-        link_devices(int device_id_1, int device_id_2): è abbastanza complicata questa boh...
-
-        switch_device(int device_id, char* label_interruttore, char* pos): anche questa complicata l'interruttore ha anche un label
-                                                                            nel pdf quello della finestra è open ma ad esempio quello della lampadina
-                                                                            sarà diverso. la funzione penso che userà le pipe per switchare il device
-        get_info(int device_id): interroga il device, probabilmente con le pipe...
-        
-        
-Un eseguibile es. manualcontrol che simula i comandi manuali dei dispositivi senza passare per la centralina.
-Si utilizzeranno gli args del main come comandi per switchare lo stato dei device manualmente.
-Il manualcontrol userà i segnali per comunicare con i processi dei devices quindi bisogna sapere i loro PID.
-
-la get info serve anche per ricavare le info del dispositivo per ricostruirlo se cambia parent. (comando link)
-Si usa lo stesso comando o un comando uno a parte???? le informazioni restituite si passeranno come args al nuovo processo
-per settarlo come prima.
-
-
+Tutti i dispositivi anche la centralina hanno:
+    un id
+    uno stato
+    dei registri
+    degli interruttori.
+    
+I dispositivi di controllo hanno in più anche una lista pipe per parlare con i figli.
+    
+La centralina è un dispositivo di controllo come gli altri lei però prende i comandi da shell
+anziche tramite pipe. In realtà ogni dispositivo prende comandi da stdin e risponde in stdout
+però quando si aggiunge un dispositivo ad uno di controllo, l'stdin e stdout  del dispositivo saranno pipe
+collegate al dispositivo di controllo parent. Il vantaggio è che si può eseguire il singolo dispositivo da shell
+e impartire comandi testuali.
 
 COMANDI DA IMPLEMENTARE:
 
@@ -43,7 +24,25 @@ dispositivi di iterazione:
     switch <id> <interruttore> <pos>    se è <id> switch l'interrutore, la risposta boh...
     switch <interrutore <pos>
     del                                 termina l'esecuzione, la risposta niente o boh..
-    dovrebbero essere tutti...
+    
+    set <configurazione>                setta lo stato e i registri del processo in base alla configurazione
+    get                                 ricava le informazioni (configurazione) del dispositivo.
+
+dispositivi di controllo:
+    stdin (richiesta)                   stdout (risposta)
+    
+    tutti i comandi dispositivi di iterazione
+    
+    link <id> to <id>
+    add <configurazione>               Aggiunge un dispositivo con la configurazione passata come parametro
+    
+    la configurazione può essere anche un intero albero di dispositivi
+    
+centralina:
+    oltre a quelli di controllo anche:
+    
+    add <device name>
+    
     
 Ci sono 2 versioni per ogni comando una con <id> e l'altra senza, perché il dispositivo di controllo
 che controlla il dispositivo di iterazione non conosce il suo id (lui ha solo il canale per comunicare, pipe).
@@ -52,13 +51,8 @@ Almeno io l'ho interpretata così. Quindi se un hub vuole le info dei sui filgi 
 Al posto di settare un dispositivo via parametri del main pensavo di fare un comando apposta del tipo:
 set <id> state=<on/off> registry:time=2&bo=3 (gli interruttori non hanno dati o no?)
 
-La roba peso sarà implementare la struttura della risposta al comando info di un dispositivo di controllo perché
+La roba peso sarà implementare la struttura della risposta al comando get di un dispositivo di controllo perché
 deve restituire tutto l'albero.
-
-
-
-
-
 
 Centralina:
     Segnali:

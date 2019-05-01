@@ -4,6 +4,7 @@
 #include <errno.h>
 #include "centralina.h"
 #include "devices.h"
+#include "utils.h"
 
 
 int main(int argc, char *argv[]){

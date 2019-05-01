@@ -24,7 +24,7 @@ $(LIST): | $(BIN)
 $(ODIR) $(BIN):
 	@mkdir -p $@
 
-$(ODIR)/centralina.o: centralina.c centralina.h devices.h
+$(ODIR)/centralina.o: centralina.c centralina.h devices.h utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(ODIR)/devices.o: devices.c devices.h
@@ -36,13 +36,16 @@ $(ODIR)/bulb.o: bulb.c bulb.h devices.h
 $(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h devices.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-centralina: $(ODIR)/centralina.o $(ODIR)/devices.o
+$(ODIR)/utils.o: utils.c utils.h devices.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+centralina: $(ODIR)/centralina.o $(ODIR)/devices.o $(ODIR)/utils.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
-bulb: $(ODIR)/bulb.o $(ODIR)/devices.o
+bulb: $(ODIR)/bulb.o $(ODIR)/devices.o $(ODIR)/utils.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
-manualcontrol : $(ODIR)/manualcontrol.o
+manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
 build: all

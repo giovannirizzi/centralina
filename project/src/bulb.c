@@ -6,6 +6,7 @@
 #include <sys/signalfd.h>
 #include <sys/types.h>
 #include "devices.h"
+#include "utils.h"
 
 int main(int argc, char *argv[]){
 

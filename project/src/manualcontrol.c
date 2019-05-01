@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 #include "manualcontrol.h"
+#include "utils.h"
 
 
 /*
