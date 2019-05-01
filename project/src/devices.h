@@ -7,7 +7,7 @@
 typedef int device_id;
 typedef char* device_name;
 
-//Numeri negativi per i dispositivi controllo e positivi per quelli d'iterazione
+//Numeri negativi per i devices di controllo e positivi per iterazione
 typedef enum {
     TIMER = -3,
     HUB = -2,
@@ -21,25 +21,41 @@ typedef enum {
 typedef struct{
 
     DeviceType type;
+    device_id id;
 
     // 0 spento 1 acceso
     char state;
 
-    //Questi sono puntatori ad altre strutture, possono cambiare in base al tipo di device
+    /*
+     * Questi sono puntatori ad altre strutture,
+     * possono cambiare in base al tipo di device */
     char* interruttori_struct;
     char* data_struct;
 
 } DeviceBase;
 
 /* Segnali real-time usati per simulare il controllo manuale
- * Per ogni segnale si utilizza anche il valore intero associato ad esso
- * (sival_int) inviato con la syscall sigqueue().
+ * Per ogni segnale si utilizza anche il valore intero associato
+ * ad esso (sival_int) inviato con la syscall sigqueue().
 */
 typedef enum{
-    SIG_POWER,
+    SIG_POWER = 0,
     SIG_OPEN,
     SIG_CLOSE
 } SignalType;
+
+/*
+ * TODO
+ */
+typedef struct{
+    SignalType signal_type;
+    int signal_val;
+} SignalResponse;
+
+/*
+ * TODO
+ */
+int read_incoming_signal(int sfd, SignalResponse *signal_res);
 
 /*
  * Mappa i nomi dei device al loro device type

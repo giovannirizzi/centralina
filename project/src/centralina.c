@@ -46,26 +46,61 @@ void list(){
 }
 
 int add_device(DeviceType device){
+
     printf("Adding %s...\n", device_type_to_string(device));
 
+    /*
+     * Fork ed exec in base al device
+     * Creazione e settaggio delle pipe per comunicare
+     * Magari attendo una risposta
+     */
 }
 
 int delete_device(device_id device){
 
-    //Se è la centralina non posso eliminarla
     printf("Delete %d\n",device);
+
+    /*
+     * Se è la centralina non posso eliminarla
+     * mando un segnanle del <device> ha tutti i dispositivi
+     * collegati
+     * Magari attendo una risposta
+     */
 }
 
 int link_device(device_id device1, device_id device2){
+
     printf("Link %d to %d\n",device1,device2);
+
+    /*
+     * Mando un info <device1>
+     * Mando un del <device1>
+     * Mando un add <device2> <info>
+     * Se device2 è la centralina non mando niente,
+     * eseguirò un metodo che aggiunge il dispositivo
+     * alla centralina e fa un set
+     * Magari attendo una risposta
+     */
 }
 
 int switch_device(device_id device, const char* label, const char* pos){
+
     printf("Switch device %d, label: %s, pos: %s\n", device, label, pos);
+
+    /*
+     * Mando uno switch <device> <label> <pos>
+     * Magari attendo una risposta
+     */
 }
 
 int get_info(device_id device){
+
     printf("Info %d\n",device);
+
+    /*
+    * Mando una info <device>
+    * Parsing della risosta e visualizzo a video le info
+    */
 }
 
 size_t divide_line_into_substrings(char* line, char* args[], size_t max_args){

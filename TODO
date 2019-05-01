@@ -29,6 +29,37 @@ la get info serve anche per ricavare le info del dispositivo per ricostruirlo se
 Si usa lo stesso comando o un comando uno a parte???? le informazioni restituite si passeranno come args al nuovo processo
 per settarlo come prima.
 
+
+
+COMANDI DA IMPLEMENTARE:
+
+dispositivi di iterazione:
+    stdin (richiesta)                   stdout (risposta)
+    
+    whois <id>                          il suo PID se è il dispositivo <id>, -1 altrimenti oppure non risponde..
+    info <id>                           se è il dispositivo <id> rest. le sue info, altrimenti errore o niente
+    info                                restituisce le sue info sempre
+    del <id>                            se è <id> termina l'esecuzione, la risposta niente o boh..
+    switch <id> <interruttore> <pos>    se è <id> switch l'interrutore, la risposta boh...
+    switch <interrutore <pos>
+    del                                 termina l'esecuzione, la risposta niente o boh..
+    dovrebbero essere tutti...
+    
+Ci sono 2 versioni per ogni comando una con <id> e l'altra senza, perché il dispositivo di controllo
+che controlla il dispositivo di iterazione non conosce il suo id (lui ha solo il canale per comunicare, pipe).
+Almeno io l'ho interpretata così. Quindi se un hub vuole le info dei sui filgi chiama la info su tutti i figli, se la centralina vuole le info dell'id 1 invia in brodcast ai figli e risponde solo l'id 1.
+
+Al posto di settare un dispositivo via parametri del main pensavo di fare un comando apposta del tipo:
+set <id> state=<on/off> registry:time=2&bo=3 (gli interruttori non hanno dati o no?)
+
+La roba peso sarà implementare la struttura della risposta al comando info di un dispositivo di controllo perché
+deve restituire tutto l'albero.
+
+
+
+
+
+
 Centralina:
     Segnali:
         per interruttore generale forse?
@@ -54,7 +85,7 @@ Bulb:
         delete?
     Registro
         time: tempo di utilizzo. come lo calcolo??
-    Args per inizializzazione:
+    Args per inizializzazione:  
         id ?? per named pipe eventualmente
         stato
         registro

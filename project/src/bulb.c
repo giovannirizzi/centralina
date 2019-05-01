@@ -10,9 +10,8 @@
 int main(int argc, char *argv[]){
 
     int sfd;
-    struct signalfd_siginfo fdsi;
-    ssize_t s;
     sigset_t mask;
+    SignalResponse sig_res;
 
     printf("PID: %d\n", getpid());
 
@@ -23,31 +22,23 @@ int main(int argc, char *argv[]){
     if (sfd == -1)
         handle_error("signalfd");
 
-
-    // Test invio segnale a me stesso
-    union sigval val_union = {.sival_int = 45 };
-    sigqueue(getpid(), SIGRTMIN + SIG_POWER, val_union);
-
     for (;;) {
-       
-        s = read(sfd, &fdsi, sizeof(struct signalfd_siginfo));
-        if (s != sizeof(struct signalfd_siginfo))
+
+        if (read_incoming_signal(sfd, &sig_res) != 0)
             handle_error("read");
 
-        int signal = fdsi.ssi_signo - SIGRTMIN;
-
-        switch(signal){
+        switch(sig_res.signal_type){
 
             case SIG_POWER:
-                printf("Got SIG_POWER, int val: %d\n", fdsi.ssi_int);
+                printf("Got SIG_POWER, int val: %d\n", sig_res.signal_val);
                 break;
 
             case SIG_OPEN:
-                printf("Got SIG_OPEN, int val: %d\n", fdsi.ssi_int);
+                printf("Got SIG_OPEN, int val: %d\n", sig_res.signal_val);
                 break;
 
             case SIG_CLOSE:
-                printf("Got SIG_CLOSE, int val: %d\n", fdsi.ssi_int);
+                printf("Got SIG_CLOSE, int val: %d\n", sig_res.signal_val);
                 exit(EXIT_SUCCESS);
 
             default:
