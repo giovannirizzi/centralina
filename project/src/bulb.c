@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     SignalResponse sig_res;
 
     printf("PID: %d\n", getpid());
-
+    
     mask = update_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
 
     sfd = signalfd(-1, &mask, 0);

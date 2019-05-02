@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include "centralina.h"
 #include "devices.h"
 #include "utils.h"
@@ -55,14 +56,47 @@ int add_device(DeviceType device){
     if(strcmp(device_type_to_string(device), "bulb") == 0){
         printf("Adding %s...\n", device_type_to_string(device));
         printf("PID padre: %d\n", getpid());
+        int fd_parent_to_child[2];
+        int fd_child_to_parent[2];
+        char *line = NULL;
+        size_t len;
+        char buffer[20];
+        if(pipe(fd_parent_to_child)){
+            printf("Piping failed!\n");
+            return -1;
+        }
+        if(pipe(fd_child_to_parent)){
+            printf("Piping failed!\n");
+            return -1;
+        }
         pid_t pid = fork();
         if(pid == -1){
             printf("Forking failed!\n");
-            return(1);
-        }else if(pid == 0){
-            char *args[]={"./bin/bulb",NULL};
-            execve(args[0],args);
-        }
+                return(1);
+            }
+            else if(pid == 0){
+                dup2(fd_parent_to_child[0], STDIN_FILENO);
+                dup2(fd_child_to_parent[1], STDOUT_FILENO);
+                close(fd_parent_to_child[1]);
+                close(fd_parent_to_child[0]);
+                close(fd_child_to_parent[0]);
+                close(fd_child_to_parent[1]);
+                //stdin = fdopen(fd_parent_to_child[0],"w");
+                printf("Ciao");
+                exit(0);
+                execl("./bin/bulb", NULL);
+            }else{
+                close(fd_parent_to_child[0]);
+                close(fd_child_to_parent[1]);
+                close(fd_parent_to_child[1]);
+                FILE* file = fdopen(fd_child_to_parent[0],"r");
+                if(file == NULL){
+                    perror("Ciao: ");
+                }
+                getline(&line,&len,file);
+                printf("Padre: %s",line);
+                close(fd_child_to_parent[0]);
+            }
     }else if(strcmp(device_type_to_string(device), "window") == 0){
 
     }
