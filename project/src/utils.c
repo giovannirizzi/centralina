@@ -41,7 +41,14 @@ DeviceType device_string_to_type(const char* device_string){
     else
         return INVALID_TYPE;
 }
-
+int string_to_state(const char* device_state){
+    if(strcmp("on", device_state) == 0)
+        return 0;
+    if(strcmp("off", device_state) == 0)
+        return 1;
+    else
+        return -1;    
+}
 int string_to_device_id(const char* string, device_id *id){
 
     int n;
