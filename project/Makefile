@@ -39,10 +39,13 @@ $(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h devices.h
 $(ODIR)/utils.o: utils.c utils.h devices.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(ODIR)/iteration_device.o: iteration_device.c iteration_device.h devices.h utils.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
 centralina: $(ODIR)/centralina.o $(ODIR)/devices.o $(ODIR)/utils.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
-bulb: $(ODIR)/bulb.o $(ODIR)/devices.o $(ODIR)/utils.o
+bulb: $(ODIR)/bulb.o $(ODIR)/devices.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
 manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o

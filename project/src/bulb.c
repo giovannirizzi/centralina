@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include "devices.h"
 #include "utils.h"
+#include "iteration_device.h"
 
 int main(int argc, char *argv[]){
 

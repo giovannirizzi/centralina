@@ -47,14 +47,25 @@ void list(){
 }
 
 int add_device(DeviceType device){
-
-    printf("Adding %s...\n", device_type_to_string(device));
-
     /*
      * Fork ed exec in base al device
      * Creazione e settaggio delle pipe per comunicare
      * Magari attendo una risposta
      */
+    if(strcmp(device_type_to_string(device), "bulb") == 0){
+        printf("Adding %s...\n", device_type_to_string(device));
+        printf("PID padre: %d\n", getpid());
+        pid_t pid = fork();
+        if(pid == -1){
+            printf("Forking failed!\n");
+            return(1);
+        }else if(pid == 0){
+            char *args[]={"./bin/bulb",NULL};
+            execve(args[0],args);
+        }
+    }else if(strcmp(device_type_to_string(device), "window") == 0){
+
+    }
 }
 
 int delete_device(device_id device){

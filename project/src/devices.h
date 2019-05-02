@@ -67,12 +67,4 @@ int read_incoming_signal(int sfd, SignalResponse *signal_res);
 sigset_t update_signal_mask(SignalType signal1, ...);
 
 
-/**
- * TODO
- * @param device_base
- * @param id
- */
-pid_t whois_command(DeviceBase *device_base, device_id id);
-
-
 #endif // DEVICES_H
