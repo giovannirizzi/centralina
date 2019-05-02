@@ -6,6 +6,7 @@
 #include "centralina.h"
 #include "devices.h"
 #include "utils.h"
+#include "fcntl.h"
 
 
 int main(int argc, char *argv[]){
@@ -53,6 +54,8 @@ int add_device(DeviceType device){
      * Creazione e settaggio delle pipe per comunicare
      * Magari attendo una risposta
      */
+
+
     if(strcmp(device_type_to_string(device), "bulb") == 0){
         printf("Adding %s...\n", device_type_to_string(device));
         printf("PID padre: %d\n", getpid());
@@ -60,7 +63,7 @@ int add_device(DeviceType device){
         int fd_child_to_parent[2];
         char *line = NULL;
         size_t len;
-        char buffer[20];
+        char buffer[20] = {0};
         if(pipe(fd_parent_to_child)){
             printf("Piping failed!\n");
             return -1;
@@ -73,30 +76,34 @@ int add_device(DeviceType device){
         if(pid == -1){
             printf("Forking failed!\n");
                 return(1);
+        }
+        else if(pid == 0){
+            dup2(fd_parent_to_child[0], STDIN_FILENO);
+            dup2(fd_child_to_parent[1], STDOUT_FILENO);
+
+            close(fd_parent_to_child[0]);
+            close(fd_parent_to_child[1]);
+            close(fd_child_to_parent[0]);
+            close(fd_child_to_parent[1]);
+
+            execl("./bulb", NULL);
+        }
+        else{
+            close(fd_parent_to_child[0]);
+            close(fd_child_to_parent[1]);
+            close(fd_parent_to_child[1]);
+
+            FILE* file = fdopen(fd_child_to_parent[0],"r");
+            if(file == NULL){
+                perror("Errore fdopen padre");
             }
-            else if(pid == 0){
-                dup2(fd_parent_to_child[0], STDIN_FILENO);
-                dup2(fd_child_to_parent[1], STDOUT_FILENO);
-                close(fd_parent_to_child[1]);
-                close(fd_parent_to_child[0]);
-                close(fd_child_to_parent[0]);
-                close(fd_child_to_parent[1]);
-                //stdin = fdopen(fd_parent_to_child[0],"w");
-                printf("Ciao");
-                exit(0);
-                execl("./bin/bulb", NULL);
-            }else{
-                close(fd_parent_to_child[0]);
-                close(fd_child_to_parent[1]);
-                close(fd_parent_to_child[1]);
-                FILE* file = fdopen(fd_child_to_parent[0],"r");
-                if(file == NULL){
-                    perror("Ciao: ");
-                }
-                getline(&line,&len,file);
-                printf("Padre: %s",line);
-                close(fd_child_to_parent[0]);
-            }
+
+            int byteread = getline(&line,&len,file);
+
+            printf("Figlio: %s num byte %d\n", line, byteread);
+
+            close(fd_child_to_parent[0]);
+        }
     }else if(strcmp(device_type_to_string(device), "window") == 0){
 
     }

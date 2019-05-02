@@ -58,6 +58,11 @@ typedef struct{
 int read_incoming_signal(int sfd, SignalResponse *signal_res);
 
 /*
+ * TODO
+ */
+int read_incoming_command(FILE* stream, int bo);
+
+/*
  * Aggiorna la signal mask del processo, aggiungendo i segnali real-time
  * passati come parametro
  * @param signal1 segnale real-time da mascherare

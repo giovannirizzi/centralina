@@ -5,11 +5,19 @@
 #include <unistd.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
+#include "fcntl.h"
 #include "devices.h"
 #include "utils.h"
 #include "iteration_device.h"
 
 int main(int argc, char *argv[]){
+
+    printf("ciao 123");
+    /*FILE* pra = fdopen(STDOUT_FILENO, "w");
+    if(pra == NULL)
+        handle_error("error fdopen");
+    fwrite("test", sizeof(char), 4, pra);*/
+    exit(0);
 
     int sfd;
     sigset_t mask;
