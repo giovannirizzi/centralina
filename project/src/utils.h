@@ -21,5 +21,11 @@ const char* device_type_to_string(DeviceType device_type);
  * @return 1 se la conversione è andata a buon fine altrimenti 0
 */
 int string_to_device_id(const char* string, device_id *id);
+/*
+ * Converte una string in uno stato, ovvero controlla che venga
+ * passato on / off e @return 0 / 1
+ * @return -1 se ho un parametro non valido 
+*/
+int string_to_state(const char* device_state);
 
 #endif // UTILS_H
