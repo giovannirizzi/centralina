@@ -6,54 +6,97 @@ Tutti i dispositivi anche la centralina hanno:
     
 I dispositivi di controllo hanno in più anche una lista pipe per parlare con i figli.
     
-La centralina è un dispositivo di controllo come gli altri lei però prende i comandi da shell
-anziche tramite pipe. In realtà ogni dispositivo prende comandi da stdin e risponde in stdout
-però quando si aggiunge un dispositivo ad uno di controllo, l'stdin e stdout  del dispositivo saranno pipe
-collegate al dispositivo di controllo parent. Il vantaggio è che si può eseguire il singolo dispositivo da shell
-e impartire comandi testuali.
+
+
+
 
 COMANDI DA IMPLEMENTARE:
 
-dispositivi di iterazione:
-    stdin (richiesta)                   stdout (risposta)
-    
-    whois <id>                          il suo PID se è il dispositivo <id>, -1 altrimenti oppure non risponde..
-    info <id>                           se è il dispositivo <id> rest. le sue info, altrimenti errore o niente
-    info                                restituisce le sue info sempre
-    del <id>                            se è <id> termina l'esecuzione, la risposta niente o boh..
-    switch <id> <interruttore> <pos>    se è <id> switch l'interrutore, la risposta boh...
-    switch <interrutore <pos>
-    del                                 termina l'esecuzione, la risposta niente o boh..
-    
-    set <configurazione>                setta lo stato e i registri del processo in base alla configurazione
-    get                                 ricava le informazioni (configurazione) del dispositivo.
+[Richiesta]                                 [Risposta]
+del                                         <id> <id> <id> : lista dei dispositivi eliminati, se il dispositivo è di iterazione
+                                                            restituirà solo il suo, altrimenti tutto l'albero.
+                                                            
+info                                        <info> da definire bene il formato, però deve restituire: PID, id, tipo, stato, registri,
+                                            dispositivi direttamente connessi se presenti? (oppure tutto l'albero però boh)
+                                            
+setconf <config>                            OK / ERROR: setta la configurazione del dispositivo
 
-dispositivi di controllo:
-    stdin (richiesta)                   stdout (risposta)
-    
-    tutti i comandi dispositivi di iterazione
-    
-    link <id> to <id>
-    add <configurazione>               Aggiunge un dispositivo con la configurazione passata come parametro
-    
-    la configurazione può essere anche un intero albero di dispositivi
-    
-centralina:
-    oltre a quelli di controllo anche:
-    
-    add <device name>
-    
-    
-Ci sono 2 versioni per ogni comando una con <id> e l'altra senza, perché il dispositivo di controllo
-che controlla il dispositivo di iterazione non conosce il suo id (lui ha solo il canale per comunicare, pipe).
-Almeno io l'ho interpretata così. Quindi se un hub vuole le info dei sui filgi chiama la info su tutti i figli, se la centralina vuole le info dell'id 1 invia in brodcast ai figli e risponde solo l'id 1.
+formato <config>: id:%d;type:%d;state:%d;reg:time=%d&bobobo=%d
 
-Al posto di settare un dispositivo via parametri del main pensavo di fare un comando apposta del tipo:
-set <id> state=<on/off> registry:time=2&bo=3 (gli interruttori non hanno dati o no?)
+getconf                                     <config> | <config> | | <config>.. : restituisce la configurazione del dispositivo compresi i figli,
+                                            il simbolo | serve come carattere per serializzare l'albero -> andate a vedere come si serializza un albero.
+                                            
+                                            
+add <config> | <config>...                  OK / ERROR: aggiungere l'albero ad un dispositivo di controllo.
 
-La roba peso sarà implementare la struttura della risposta al comando get di un dispositivo di controllo perché
-deve restituire tutto l'albero.
 
+
+
+
+SHELL sistema:
+
+    la shell ha una lista di FILE* che corrispondono alle FIFO di tutti i device collegati al sistema.
+    La shell parla hai dispositivi solo tramite FIFO e riceve la risposta nella sua FIFO
+    
+    add <device>
+    Aggiunge un device e gli assegna una id unico 
+    
+    del <id>
+    Manda il comando di del nella FIFO e rimuove il dispositivo dalla lista
+    
+    link <id1> to <id2>
+    Manda il comando getconfig ad <id1>, del ad <id1>, add <config> ad <id2>
+    
+    info <id>
+    Manda il comamndo info al dispositivo id tramite FIFO e aspetta la risposta.
+    
+    list
+    Manda il comando info a tutti i dispositivi nella lista
+    
+    switch <id> <label> <pos>
+    Inoltra il comando alla centralina
+    
+    set <id> <registro> <value>                                    
+    
+
+Device (Comandi di base che tutti i dispositivi devono implementare):
+
+    setconf <config> <config> .... (sequenze di config per rappresentare una albero) - FIFO ED STDIN
+    getconf <config> <config> .... - FIFO ED STDIN
+    info    restituisce anche il proprio PID - FIFO ED STDIN
+    del     (Deve restituire la lista dei dispositivi eliminati) - FIFO ED STDIN
+    
+    Ogni device deve aprire in lettura la propria FIFO che sarà tipo /system/<id>, quindi l'id univoco
+    del device bisogna passarlo come arg nel main.
+    
+    Ogni device accetta come parametri del main un id, il signalfd, e un flag che indica se aspettare il settagggio tramite comando
+    oppure avviarsi con il settaggio di default.
+    
+Device di controllo:
+
+    add <config> <config> FIFO ED STDIN
+    
+    
+    Comando per interruttori a 2 posizioni:
+        
+        switch <id> <interrutore> <pos> STDIN
+        
+    Comando per settare i valori nei registri ad esempio per il termostato
+    
+        set <id> <registro> <value> STDIN
+    
+  
+Device di iterazione:
+
+    Comando per interruttori a 2 posizioni:
+        
+        switch <interrutore> <pos> STDIN
+        
+    Comando per settare i valori nei registri ad esempio per il termostato
+    
+        set <registro> <value> STDIN
+        
+        
 Centralina:
     Segnali:
         per interruttore generale forse?
