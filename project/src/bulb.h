@@ -1,6 +1,6 @@
 #ifndef BULB_H
 #define BULB_H
 
-#include "devices.h"
+#include "iteration_device.h"
 
 #endif // BULB_H

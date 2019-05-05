@@ -8,44 +8,40 @@
 #include "utils.h"
 #include "fcntl.h"
 
+Command input_command  = {NULL, NULL, 0};
+
+CommandBind shell_command_bindings[] = {{"add", &add_command},
+                                  {"list", &list_command},
+                                  {"help", &help_command},
+                                  {"exit", &exit_command},
+                                  {"del", &del_command},
+                                  {"switch", &switch_command},
+                                  {"link", &link_command},
+                                  {"info", &info_command}};
 
 int main(int argc, char *argv[]){
 
-    //ESEMPIO DI CODICE PER IMPLEMENTARE IL PARSING DEI COMANDI
-    
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
-    char *args[3];
-    device_id id;
-
     printf("#>");
 
-    //Legge una riga finche non si verifica un errore 
-    while ((nread = getline(&line, &len, stdin)) != -1) {
-        //Sostituisce l'ultimo carattere della riga letta \n con \0
-        if(nread != -1)
-            line[nread-1] = '\0';
+    //Legge un comando (una linea)
+    while (read_incoming_command(stdin, &(input_command.name))) {
 
-        //Interprento la riga letta come: comando arg0 arg1 arg2
-        size_t num_args = divide_line_into_substrings(line, args, sizeof(args)/sizeof(char*));
-        
-        int code = interpret_command((const char*)line, args, num_args);
-        
+        input_command.n_args = divide_string(input_command.name,
+                input_command.args, MAX_COMMAND_ARGS, " ");
+
+        int code = handle_command(&input_command, shell_command_bindings,
+                sizeof(shell_command_bindings)/sizeof(CommandBind));
+
         if(code == -1)
-            fprintf(stderr, "unknown command %s\n", line);
+            print_error("Unknown command %s\n", input_command.name);
         else if(code == 1)
             break;
 
         printf("#>");
     }
 
-    free(line);
+    free(input_command.name);
     exit(EXIT_SUCCESS);
-}
-
-void list(){
-    printf("Lista devices: \n");
 }
 
 int add_device(DeviceType device){
@@ -54,7 +50,6 @@ int add_device(DeviceType device){
      * Creazione e settaggio delle pipe per comunicare
      * Magari attendo una risposta
      */
-
 
     if(strcmp(device_type_to_string(device), "bulb") == 0){
         printf("Adding %s...\n", device_type_to_string(device));
@@ -156,101 +151,78 @@ int get_info(device_id device){
     */
 }
 
-size_t divide_line_into_substrings(char* line, char* args[], size_t max_args){
+void add_command(const char** args, const size_t n_args){
 
-    char *start = line, *end = line;
-    size_t num_args = 0;
-
-    if(start != NULL){
-        strsep(&end, " ");
-        start = end;
-
-        while (start != NULL && num_args < max_args) {
-            //Sostituisce nella stringa il primo " " che incontra con \0
-            strsep(&end, " ");
-            args[num_args++] = start;
-            start = end;
-        }
+    if(n_args != 1)
+        print_error("usage: add <device>\n");
+    else{
+        DeviceType device = device_string_to_type(args[0]);
+        if(device != INVALID_TYPE && device != CENTRALINA)
+            add_device(device);
+        else
+            print_error("invalid device %s\n", args[0]);
     }
-    
-    return num_args;
 }
+void del_command(const char** args, const size_t n_args){
 
-int interpret_command(const char* command, char* args[], const size_t num_args){
+    if(n_args != 1)
+        print_error("usage: del <id>\n");
+    else{
+        device_id id;
+        if(string_to_int(args[0], &id) != 0)
+            print_error("invalid id %s\n", args[0]);
+        else
+            delete_device(id);
+    }
+}
+void link_command(const char** args, const size_t n_args){
 
-    if(strcmp(command, "list") == 0){
-        list();
+    if(n_args != 3 || strcmp(args[1], "to") != 0)
+        print_error("usage: link <id> to <id>\n");
+    else{
+        device_id id1, id2;
+        if(string_to_int(args[0], &id1) != 0)
+            print_error("invalid id %s\n", args[0]);
+        else if(string_to_int(args[2], &id2) != 0)
+            print_error("invalid id %s\n", args[2]);
+        else
+            link_device(id1, id2);
     }
-    else if(strcmp(command, "help") == 0){
-        printf("Help...\n");
-    }
-    else if(strcmp(command, "exit") == 0){
-        return 1;
-    }
-    else if(strcmp(command, "add") == 0){
-        
-        if(num_args != 1)
-            fprintf(stderr, "usage: add <device>\n");
-        else{
-            DeviceType device = device_string_to_type(args[0]);
-            if(device != INVALID_TYPE && device != CENTRALINA)
-                add_device(device);
-            else
-                fprintf(stderr, "invalid device %s\n", args[0]);
-        }
-    }
-    else if(strcmp(command, "del") == 0){
+}
+void list_command(const char** args, const size_t n_args){
 
-        if(num_args != 1)
-            fprintf(stderr, "usage: del <id>\n");
-        else{
-            device_id id;
-            if(!string_to_device_id(args[0], &id))
-                fprintf(stderr, "invalid id %s\n", args[0]);
-            else
-                delete_device(id);
-        }
-    }
-    else if(strcmp(command, "link") == 0){
+    printf("Lista devices: \n");
+}
+void switch_command(const char** args, const size_t n_args){
 
-        if(num_args != 3 || strcmp(args[1], "to") != 0)
-            fprintf(stderr, "usage: link <id> to <id>\n");
-        else{
-            device_id id1, id2;
-            if(!string_to_device_id(args[0], &id1))
-                fprintf(stderr, "invalid id %s\n", args[0]);
-            else if(!string_to_device_id(args[2], &id2))
-                fprintf(stderr, "invalid id %s\n", args[2]);
-            else
-                link_device(id1, id2);     
-        }
+    if(n_args != 3)
+        print_error("usage: switch <id> <label> <pos>\n");
+    else{
+        device_id id;
+        if(string_to_int(args[0], &id) != 0)
+            print_error("invalid id %s\n", args[0]);
+        else
+            switch_device(id, args[1], args[2]);
     }
-    else if(strcmp(command, "switch") == 0){
+}
+void info_command(const char** args, const size_t n_args){
 
-        if(num_args != 3)
-            fprintf(stderr, "usage: switch <id> <label> <pos>\n");
-        else{
-            device_id id;
-            if(!string_to_device_id(args[0], &id))
-                fprintf(stderr, "invalid id %s\n", args[0]);
-            else
-                switch_device(id, args[1], args[2]);
-        }
+    if(n_args != 1)
+        print_error("usage: info <id>\n");
+    else{
+        device_id id;
+        if(string_to_int(args[0], &id) != 0)
+            print_error("invalid id %s\n", args[0]);
+        else
+            get_info(id);
     }
-    else if(strcmp(command, "info") == 0){
+}
+void help_command(const char** args, const size_t n_args){
 
-        if(num_args != 1)
-            fprintf(stderr, "usage: info <id>\n");
-        else{
-            device_id id;
-            if(!string_to_device_id(args[0], &id))
-                fprintf(stderr, "invalid id %s\n", args[0]);
-            else
-                get_info(id);
-        }
-    }
-    else
-        return -1;
+    printf("Help...\n");
+}
+void exit_command(const char** args, const size_t n_args){
 
-    return 0;
+    free(input_command.name);
+    exit(EXIT_SUCCESS);
 }

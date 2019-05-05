@@ -4,11 +4,8 @@ Tutti i dispositivi anche la centralina hanno:
     dei registri
     degli interruttori.
     
-I dispositivi di controllo hanno in più anche una lista pipe per parlare con i figli.
+I dispositivi di controllo hanno in più anche un array di pipe per parlare con i figli.
     
-
-
-
 
 COMANDI DA IMPLEMENTARE:
 
@@ -30,7 +27,8 @@ getconf                                     <config> | <config> | | <config>.. :
 add <config> | <config>...                  OK / ERROR: aggiungere l'albero ad un dispositivo di controllo.
 
 
-
+quando si esegue il programma centralina, il processo esegue subito la fork e il figlio funzionerà come dispositivo di controllo, quindi prende i comandi da stdin che sarà
+la pipe con il processo padre. Il padre ascolta invece i comandi della shell.
 
 
 SHELL sistema:
@@ -53,7 +51,7 @@ SHELL sistema:
     list
     Manda il comando info a tutti i dispositivi nella lista
     
-    switch <id> <label> <pos>
+    switch <id> <label> power_signalpower_signal<pos>
     Inoltra il comando alla centralina
     
     set <id> <registro> <value>                                    

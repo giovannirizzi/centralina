@@ -1,9 +1,6 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#define handle_error(msg) \
-            do { perror(msg); exit(EXIT_FAILURE); } while (0)
-
 typedef int device_id;
 typedef char* device_name;
 
@@ -22,15 +19,16 @@ typedef struct{
 
     DeviceType type;
     device_id id;
+    int singal_fd;
 
     // 0 spento 1 acceso
-    char state;
+    int state;
 
     /*
      * Questi sono puntatori ad altre strutture,
      * possono cambiare in base al tipo di device */
-    char* interruttori_struct;
-    char* data_struct;
+    const void* interruttori_struct;
+    const void* data_struct;
 
 } DeviceBase;
 
@@ -50,26 +48,39 @@ typedef enum{
 typedef struct{
     SignalType signal_type;
     int signal_val;
-} SignalResponse;
+} Signal;
 
 /*
  * TODO
  */
-int read_incoming_signal(int sfd, SignalResponse *signal_res);
+void read_incoming_signal(int sfd, Signal *signal_res);
 
 /*
  * TODO
  */
-int read_incoming_command(FILE* stream, int bo);
+ssize_t read_incoming_command(FILE* stream, char** command);
 
-/*
- * Aggiorna la signal mask del processo, aggiungendo i segnali real-time
+/**
+ * Setta la signal mask del processo, con i segnali real-time
  * passati come parametro
  * @param signal1 segnale real-time da mascherare
  * @param ... altri segnali
  * @return la mask dei segnali passati come argomento
  */
-sigset_t update_signal_mask(SignalType signal1, ...);
+sigset_t set_signal_mask(SignalType signal1, ...);
+
+
+/**
+ * Signal function implementation
+ *
+ */
+
+void power_signal(const int value);
+
+/**
+ * Global var for all devices
+ */
+DeviceBase device_data;
 
 
 #endif // DEVICES_H

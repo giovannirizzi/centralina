@@ -6,53 +6,36 @@
 #include <sys/signalfd.h>
 #include <sys/types.h>
 #include "fcntl.h"
-#include "devices.h"
 #include "utils.h"
-#include "iteration_device.h"
+
+Signal input_singal;
+SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
 int main(int argc, char *argv[]){
 
-    printf("ciao 123");
-    /*FILE* pra = fdopen(STDOUT_FILENO, "w");
-    if(pra == NULL)
-        handle_error("error fdopen");
-    fwrite("test", sizeof(char), 4, pra);*/
-    exit(0);
-
     int sfd;
     sigset_t mask;
-    SignalResponse sig_res;
 
     printf("PID: %d\n", getpid());
-    
-    mask = update_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
 
+    /*
+     * Il signal fd deve essere passato per il main non serve crearlo ogni
+     * volta perché esso viene ereditato dai processi filgi, quindi basta
+     * fare la set_signal_mask e singalfd nella centrlaina.
+     * Però per debug se esso non viene passato per il main si può creare...
+     */
+
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
     sfd = signalfd(-1, &mask, 0);
 
     if (sfd == -1)
-        handle_error("signalfd");
+        perror_and_exit("signalfd");
 
     for (;;) {
 
-        if (read_incoming_signal(sfd, &sig_res) != 0)
-            handle_error("read");
+        read_incoming_signal(sfd, &input_singal);
 
-        switch(sig_res.signal_type){
-
-            case SIG_POWER:
-                printf("Got SIG_POWER, int val: %d\n", sig_res.signal_val);
-                break;
-
-            case SIG_OPEN:
-                printf("Got SIG_OPEN, int val: %d\n", sig_res.signal_val);
-                break;
-
-            case SIG_CLOSE:
-                printf("Got SIG_CLOSE, int val: %d\n", sig_res.signal_val);
-                exit(EXIT_SUCCESS);
-
-            default:
-                printf("Read unexpected signal\n");
-        }
+        handle_signal(&input_singal, signal_bindings,
+                sizeof(signal_bindings)/ sizeof(SignalBind));
     }
 }
