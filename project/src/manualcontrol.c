@@ -21,7 +21,7 @@
  *
  */
 
-Command input_command  = {NULL, NULL, 0};
+Command input_command  = {NULL, 0, NULL, 0};
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
                                   {"switch", &switch_command},

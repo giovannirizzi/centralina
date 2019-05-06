@@ -102,3 +102,31 @@ int handle_signal(const Signal *s, const SignalBind s_bindings[], const size_t n
         }
     return -1;
 }
+
+ssize_t read_line(FILE* stream, char** buffer, size_t *n){
+
+    ssize_t nread = getline(buffer, n, stream);
+
+    if(nread < 0)
+        perror_and_exit("[-] Error getline");
+
+    //Se alla fine della linea letta c'è un \n lo sostituisce con \0
+    if(nread > 0 && (*buffer)[nread-1] == '\n')
+        (*buffer)[nread-1] = '\0';
+
+    return nread;
+}
+
+void read_incoming_signal(int sfd, Signal *signal){
+
+    static struct signalfd_siginfo fdsi;
+    ssize_t s;
+
+    s = read(sfd, &fdsi, sizeof(struct signalfd_siginfo));
+    if (s != sizeof(struct signalfd_siginfo))
+        perror_and_exit("read signalfd");
+
+    //Il cast non dovrebbe dare problemi...
+    signal->signal_type = (SignalType)fdsi.ssi_signo - SIGRTMIN;
+    signal->signal_val = fdsi.ssi_int;
+}
