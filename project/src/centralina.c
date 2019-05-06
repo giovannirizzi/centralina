@@ -3,6 +3,10 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/signalfd.h>
+#include <sys/stat.h>
+#include <sys/time.h> 
+#include <sys/types.h> 
 #include "centralina.h"
 #include "devices.h"
 #include "utils.h"
@@ -20,9 +24,70 @@ CommandBind shell_command_bindings[] = {{"add", &add_command},
                                   {"info", &info_command}};
 
 int main(int argc, char *argv[]){
+    setlinebuf(stdin);
+    int fd_1, fd_2;
+    fd_set rfds;
+    fd_set wfds;
+    fd_set efds;
+    char *myfifo = "/tmp/myfifo";
+    char str1[80];
+    int retval;
+    /* Create the FIFO if it does not exist */
+    //prima di leggere un comando provo a sentire se ricevo un whois
+    //questo va sistemato però per ora non capisco come dovrebbe essere permanentemente in ascolto
+    mkfifo(myfifo, 0666);
+    fd_1 = open(myfifo, O_RDONLY); // Open FIFO for read only 
+    fd_2 = fileno(stdin);
 
-    printf("#>");
+    printf("fd_1: %d, fd_2: %d", fd_1, fd_2);
+  
+    FD_ZERO(&wfds);
+    FD_ZERO(&efds);    
 
+    while(1){
+
+        FD_ZERO(&rfds);
+        FD_SET(fd_1, &rfds);
+        FD_SET(fd_2, &rfds);
+
+        int maxfd = fd_1 > fd_2 ? fd_1 : fd_2;
+
+        retval = select(maxfd+1, &rfds, &wfds, &efds, NULL);
+        if (retval == -1)
+            perror("select()");
+        else if(retval > 0){
+            printf("Retval %d\n", retval);
+
+            if(FD_ISSET(fd_2, &rfds)){
+                printf("STDIN\n");
+                //Legge un comando (una linea)
+                read_incoming_command(stdin, &(input_command.name));
+                input_command.n_args = divide_string(input_command.name,
+                        input_command.args, MAX_COMMAND_ARGS, " ");
+
+                int code = handle_command(&input_command, shell_command_bindings,
+                        sizeof(shell_command_bindings)/sizeof(CommandBind));
+
+                if(code == -1)
+                    print_error("Unknown command %s\n", input_command.name);
+                else if(code == 1){
+                    close(fd_1);
+                    exit(EXIT_SUCCESS);
+                }
+            }
+            if(FD_ISSET(fd_1, &rfds)){
+                int nread = read(fd_1, str1, 80); // read from FIFO
+                printf("Received string: %s, num bytes %d\n", str1, nread);
+                
+            }
+            
+        }
+        else{
+            printf("Time out\n");
+        }
+    }
+
+    /*printf("#>");
     //Legge un comando (una linea)
     while (read_incoming_command(stdin, &(input_command.name))) {
 
@@ -38,10 +103,9 @@ int main(int argc, char *argv[]){
             break;
 
         printf("#>");
-    }
-
+    }     
     free(input_command.name);
-    exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);*/
 }
 
 int add_device(DeviceType device){

@@ -4,9 +4,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <sys/signalfd.h>
+#include <sys/stat.h> 
+#include <sys/types.h> 
 #include "manualcontrol.h"
 #include "utils.h"
+
 
 
 /*
@@ -29,6 +33,17 @@ CommandBind command_bindings[] = {{"whois", &whois_command},
                                   {"help", &help_command}};
 
 int main(int argc, char *argv[]){
+    setlinebuf(stdout);
+    int fd;
+    char *myfifo = "/tmp/myfifo";
+    mkfifo(myfifo, 0666); // mkfifo(<pathname>, <permission>) 
+    char str2[80];
+        while(fgets(str2, 80, stdin)){
+            fd = open(myfifo, O_WRONLY);
+            write(fd, str2, strlen(str2)+1); // write and close
+        } // input from user, maxlen=80 
+        close(fd);
+    
 
     if(argc <= 1){
         help_command(NULL, 0);
