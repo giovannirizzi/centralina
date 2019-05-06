@@ -23,6 +23,7 @@ typedef struct{
 
 typedef struct{
     char* name;
+    size_t len_name;
     char* args[MAX_COMMAND_ARGS];
     size_t n_args;
 } Command;
@@ -31,6 +32,31 @@ typedef struct{
     SignalType type;
     singal_func_ptr exec_command;
 } SignalBind;
+
+/*
+ * TODO
+ */
+typedef struct{
+    SignalType signal_type;
+    int signal_val;
+} Signal;
+
+/*
+ * TODO
+ */
+void read_incoming_signal(int sfd, Signal *signal_res);
+
+
+/**
+ * TODO
+ * @param command
+ */
+void read_incoming_command(FILE *stream, Command *command);
+
+/**
+ * Funziona esattamente come la getline però toglie il carattere \n se presente
+ */
+ssize_t read_line(FILE* stream, char** buffer, size_t *n);
 
 /**
  *

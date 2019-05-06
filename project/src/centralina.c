@@ -12,16 +12,17 @@
 #include "utils.h"
 #include "fcntl.h"
 
-Command input_command  = {NULL, NULL, 0};
+Command input_command  = {NULL, 0, NULL, 0};
 
 CommandBind shell_command_bindings[] = {{"add", &add_command},
-                                  {"list", &list_command},
-                                  {"help", &help_command},
-                                  {"exit", &exit_command},
-                                  {"del", &del_command},
-                                  {"switch", &switch_command},
-                                  {"link", &link_command},
-                                  {"info", &info_command}};
+                                      {"list", &list_command},
+                                      {"help", &help_command},
+                                      {"exit", &exit_command},
+                                      {"del", &del_command},
+                                      {"switch", &switch_command},
+                                      {"link", &link_command},
+                                      {"info", &info_command}};
+
 
 int main(int argc, char *argv[]){
     setlinebuf(stdin);
@@ -89,7 +90,7 @@ int main(int argc, char *argv[]){
 
     /*printf("#>");
     //Legge un comando (una linea)
-    while (read_incoming_command(stdin, &(input_command.name))) {
+    while (read_line(stdin, &input_command.name, &input_command.len_name)) {
 
         input_command.n_args = divide_string(input_command.name,
                 input_command.args, MAX_COMMAND_ARGS, " ");
@@ -115,57 +116,64 @@ int add_device(DeviceType device){
      * Magari attendo una risposta
      */
 
-    if(strcmp(device_type_to_string(device), "bulb") == 0){
-        printf("Adding %s...\n", device_type_to_string(device));
-        printf("PID padre: %d\n", getpid());
-        int fd_parent_to_child[2];
-        int fd_child_to_parent[2];
-        char *line = NULL;
-        size_t len;
-        char buffer[20] = {0};
-        if(pipe(fd_parent_to_child)){
-            printf("Piping failed!\n");
-            return -1;
-        }
-        if(pipe(fd_child_to_parent)){
-            printf("Piping failed!\n");
-            return -1;
-        }
-        pid_t pid = fork();
-        if(pid == -1){
-            printf("Forking failed!\n");
-                return(1);
-        }
-        else if(pid == 0){
-            dup2(fd_parent_to_child[0], STDIN_FILENO);
-            dup2(fd_child_to_parent[1], STDOUT_FILENO);
+    char path[50];
 
-            close(fd_parent_to_child[0]);
-            close(fd_parent_to_child[1]);
-            close(fd_child_to_parent[0]);
-            close(fd_child_to_parent[1]);
+    sprintf(path, "./%s", device_type_to_string(device));
 
-            execl("./bulb", NULL);
-        }
-        else{
-            close(fd_parent_to_child[0]);
-            close(fd_child_to_parent[1]);
-            close(fd_parent_to_child[1]);
+    printf("Adding %s...\n", device_type_to_string(device));
+    printf("PID padre: %d\n", getpid());
 
-            FILE* file = fdopen(fd_child_to_parent[0],"r");
-            if(file == NULL){
-                perror("Errore fdopen padre");
-            }
 
-            int byteread = getline(&line,&len,file);
+    int fd_parent_to_child[2];
+    int fd_child_to_parent[2];
+    char *line_buffer = NULL;
+    size_t len = 0;
+    char buffer[20] = {0};
 
-            printf("Figlio: %s num byte %d\n", line, byteread);
-
-            close(fd_child_to_parent[0]);
-        }
-    }else if(strcmp(device_type_to_string(device), "window") == 0){
-
+    if(pipe(fd_parent_to_child) != 0){
+        perror("pipe");
+        return -1;
     }
+    if(pipe(fd_child_to_parent) != 0){
+        perror("pipe");
+        return -1;
+    }
+    pid_t pid = fork();
+    if(pid == -1){
+        perror("fork");
+        return -1;
+    }
+    else if(pid == 0){
+        dup2(fd_parent_to_child[0], STDIN_FILENO);
+        dup2(fd_child_to_parent[1], STDOUT_FILENO);
+
+        close(fd_parent_to_child[0]);
+        close(fd_parent_to_child[1]);
+        close(fd_child_to_parent[0]);
+        close(fd_child_to_parent[1]);
+
+
+        execl(path, NULL);
+        perror_and_exit("[-] Error execl");
+    }
+    else{
+        close(fd_parent_to_child[0]);
+        close(fd_child_to_parent[1]);
+        close(fd_parent_to_child[1]);
+
+        FILE* file = fdopen(fd_child_to_parent[0],"r");
+        if(file == NULL){
+            perror("[-] Error fdopen");
+        }
+
+        printf("Ciao\n");
+
+        int byteread = read_line(file, &line_buffer, &len);
+        printf("Figlio: %s, num byte %d\n", line_buffer, byteread);
+        free(line_buffer);
+        close(fd_child_to_parent[0]);
+    }
+
 }
 
 int delete_device(device_id device){

@@ -42,23 +42,6 @@ typedef enum{
     SIG_CLOSE
 } SignalType;
 
-/*
- * TODO
- */
-typedef struct{
-    SignalType signal_type;
-    int signal_val;
-} Signal;
-
-/*
- * TODO
- */
-void read_incoming_signal(int sfd, Signal *signal_res);
-
-/*
- * TODO
- */
-ssize_t read_incoming_command(FILE* stream, char** command);
 
 /**
  * Setta la signal mask del processo, con i segnali real-time

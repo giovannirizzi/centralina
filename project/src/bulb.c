@@ -5,13 +5,15 @@
 #include <unistd.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
-#include "fcntl.h"
+#include <fcntl.h>
 #include "utils.h"
 
 Signal input_singal;
 SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
 int main(int argc, char *argv[]){
+
+    setlinebuf(stdout);
 
     int sfd;
     sigset_t mask;
