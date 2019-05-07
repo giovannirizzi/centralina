@@ -34,38 +34,26 @@ CommandBind command_bindings[] = {{"whois", &whois_command},
 
 int main(int argc, char *argv[]){
     setlinebuf(stdout);
-    int fd;
-    char *myfifo = "/tmp/myfifo";
-    mkfifo(myfifo, 0666); // mkfifo(<pathname>, <permission>) 
-    char str2[80];
-        while(fgets(str2, 80, stdin)){
-            fd = open(myfifo, O_WRONLY);
-            write(fd, str2, strlen(str2)+1); // write and close
-        } // input from user, maxlen=80 
-        close(fd);
-    
 
-    if(argc <= 1){
-        help_command(NULL, 0);
-        exit(EXIT_FAILURE);
-    }
-    else{
-
+    if(argc>=2){
         input_command.name = argv[1];
         int i;
-        for(i=0; i<argc && i<MAX_COMMAND_ARGS+2; i++){
+        for(i=0; i<argc-2 && i<MAX_COMMAND_ARGS; i++){
             input_command.args[i] = argv[i+2];
         }
         input_command.n_args = i;
-
         int code = handle_command(&input_command, command_bindings,
                                   sizeof(command_bindings)/sizeof(CommandBind));
 
         if(code == -1){
-            print_error("Invalid Command\n");
+            print_error("uknown command\n");
             help_command(NULL, 0);
             exit(EXIT_FAILURE);
         }
+    }
+    else{
+        help_command(NULL, 0);
+        exit(EXIT_FAILURE);
     }
 
     exit(EXIT_SUCCESS);
@@ -80,35 +68,86 @@ void send_signal(pid_t pid, SignalType signal, int val){
 
 void set_command(const char** args, const size_t n_args){
 
-    if(n_args !=5)
-        print_error("Numero parametri comandi incorretto...");
+    if(n_args !=5){
+        print_error("usage: <set> <id> <label> <value>\n");
+        exit(EXIT_FAILURE);
+    }
     else {
         int device_id;
         int id_control = string_to_int(args[2], &device_id);
         int state_control = string_to_state(args[4]);
-        if (id_control != 0)
-            print_error("Conversion failed");
-        if (state_control == -1)
-            print_error("Stato on/off not valid");
+        if (id_control != 0){
+            print_error("conversion failed");
+            exit(EXIT_FAILURE);
+        }
+        if (state_control == -1){
+            print_error("state on/off not valid");
+            exit(EXIT_FAILURE);
+        }
         else
             //ora posso mandare la signal
-            printf("Signal1\n");
+            printf("signal1\n");
         //send_signal(device_id, state_control);
     }
 }
 
 void whois_command(const char** args, const size_t n_args){
-
-    if(n_args !=3)
-        print_error("Numero parametri comando incorretto...");
+   
+    if(n_args !=1){
+        print_error("usage: <whois> <id>\n");
+    }
     else{
         int device_id;
-        int control= string_to_int(args[2], &device_id);
-        if(control != 0)
+        int control = string_to_int(args[0], &device_id);
+        if(control != 0){
             print_error("Conversion failed");
-        else
-            //ora posso mandare la signal
-            printf("Signal2\n");
+            exit(EXIT_FAILURE);
+        }
+        else{
+            int fd_whois_request, fd_whois_response;
+            fd_set rfds;
+            char buffer[80];
+            sprintf(buffer, "whois %d", device_id);
+            mkfifo(FIFO_WHOIS_REQUEST, 0666);
+
+            fd_whois_request = open(FIFO_WHOIS_REQUEST, O_WRONLY);
+            write(fd_whois_request, buffer, strlen(buffer)+1);
+            close(fd_whois_request);
+
+            fd_whois_response = open(FIFO_WHOIS_RESPONSE, O_RDWR);
+
+            FD_ZERO(&rfds);
+            FD_SET(fd_whois_response, &rfds);
+            struct timeval timeout = {5, 0};
+            int retval = select(fd_whois_response+1, &rfds, NULL, NULL, &timeout);
+
+            if (retval == -1){
+                perror("select()");
+                exit(EXIT_FAILURE);
+            }
+            else if(retval){
+                if(FD_ISSET(fd_whois_response, &rfds)){
+                    int nread = read(fd_whois_response, buffer, 80); // read from FIFO
+                    printf("Received string: %s, num bytes %d\n", buffer, nread);
+                    int control = string_to_int(args[0], &device_id);
+                    if(control != 0){
+                        print_error("Conversion failed");
+                        exit(EXIT_FAILURE);        
+                    }
+                    else{
+                        printf("id: %d", device_id);
+                        exit(EXIT_SUCCESS);
+                    }
+
+                }
+            }
+            else{
+                printf("timeout\n");
+                exit(EXIT_FAILURE);
+            }
+
+            close(fd_whois_response);
+        }
     }
 }
 
