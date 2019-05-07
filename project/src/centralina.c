@@ -25,7 +25,7 @@ CommandBind shell_command_bindings[] = {{"add", &add_command},
 
 
 int main(int argc, char *argv[]){
-    setlinebuf(stdin);
+
     int fd_1, fd_2;
     fd_set rfds;
     fd_set wfds;
@@ -37,13 +37,13 @@ int main(int argc, char *argv[]){
     //prima di leggere un comando provo a sentire se ricevo un whois
     //questo va sistemato però per ora non capisco come dovrebbe essere permanentemente in ascolto
     mkfifo(myfifo, 0666);
-    fd_1 = open(myfifo, O_RDONLY); // Open FIFO for read only 
+    fd_1 = open(myfifo, O_RDWR); // Open FIFO for read only
     fd_2 = fileno(stdin);
 
-    printf("fd_1: %d, fd_2: %d", fd_1, fd_2);
-  
-    FD_ZERO(&wfds);
-    FD_ZERO(&efds);    
+    printf("fd_1: %d, fd_2: %d\n", fd_1, fd_2);
+
+    printf("#>");
+    fflush(stdout);
 
     while(1){
 
@@ -53,16 +53,21 @@ int main(int argc, char *argv[]){
 
         int maxfd = fd_1 > fd_2 ? fd_1 : fd_2;
 
-        retval = select(maxfd+1, &rfds, &wfds, &efds, NULL);
+        retval = select(maxfd+1, &rfds, NULL, NULL, NULL);
         if (retval == -1)
             perror("select()");
         else if(retval > 0){
-            printf("Retval %d\n", retval);
+
+            if(FD_ISSET(fd_1, &rfds)){
+                int nread = read(fd_1, str1, 80); // read from FIFO
+                printf("Received string: %s, num bytes %d\n", str1, nread);
+
+            }
 
             if(FD_ISSET(fd_2, &rfds)){
-                printf("STDIN\n");
+
                 //Legge un comando (una linea)
-                read_incoming_command(stdin, &(input_command.name));
+                read_line(stdin, &input_command.name, &input_command.len_name);
                 input_command.n_args = divide_string(input_command.name,
                         input_command.args, MAX_COMMAND_ARGS, " ");
 
@@ -75,13 +80,9 @@ int main(int argc, char *argv[]){
                     close(fd_1);
                     exit(EXIT_SUCCESS);
                 }
+                printf("#>");
+                fflush(stdout);
             }
-            if(FD_ISSET(fd_1, &rfds)){
-                int nread = read(fd_1, str1, 80); // read from FIFO
-                printf("Received string: %s, num bytes %d\n", str1, nread);
-                
-            }
-            
         }
         else{
             printf("Time out\n");
@@ -118,7 +119,7 @@ int add_device(DeviceType device){
 
     char path[50];
 
-    sprintf(path, "./%s", device_type_to_string(device));
+    sprintf(path, "/bin/xterm ./%s", device_type_to_string(device));
 
     printf("Adding %s...\n", device_type_to_string(device));
     printf("PID padre: %d\n", getpid());

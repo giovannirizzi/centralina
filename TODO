@@ -6,6 +6,7 @@ Tutti i dispositivi anche la centralina hanno:
     
 I dispositivi di controllo hanno in più anche un array di pipe per parlare con i figli.
     
+    
 
 COMANDI DA IMPLEMENTARE:
 
@@ -59,7 +60,7 @@ SHELL sistema:
 
 Device (Comandi di base che tutti i dispositivi devono implementare):
 
-    setconf <config> <config> .... (sequenze di config per rappresentare una albero) - FIFO ED STDIN
+    setconf <config>|<config> .... (sequenze di config per rappresentare una albero) - FIFO ED STDIN
     getconf <config> <config> .... - FIFO ED STDIN
     info    restituisce anche il proprio PID - FIFO ED STDIN
     del     (Deve restituire la lista dei dispositivi eliminati) - FIFO ED STDIN
