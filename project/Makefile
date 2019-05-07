@@ -42,7 +42,10 @@ $(ODIR)/utils.o: utils.c utils.h devices.h
 $(ODIR)/iteration_device.o: iteration_device.c iteration_device.h devices.h utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-centralina: $(ODIR)/centralina.o $(ODIR)/devices.o $(ODIR)/utils.o
+$(ODIR)/control_device.o: control_device.c control_device.h devices.h utils.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+centralina: $(ODIR)/centralina.o $(ODIR)/devices.o $(ODIR)/utils.o $(ODIR)/control_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
 bulb: $(ODIR)/bulb.o $(ODIR)/devices.o $(ODIR)/utils.o $(ODIR)/iteration_device.o

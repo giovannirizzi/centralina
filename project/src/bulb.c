@@ -7,18 +7,18 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include "utils.h"
-
-Signal input_singal;
-SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 int main(int argc, char *argv[]){
 
-    setlinebuf(stdout);
+    Command input_command = {NULL, 0, NULL, 0};
+    Signal input_singal;
 
-    int sfd;
-    sigset_t mask;
+    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
-    printf("PID: %d\n", getpid());
+    init_device(0, 0);
 
     /*
      * Il signal fd deve essere passato per il main non serve crearlo ogni
@@ -27,17 +27,51 @@ int main(int argc, char *argv[]){
      * Però per debug se esso non viene passato per il main si può creare...
      */
 
-    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
-    sfd = signalfd(-1, &mask, 0);
+    //Init signal file descriptor, dovebbe stare in init_device però
+    int signal_fd;
+    sigset_t mask;
 
-    if (sfd == -1)
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
+    signal_fd = signalfd(-1, &mask, 0);
+
+    if (signal_fd == -1)
         perror_and_exit("signalfd");
 
-    for (;;) {
+    fd_set rfds;
+    int stdin_fd = fileno(stdin);
 
-        read_incoming_signal(sfd, &input_singal);
+    while(1){
+        FD_ZERO(&rfds);
 
-        handle_signal(&input_singal, signal_bindings,
-                sizeof(signal_bindings)/ sizeof(SignalBind));
+        FD_SET(signal_fd, &rfds);
+        FD_SET(stdin_fd, &rfds);
+
+        if(select(signal_fd+1, &rfds, NULL, NULL, NULL) == -1)
+            perror_and_exit("select");
+        else{
+
+            //STDIN
+            if (FD_ISSET(stdin_fd, &rfds)) {
+
+                //Legge un comando (una linea)
+                read_incoming_command(stdin, &input_command);
+
+                //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
+                command_output = stdout;
+
+                if(handle_device_command(&input_command, NULL, 0) == -1)
+                    fprintf(command_output, "Unknown command %s\n",
+                            input_command.name);
+            }
+
+            //SIGNAL
+            if (FD_ISSET(signal_fd, &rfds)) {
+
+                read_incoming_signal(signal_fd, &input_singal);
+
+                handle_signal(&input_singal, signal_bindings,
+                              sizeof(signal_bindings) / sizeof(SignalBind));
+            }
+        }
     }
 }

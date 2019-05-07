@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdarg.h>
 #include <sys/signalfd.h>
 #include "utils.h"
 
@@ -108,7 +109,7 @@ ssize_t read_line(FILE* stream, char** buffer, size_t *n){
     ssize_t nread = getline(buffer, n, stream);
 
     if(nread < 0)
-        perror_and_exit("[-] Error getline");
+        perror_and_exit("error getline\n");
 
     //Se alla fine della linea letta c'è un \n lo sostituisce con \0
     if(nread > 0 && (*buffer)[nread-1] == '\n')
@@ -116,6 +117,14 @@ ssize_t read_line(FILE* stream, char** buffer, size_t *n){
 
     return nread;
 }
+
+void read_incoming_command(FILE* in, Command *c){
+
+    read_line(in, &(c->name), &(c->len_name));
+
+    c->n_args = divide_string(c->name, c->args, MAX_COMMAND_ARGS, " ");
+}
+
 
 void read_incoming_signal(int sfd, Signal *signal){
 
@@ -130,6 +139,8 @@ void read_incoming_signal(int sfd, Signal *signal){
     signal->signal_type = (SignalType)fdsi.ssi_signo - SIGRTMIN;
     signal->signal_val = fdsi.ssi_int;
 }
+
+
 
 int add_child(ChildrenDevices* c, ChildDevice d){
     if(c->size == MAX_CHILDREN)
@@ -147,4 +158,13 @@ int delete_child(ChildrenDevices* c, int i){
         c->children[i] = c->children[i + 1];
     c->size--;
     return 0;
+}
+
+void send_command(FILE* out, char* format, ...){
+    va_list args;
+    va_start(args,format);
+    vfprintf(out, format, args);
+    if(format[strlen(format)-1] != '\n')
+        fprintf(out,"\n");
+    va_end(args);
 }

@@ -14,7 +14,7 @@ COMANDI DA IMPLEMENTARE:
 del                                         <id> <id> <id> : lista dei dispositivi eliminati, se il dispositivo è di iterazione
                                                             restituirà solo il suo, altrimenti tutto l'albero.
                                                             
-info                                        <info> da definire bene il formato, però deve restituire: PID, id, tipo, stato, registri,
+info                      void                  <info> da definire bene il formato, però deve restituire: PID, id, tipo, stato, registri,
                                             dispositivi direttamente connessi se presenti? (oppure tutto l'albero però boh)
                                             
 setconf <config>                            OK / ERROR: setta la configurazione del dispositivo
@@ -23,6 +23,7 @@ formato <config>: id:%d;type:%d;state:%d;reg:time=%d&bobobo=%d
 
 getconf                                     <config> | <config> | | <config>.. : restituisce la configurazione del dispositivo compresi i figli,
                                             il simbolo | serve come carattere per serializzare l'albero -> andate a vedere come si serializza un albero.
+getpid                                      <pid>
                                             
                                             
 add <config> | <config>...                  OK / ERROR: aggiungere l'albero ad un dispositivo di controllo.

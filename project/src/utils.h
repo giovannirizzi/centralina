@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define MAX_COMMAND_ARGS 5
+
 #define MAX_CHILDREN 50
 
 #include <sys/types.h>
@@ -14,20 +14,7 @@
 #define print_error(args...) \
             do { fprintf(stderr, ##args); } while (0)
 
-typedef void (*command_func_ptr)(const char** args, const size_t n_args);
-typedef void (*singal_func_ptr)(const int value);
 
-typedef struct{
-    char command_name[20];
-    command_func_ptr validate_and_exec_command;
-} CommandBind;
-
-typedef struct{
-    char* name;
-    size_t len_name;
-    char* args[MAX_COMMAND_ARGS];
-    size_t n_args;
-} Command;
 
 typedef struct{
     SignalType type;
@@ -51,6 +38,8 @@ typedef struct{
     ChildDevice children[MAX_CHILDREN];
     int size;
 } ChildrenDevices;
+
+void send_command(FILE* out, char* format, ...);
 
 int add_child(ChildrenDevices* c, ChildDevice d);
 

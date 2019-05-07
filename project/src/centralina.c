@@ -8,23 +8,31 @@
 #include <sys/time.h> 
 #include <sys/types.h> 
 #include "centralina.h"
-#include "devices.h"
+
 #include "utils.h"
 #include "fcntl.h"
+#include "control_device.h"
 
-Command input_command  = {NULL, 0, NULL, 0};
+Command input_command = {NULL, 0, NULL, 0};
 
-CommandBind shell_command_bindings[] = {{"add", &add_command},
-                                      {"list", &list_command},
-                                      {"help", &help_command},
-                                      {"exit", &exit_command},
-                                      {"del", &del_command},
-                                      {"switch", &switch_command},
-                                      {"link", &link_command},
-                                      {"info", &info_command}};
-
+CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
+                                      {"list", &list_shell_command},
+                                      {"help", &help_shell_command},
+                                      {"exit", &exit_shell_command},
+                                      {"del", &del_shell_command},
+                                      {"switch", &switch_shell_command},
+                                      {"link", &link_shell_command},
+                                      {"info", &info_shell_command}};
 
 int main(int argc, char *argv[]){
+
+    input_command.name = "info";
+
+
+    handle_device_command(&input_command, NULL, 0);
+
+    //base_commands[0].validate_and_exec_command(NULL, 0);
+
 
     int fd_1, fd_2;
     fd_set rfds;
@@ -124,7 +132,6 @@ int add_device(DeviceType device){
     printf("Adding %s...\n", device_type_to_string(device));
     printf("PID padre: %d\n", getpid());
 
-
     int fd_parent_to_child[2];
     int fd_child_to_parent[2];
     char *line_buffer = NULL;
@@ -152,7 +159,6 @@ int add_device(DeviceType device){
         close(fd_parent_to_child[1]);
         close(fd_child_to_parent[0]);
         close(fd_child_to_parent[1]);
-
 
         execl(path, NULL);
         perror_and_exit("[-] Error execl");
@@ -224,7 +230,7 @@ int get_info(device_id device){
     */
 }
 
-void add_command(const char** args, const size_t n_args){
+void add_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
         print_error("usage: add <device>\n");
@@ -236,7 +242,7 @@ void add_command(const char** args, const size_t n_args){
             print_error("invalid device %s\n", args[0]);
     }
 }
-void del_command(const char** args, const size_t n_args){
+void del_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
         print_error("usage: del <id>\n");
@@ -248,7 +254,7 @@ void del_command(const char** args, const size_t n_args){
             delete_device(id);
     }
 }
-void link_command(const char** args, const size_t n_args){
+void link_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3 || strcmp(args[1], "to") != 0)
         print_error("usage: link <id> to <id>\n");
@@ -262,11 +268,11 @@ void link_command(const char** args, const size_t n_args){
             link_device(id1, id2);
     }
 }
-void list_command(const char** args, const size_t n_args){
+void list_shell_command(const char** args, const size_t n_args){
 
     printf("Lista devices: \n");
 }
-void switch_command(const char** args, const size_t n_args){
+void switch_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3)
         print_error("usage: switch <id> <label> <pos>\n");
@@ -278,7 +284,7 @@ void switch_command(const char** args, const size_t n_args){
             switch_device(id, args[1], args[2]);
     }
 }
-void info_command(const char** args, const size_t n_args){
+void info_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
         print_error("usage: info <id>\n");
@@ -290,12 +296,30 @@ void info_command(const char** args, const size_t n_args){
             get_info(id);
     }
 }
-void help_command(const char** args, const size_t n_args){
+void help_shell_command(const char** args, const size_t n_args){
 
     printf("Help...\n");
 }
-void exit_command(const char** args, const size_t n_args){
+void exit_shell_command(const char** args, const size_t n_args){
 
     free(input_command.name);
     exit(EXIT_SUCCESS);
+}
+
+void init_centralina(){
+
+    //fork();
+
+    pid_t pid = fork();
+    if(pid == -1){
+        perror_and_exit("[-] error, init_centralina: fork");
+    }
+    else if(pid == 0){
+
+        //Codice device centralina
+    }
+    else{
+
+        //devicesIn[0] = m;
+    }
 }

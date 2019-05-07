@@ -10,6 +10,12 @@
 #include "devices.h"
 #include "utils.h"
 
+CommandBind base_commands[] = {{"info", &info_command},
+                                     {"del", &del_command},
+                                     {"getconf", &getconf_command},
+                                     {"setconf", &setconf_command},
+                                     {"getpid", &getpid_command}};
+
 sigset_t set_signal_mask(SignalType signal1, ...){
 
     va_list ap;
@@ -38,4 +44,23 @@ void power_signal(const int value){
     //TODO
     printf("Got SIG_POWER, int val: %d\n", value);
     device_data.state = value;
+}
+
+void init_device(device_id id, int signalfd){
+
+    /**
+     * Apri la fifo /tmp/centralina/devices/0 -> fifo_response in write
+     * Apri la fifo /tmp/centralina/devices/<id> -> fifo_request in read
+     * Inizializza signalfd.....
+     */
+
+    command_output = stdout;
+    setlinebuf(stdout);
+}
+
+void getpid_command(const char** args, const size_t n_args){
+
+    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
+    //send_command(command_output, "%d", getpid());
+    fprintf(command_output, "%d\n", getpid());
 }
