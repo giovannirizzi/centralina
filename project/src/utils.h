@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #define MAX_COMMAND_ARGS 5
+#define MAX_CHILDREN 50
 
 #include <sys/types.h>
 #include <errno.h>
@@ -40,6 +41,20 @@ typedef struct{
     SignalType signal_type;
     int signal_val;
 } Signal;
+
+typedef struct{
+    FILE* in;
+    FILE* out;
+} ChildDevice;
+
+typedef struct{
+    ChildDevice children[MAX_CHILDREN];
+    int size;
+} ChildrenDevices;
+
+int add_child(ChildrenDevices* c, ChildDevice d);
+
+int delete_child(ChildrenDevices* c, int i);
 
 /*
  * TODO

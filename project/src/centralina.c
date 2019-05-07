@@ -119,7 +119,7 @@ int add_device(DeviceType device){
 
     char path[50];
 
-    sprintf(path, "/bin/xterm ./%s", device_type_to_string(device));
+    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(device));
 
     printf("Adding %s...\n", device_type_to_string(device));
     printf("PID padre: %d\n", getpid());

@@ -130,3 +130,21 @@ void read_incoming_signal(int sfd, Signal *signal){
     signal->signal_type = (SignalType)fdsi.ssi_signo - SIGRTMIN;
     signal->signal_val = fdsi.ssi_int;
 }
+
+int add_child(ChildrenDevices* c, ChildDevice d){
+    if(c->size == MAX_CHILDREN)
+        return -1;
+    c->children[c->size] = d;
+    c->size++;
+    printf("SIZE = %d\n",c->size);
+    return 0;
+}
+
+int delete_child(ChildrenDevices* c, int i){
+    if(c->size == 0)
+        return -1;
+    for ( ; i <= c->size; i++)
+        c->children[i] = c->children[i + 1];
+    c->size--;
+    return 0;
+}
