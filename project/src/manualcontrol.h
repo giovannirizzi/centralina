@@ -1,6 +1,8 @@
 #ifndef MANUALCONTROL_H
 #define MANUALCONTROL_H
 
+#define FIFO_WHOIS_REQUEST "/tmp/centralina/whois_request"
+#define FIFO_WHOIS_RESPONSE "/tmp/centralina/whois_response"
 #include <sys/types.h>
 #include "devices.h"
 
