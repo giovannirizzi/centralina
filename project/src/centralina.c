@@ -1,16 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
-#include <sys/signalfd.h>
-#include <sys/stat.h>
-#include <sys/time.h> 
-#include <sys/types.h> 
+#include <fcntl.h>
+#include <sys/time.h>
 #include "centralina.h"
 #include "utils.h"
-#include "fcntl.h"
-#include "control_device.h"
+
 
 Command input_command = {NULL, 0, NULL, 0};
 
@@ -131,8 +127,8 @@ int add_device(DeviceType device){
 
         printf("Ciao\n");
 
-        int byteread = read_line(file, &line_buffer, &len);
-        printf("Figlio: %s, num byte %d\n", line_buffer, byteread);
+        ssize_t byteread = read_line(file, &line_buffer, &len);
+        printf("Figlio: %s, num byte %d\n", line_buffer, (int) byteread);
         free(line_buffer);
         close(fd_child_to_parent[0]);
     }
@@ -267,7 +263,7 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
 
-    fprintf(stdout, "whois command reviced\n");
+    fprintf(stdout, "whois command reviced with id: %s\n", n_args > 0 ? args[0] : " ");
 }
 
 void init_centralina(){

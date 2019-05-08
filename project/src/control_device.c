@@ -1,14 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/signalfd.h>
-#include <sys/types.h>
 #include "control_device.h"
 #include "utils.h"
 
-CommandBind control_device_commands[] = {"add", &add_command};
+const CommandBind control_device_commands[] = {"add", &add_command};
 
 int handle_device_command(const Command *c, const CommandBind custom_commands[], const size_t n){
 
@@ -43,4 +38,22 @@ void getconf_command(const char** args, const size_t n_args){
 void add_command(const char** args, const size_t n_args){
 
     fprintf(command_output, "add command\n");
+}
+
+int add_child(ChildrenDevices* c, ChildDevice d){
+    if(c->size == MAX_CHILDREN)
+        return -1;
+    c->children[c->size] = d;
+    c->size++;
+    printf("SIZE = %d\n",c->size);
+    return 0;
+}
+
+int delete_child(ChildrenDevices* c, int i){
+    if(c->size == 0)
+        return -1;
+    for ( ; i <= c->size; i++)
+        c->children[i] = c->children[i + 1];
+    c->size--;
+    return 0;
 }

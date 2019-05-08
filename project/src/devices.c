@@ -16,7 +16,7 @@ CommandBind base_commands[] = {{"info", &info_command},
                                      {"setconf", &setconf_command},
                                      {"getpid", &getpid_command}};
 
-sigset_t set_signal_mask(SignalType signal1, ...){
+sigset_t set_signal_mask(RTSignalType signal1, ...){
 
     va_list ap;
     int i;

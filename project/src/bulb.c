@@ -14,20 +14,23 @@
 int main(int argc, char *argv[]){
 
     Command input_command = {NULL, 0, NULL, 0};
-    Signal input_singal;
+    RTSignal input_singal;
 
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
     init_device(0, 0);
 
-    /*
+    /**
      * Il signal fd deve essere passato per il main non serve crearlo ogni
      * volta perché esso viene ereditato dai processi filgi, quindi basta
      * fare la set_signal_mask e singalfd nella centrlaina.
      * Però per debug se esso non viene passato per il main si può creare...
      */
 
-    //Init signal file descriptor, dovebbe stare in init_device però
+    /**
+     * Init signal file descriptor, dovebbe stare in init_device però
+     */
+
     int signal_fd;
     sigset_t mask;
 
