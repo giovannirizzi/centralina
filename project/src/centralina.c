@@ -8,7 +8,6 @@
 #include <sys/time.h> 
 #include <sys/types.h> 
 #include "centralina.h"
-
 #include "utils.h"
 #include "fcntl.h"
 #include "control_device.h"
@@ -24,98 +23,57 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
                                       {"link", &link_shell_command},
                                       {"info", &info_shell_command}};
 
+CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
+
 int main(int argc, char *argv[]){
 
-    input_command.name = "info";
+    //Se non esiste crea la directory centralina per mettere le FIFO
+    mkdir("/tmp/centralina", S_IRWXU );
 
-
-    handle_device_command(&input_command, NULL, 0);
-
-    //base_commands[0].validate_and_exec_command(NULL, 0);
-
-
-    int fd_1, fd_2;
     fd_set rfds;
-    fd_set wfds;
-    fd_set efds;
-    char *myfifo = "/tmp/myfifo";
-    char str1[80];
-    int retval;
-    /* Create the FIFO if it does not exist */
-    //prima di leggere un comando provo a sentire se ricevo un whois
-    //questo va sistemato però per ora non capisco come dovrebbe essere permanentemente in ascolto
-    mkfifo(myfifo, 0666);
-    fd_1 = open(myfifo, O_RDWR); // Open FIFO for read only
-    fd_2 = fileno(stdin);
+    int stdin_fd = fileno(stdin);
 
-    printf("fd_1: %d, fd_2: %d\n", fd_1, fd_2);
-
-    printf("#>");
-    fflush(stdout);
+    int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
+    FILE* whois_request_in = fdopen(whois_request_fd, "r");
 
     while(1){
 
+        printf("#>");
+        fflush(stdout);
+
         FD_ZERO(&rfds);
-        FD_SET(fd_1, &rfds);
-        FD_SET(fd_2, &rfds);
+        FD_SET(whois_request_fd, &rfds);
+        FD_SET(stdin_fd, &rfds);
 
-        int maxfd = fd_1 > fd_2 ? fd_1 : fd_2;
+        if(select(whois_request_fd+1, &rfds, NULL, NULL, NULL) == -1)
+            perror_and_exit("select");
+        else{
 
-        retval = select(maxfd+1, &rfds, NULL, NULL, NULL);
-        if (retval == -1)
-            perror("select()");
-        else if(retval > 0){
-
-            if(FD_ISSET(fd_1, &rfds)){
-                int nread = read(fd_1, str1, 80); // read from FIFO
-                printf("Received string: %s, num bytes %d\n", str1, nread);
-
-            }
-
-            if(FD_ISSET(fd_2, &rfds)){
+            //STDIN
+            if (FD_ISSET(stdin_fd, &rfds)) {
 
                 //Legge un comando (una linea)
-                read_line(stdin, &input_command.name, &input_command.len_name);
-                input_command.n_args = divide_string(input_command.name,
-                        input_command.args, MAX_COMMAND_ARGS, " ");
+                read_incoming_command(stdin, &input_command);
 
-                int code = handle_command(&input_command, shell_command_bindings,
-                        sizeof(shell_command_bindings)/sizeof(CommandBind));
-
-                if(code == -1)
-                    print_error("Unknown command %s\n", input_command.name);
-                else if(code == 1){
-                    close(fd_1);
-                    exit(EXIT_SUCCESS);
-                }
-                printf("#>");
-                fflush(stdout);
+                if(handle_command(&input_command, shell_command_bindings, 8) == -1)
+                    fprintf(stdout, "Unknown command %s\n",
+                            input_command.name);
             }
-        }
-        else{
-            printf("Time out\n");
+
+            //WHOIS REQUEST
+            if (FD_ISSET(whois_request_fd, &rfds)) {
+
+                read_incoming_command(whois_request_in, &input_command);
+
+                handle_command(&input_command, whois_request_bindings,
+                        sizeof(whois_request_bindings)/sizeof(CommandBind));
+
+            }
         }
     }
 
-    /*printf("#>");
-    //Legge un comando (una linea)
-    while (read_line(stdin, &input_command.name, &input_command.len_name)) {
-
-        input_command.n_args = divide_string(input_command.name,
-                input_command.args, MAX_COMMAND_ARGS, " ");
-
-        int code = handle_command(&input_command, shell_command_bindings,
-                sizeof(shell_command_bindings)/sizeof(CommandBind));
-
-        if(code == -1)
-            print_error("Unknown command %s\n", input_command.name);
-        else if(code == 1)
-            break;
-
-        printf("#>");
-    }     
     free(input_command.name);
-    exit(EXIT_SUCCESS);*/
+    exit(EXIT_SUCCESS);
 }
 
 int add_device(DeviceType device){
@@ -284,6 +242,7 @@ void switch_shell_command(const char** args, const size_t n_args){
             switch_device(id, args[1], args[2]);
     }
 }
+
 void info_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
@@ -296,14 +255,22 @@ void info_shell_command(const char** args, const size_t n_args){
             get_info(id);
     }
 }
+
 void help_shell_command(const char** args, const size_t n_args){
 
     printf("Help...\n");
 }
+
 void exit_shell_command(const char** args, const size_t n_args){
 
     free(input_command.name);
     exit(EXIT_SUCCESS);
+}
+
+void whois_command(const char** args, const size_t n_args){
+
+
+    fprintf(stdout, "whois command reviced\n");
 }
 
 void init_centralina(){

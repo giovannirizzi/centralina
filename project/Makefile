@@ -57,7 +57,7 @@ manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o
 build: all
 
 clean:
-	rm -f -r $(ODIR)/* $(BIN)/*
+	rm -f -r $(ODIR)/* $(BIN)/* /tmp/centralina
 
 help:
 	@echo Help

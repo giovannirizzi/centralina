@@ -105,6 +105,4 @@ FILE* fifo_response;
 
 
 
-
-
 #endif // DEVICES_H

@@ -45,6 +45,8 @@ int add_child(ChildrenDevices* c, ChildDevice d);
 
 int delete_child(ChildrenDevices* c, int i);
 
+int open_fifo(const char* path, mode_t mode);
+
 /*
  * TODO
  */

@@ -8,6 +8,8 @@
 #include <stdarg.h>
 #include <stdarg.h>
 #include <sys/signalfd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "utils.h"
 
 const char* device_type_to_string(DeviceType device_type){
@@ -123,6 +125,20 @@ void read_incoming_command(FILE* in, Command *c){
     read_line(in, &(c->name), &(c->len_name));
 
     c->n_args = divide_string(c->name, c->args, MAX_COMMAND_ARGS, " ");
+}
+
+int open_fifo(const char* path, mode_t access_mode){
+
+    int fd;
+    if(mkfifo(path, S_IRWXU) == -1 && errno != EEXIST)
+        perror_and_exit("mkfifo");
+    else{
+        fd = open(path, access_mode);
+        if(fd == -1)
+            perror_and_exit("open_fifo");
+    }
+
+    return fd;
 }
 
 

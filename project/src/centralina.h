@@ -3,6 +3,9 @@
 
 #include "devices.h"
 
+#define FIFO_WHOIS_REQUEST "/tmp/centralina/whois_request"
+#define FIFO_WHOIS_RESPONSE "/tmp/centralina/whois_response"
+
 FILE* devicesIn[MAX_DEVICES];
 
 void init_centralina();
@@ -24,6 +27,8 @@ void switch_shell_command(const char** args, const size_t n_args);
 void info_shell_command(const char** args, const size_t n_args);
 void help_shell_command(const char** args, const size_t n_args);
 void exit_shell_command(const char** args, const size_t n_args);
+
+void whois_command(const char** args, const size_t n_args);
 
 
 #endif // CENTRALINA_H
