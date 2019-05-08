@@ -19,8 +19,8 @@
  * manualcontrol whois <id> (Se usiamo gli id e non i PID)
  * per restituire il PID dato un id
  *
- * manaulcontrol set <id/PID> <label interruttore> <posizione>
- * set 18039 power on
+ * manaulcontrol set <id/PID> <label> <value>
+ * set 18039 temperature 34
  * per inviare un segnale...
  *
  */
@@ -67,21 +67,21 @@ void send_signal(pid_t pid, SignalType signal, int val){
 }
 
 void set_command(const char** args, const size_t n_args){
-
-    if(n_args !=5){
-        print_error("usage: <set> <id> <label> <value>\n");
+    //manca ancora il controllo su temperature, ecc. Anche il value secondo me dovrebbe avere un controllo però boh
+    if(n_args !=3){
+        print_error("usage: <set> <id> <register> <value>\n");
         exit(EXIT_FAILURE);
     }
     else {
         int device_id;
-        int id_control = string_to_int(args[2], &device_id);
-        int state_control = string_to_state(args[4]);
+        int id_control = string_to_int(args[0], &device_id);
+        int value_control = string_to_int(args[2], &device_id);
         if (id_control != 0){
-            print_error("conversion failed");
+            print_error("conversion failed, id not valid\n");
             exit(EXIT_FAILURE);
         }
-        if (state_control == -1){
-            print_error("state on/off not valid");
+        if (value_control != 0){
+            print_error("conversion failed, value not valid\n");
             exit(EXIT_FAILURE);
         }
         else
@@ -143,7 +143,6 @@ void whois_command(const char** args, const size_t n_args){
                         printf("PID: %d", pid);
                         exit(EXIT_SUCCESS);
                     }
-
                 }
             }
             else{
@@ -157,10 +156,52 @@ void whois_command(const char** args, const size_t n_args){
 }
 
 void switch_command(const char** args, const size_t n_args){
-
+    //manca ancora il controllo su open-power-close 
+    if(n_args !=3){
+        print_error("usage: <switch> <id> <label> <state>\n");
+        exit(EXIT_FAILURE);
+    }
+    else {
+        int device_id;
+        int id_control = string_to_int(args[0], &device_id);
+        int state_control = string_to_state(args[2]);
+        if (id_control != 0){
+            print_error("conversion failed, id not valid\n");
+            exit(EXIT_FAILURE);
+        }
+        if (state_control == -1){
+            print_error("state on/off not valid\n");
+            exit(EXIT_FAILURE);
+        }
+        else
+            //ora posso mandare la signal
+            printf("signal1\n");
+        //send_signal(device_id, state_control);
+    }
 }
 
 
 void help_command(const char** args, const size_t n_args){
+    printf("available commands: \n");
+    printf(" - set: set value of the identified device\n");
+    printf("   usage: <set> <id> <register> <value>\n");
+    printf(" - whois: return pid of the identified device\n");
+    printf("   usage: <whois> <id>\n");
+    printf(" - switch: change status of the identified device\n");
+    printf("   usage: <switch> <id> <label> <state>\n");
+    printf(" - help: show available commands\n");
+    printf("   usage: <help>\n");
+}
 
+void list(){
+    printf("available devices: \n");
+    printf("interaction devices: \n");
+    printf(" -  bulb\n");
+    printf(" -  window\n");
+    printf(" -  fridge\n");
+    printf("interaction devices: \n");
+    printf(" - controller\n");
+    printf(" - hub\n");
+    printf(" - timer\n");
+    printf("active devices...\n");
 }
