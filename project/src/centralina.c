@@ -27,9 +27,6 @@ CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
 
-    //Se non esiste crea la directory centralina per mettere le FIFO
-    mkdir("/tmp/centralina", S_IRWXU );
-
     fd_set rfds;
     int stdin_fd = fileno(stdin);
 
@@ -58,6 +55,7 @@ int main(int argc, char *argv[]){
                 if(handle_command(&input_command, shell_command_bindings, 8) == -1)
                     fprintf(stdout, "Unknown command %s\n",
                             input_command.name);
+
             }
 
             //WHOIS REQUEST
@@ -268,7 +266,6 @@ void exit_shell_command(const char** args, const size_t n_args){
 }
 
 void whois_command(const char** args, const size_t n_args){
-
 
     fprintf(stdout, "whois command reviced\n");
 }

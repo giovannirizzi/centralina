@@ -9,7 +9,7 @@ VPATH = $(SDIR)
 DEFAULT: help
 
 #Lista di tutti gli eseguibili da compilare
-LIST = centralina bulb manualcontrol
+LIST = fifo centralina bulb manualcontrol
 
 all : $(LIST)
 
@@ -20,6 +20,9 @@ OBJ_FILES = $(patsubst src/%.c, obj/%.o, $(wildcard src/*.c))
 $(OBJ_FILES): | $(ODIR)
 #I file eseguibili hanno bisono della directory $(BIN)
 $(LIST): | $(BIN)
+
+fifo:
+	@mkdir -p /tmp/centralina /tmp/centralina/devices
 
 $(ODIR) $(BIN):
 	@mkdir -p $@
@@ -57,7 +60,7 @@ manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o
 build: all
 
 clean:
-	rm -f -r $(ODIR)/* $(BIN)/* /tmp/centralina
+	rm -f -r $(ODIR)/* $(BIN)/* /tmp/centralina /tmp/centralina/devices
 
 help:
 	@echo Help

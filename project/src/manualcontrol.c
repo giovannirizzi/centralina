@@ -106,43 +106,48 @@ void whois_command(const char** args, const size_t n_args){
         else{
             int fd_whois_request, fd_whois_response;
             fd_set rfds;
-            char buffer[80];
-            sprintf(buffer, "whois %d", device_id);
-            mkfifo(FIFO_WHOIS_REQUEST, 0666);
 
-            fd_whois_request = open(FIFO_WHOIS_REQUEST, O_WRONLY);
-            write(fd_whois_request, buffer, strlen(buffer)+1);
-            close(fd_whois_request);
+            fd_whois_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
+            FILE* whois_request_out = fdopen(fd_whois_request, "w");
 
-            fd_whois_response = open(FIFO_WHOIS_RESPONSE, O_RDWR);
+            fprintf(whois_request_out, "whois %d\n", device_id);
+            fclose(whois_request_out);
+
+            fd_whois_response = open_fifo(FIFO_WHOIS_RESPONSE, O_RDWR);
+            FILE* whois_response_in = fdopen(fd_whois_response, "r");
 
             FD_ZERO(&rfds);
             FD_SET(fd_whois_response, &rfds);
-            struct timeval timeout = {5, 0};
+
+            struct timeval timeout = {1, 0};
             int retval = select(fd_whois_response+1, &rfds, NULL, NULL, &timeout);
 
             if (retval == -1){
-                perror("select()");
-                exit(EXIT_FAILURE);
+                perror_and_exit("select");
             }
             else if(retval){
                 if(FD_ISSET(fd_whois_response, &rfds)){
-                    int nread = read(fd_whois_response, buffer, 80); // read from FIFO
-                    printf("Received string: %s, num bytes %d\n", buffer, nread);
-                    int control = string_to_int(args[0], &device_id);
+
+                    int nread = read_line(whois_response_in, &input_command.name,
+                            input_command.len_name);
+
+                    printf("Received string: %s, num bytes %d\n", input_command.name, nread);
+
+                    pid_t pid;
+                    int control = string_to_int(input_command.name, &pid);
+
                     if(control != 0){
-                        print_error("Conversion failed");
-                        exit(EXIT_FAILURE);        
+                        perror_and_exit("Conversion failed");
                     }
                     else{
-                        printf("id: %d", device_id);
+                        printf("PID: %d", pid);
                         exit(EXIT_SUCCESS);
                     }
 
                 }
             }
             else{
-                printf("timeout\n");
+                print_error("timeout\n");
                 exit(EXIT_FAILURE);
             }
 
