@@ -14,6 +14,10 @@
 #define print_error(args...) \
             do { fprintf(stderr, ##args); } while (0)
 
+#define print_error_and_exit(args...) \
+            do { fprintf(stderr, ##args); exit(EXIT_FAILURE); } while (0)
+
+
 
 
 typedef struct{

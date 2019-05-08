@@ -25,6 +25,26 @@
  *
  */
 
+
+typedef struct {
+    char label[20];
+    SignalType signal;
+} SignalMapping;
+
+SignalMapping switch_labels_mapping[] ={
+                        {"open",SIG_OPEN},
+                        {"power",SIG_POWER},
+                        {"close",SIG_CLOSE}
+                    };
+
+SignalMapping set_labels_mapping[] ={
+                                        {"open",SIG_OPEN},
+                                        {"power",SIG_POWER},
+                                        {"close",SIG_CLOSE}
+                                    };
+                    
+//./manualcontrol switch 14 power on
+
 Command input_command  = {NULL, 0, NULL, 0};
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
@@ -97,60 +117,22 @@ void whois_command(const char** args, const size_t n_args){
         print_error("usage: <whois> <id>\n");
     }
     else{
-        int device_id;
-        int control = string_to_int(args[0], &device_id);
-        if(control != 0){
-            print_error("Conversion failed");
-            exit(EXIT_FAILURE);
+        device_id id;
+        if(string_to_int(args[0], &id) != 0){
+            print_error_and_exit("invalid id %s\n",args[0]);
         }
         else{
-            int fd_whois_request, fd_whois_response;
-            fd_set rfds;
-
-            fd_whois_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
-            FILE* whois_request_out = fdopen(fd_whois_request, "w");
-
-            fprintf(whois_request_out, "whois %d\n", device_id);
-            fclose(whois_request_out);
-
-            fd_whois_response = open_fifo(FIFO_WHOIS_RESPONSE, O_RDWR);
-            FILE* whois_response_in = fdopen(fd_whois_response, "r");
-
-            FD_ZERO(&rfds);
-            FD_SET(fd_whois_response, &rfds);
-
-            struct timeval timeout = {1, 0};
-            int retval = select(fd_whois_response+1, &rfds, NULL, NULL, &timeout);
-
-            if (retval == -1){
-                perror_and_exit("select");
+            pid_t pid = whois(id);
+            switch(pid){
+            case -2:
+                print_error_and_exit("invalid response\n");
+                break;
+            case -1:
+                print_error_and_exit("timeout\n");
+                break;
+            default:
+                printf("pid: %d\n",pid); 
             }
-            else if(retval){
-                if(FD_ISSET(fd_whois_response, &rfds)){
-
-                    int nread = read_line(whois_response_in, &input_command.name,
-                            input_command.len_name);
-
-                    printf("Received string: %s, num bytes %d\n", input_command.name, nread);
-
-                    pid_t pid;
-                    int control = string_to_int(input_command.name, &pid);
-
-                    if(control != 0){
-                        perror_and_exit("Conversion failed");
-                    }
-                    else{
-                        printf("PID: %d", pid);
-                        exit(EXIT_SUCCESS);
-                    }
-                }
-            }
-            else{
-                print_error("timeout\n");
-                exit(EXIT_FAILURE);
-            }
-
-            close(fd_whois_response);
         }
     }
 }
@@ -162,22 +144,79 @@ void switch_command(const char** args, const size_t n_args){
         exit(EXIT_FAILURE);
     }
     else {
-        int device_id;
-        int id_control = string_to_int(args[0], &device_id);
+        device_id id;
+        int id_control = string_to_int(args[0], &id);
         int state_control = string_to_state(args[2]);
         if (id_control != 0){
-            print_error("conversion failed, id not valid\n");
-            exit(EXIT_FAILURE);
+            print_error_and_exit("invalid id %s\n",args[0]);
         }
         if (state_control == -1){
-            print_error("state on/off not valid\n");
-            exit(EXIT_FAILURE);
-        }
-        else
+            print_error_and_exit("state on/off not valid\n");
+        }else{
             //ora posso mandare la signal
-            printf("signal1\n");
-        //send_signal(device_id, state_control);
+            int retval = get_signal_mapping(args[1], switch_labels_mapping, 
+                sizeof(switch_labels_mapping)/sizeof(SignalMapping));
+            if(retval == -1)
+                print_error_and_exit("%s not valid\n",args[1]);  
+            pid_t pid = whois();
+            if(pid > 0)
+                send_signal(pid, switch_labels_mapping[retval].signal, state_control);
+            else
+                print_error_and_exit("failed to resolve id %d\n",id);
+        }
     }
+}
+
+pid_t whois(device_id id){
+    int device_id;
+    int fd_whois_request, fd_whois_response;
+    fd_set rfds;
+
+    fd_whois_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
+    FILE* whois_request_out = fdopen(fd_whois_request, "w");
+
+    fprintf(whois_request_out, "whois %d\n", device_id);
+    fclose(whois_request_out);
+
+    fd_whois_response = open_fifo(FIFO_WHOIS_RESPONSE, O_RDWR);
+    FILE* whois_response_in = fdopen(fd_whois_response, "r");
+
+    FD_ZERO(&rfds);
+    FD_SET(fd_whois_response, &rfds);
+
+    struct timeval timeout = {1, 0};
+    int retval = select(fd_whois_response+1, &rfds, NULL, NULL, &timeout);
+
+    if (retval == -1){
+        perror_and_exit("select");
+    }
+    else if(retval){
+        if(FD_ISSET(fd_whois_response, &rfds)){
+
+            int nread = read_line(whois_response_in, &input_command.name,
+                    &input_command.len_name);
+
+            pid_t pid; 
+            if(string_to_int(input_command.name, &pid) != 0)
+                return -2;
+            else
+                return pid;
+        }
+    }
+    else{
+        return -1; //timeout
+    }
+
+    close(fd_whois_response);
+}
+
+int get_signal_mapping(const char* label, const SignalMapping mappings[], const size_t n){
+    int i;
+    for(i=0; i<n; i++){
+        if(strcmp(label,mappings[i].label) == 0)
+            return i;
+    }
+    return -1;
 }
 
 
