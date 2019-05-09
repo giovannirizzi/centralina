@@ -2,14 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/signalfd.h>
+#include <sys/stat.h>
 #include <signal.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <stdarg.h>
-#include <sys/signalfd.h>
 #include <fcntl.h>
-#include <sys/stat.h>
 #include "utils.h"
 
 const char* device_type_to_string(DeviceType device_type){
@@ -95,12 +93,12 @@ int handle_command(const Command *c, const CommandBind c_bindings[], const size_
     return -1;
 }
 
-int handle_signal(const Signal *s, const SignalBind s_bindings[], const size_t n){
+int handle_signal(const RTSignal *s, const SignalBind s_bindings[], const size_t n){
 
     int i;
     for(i=0; i<n; i++)
-        if(s->signal_type == s_bindings[i].type){
-            s_bindings[i].exec_command(s->signal_val);
+        if(s->type == s_bindings[i].type){
+            s_bindings[i].exec_command(s->value);
             return 0;
         }
     return -1;
@@ -142,7 +140,7 @@ int open_fifo(const char* path, mode_t access_mode){
 }
 
 
-void read_incoming_signal(int sfd, Signal *signal){
+void read_incoming_signal(int sfd, RTSignal *signal){
 
     static struct signalfd_siginfo fdsi;
     ssize_t s;
@@ -152,31 +150,12 @@ void read_incoming_signal(int sfd, Signal *signal){
         perror_and_exit("read signalfd");
 
     //Il cast non dovrebbe dare problemi...
-    signal->signal_type = (SignalType)fdsi.ssi_signo - SIGRTMIN;
-    signal->signal_val = fdsi.ssi_int;
-}
-
-
-
-int add_child(ChildrenDevices* c, ChildDevice d){
-    if(c->size == MAX_CHILDREN)
-        return -1;
-    c->children[c->size] = d;
-    c->size++;
-    printf("SIZE = %d\n",c->size);
-    return 0;
-}
-
-int delete_child(ChildrenDevices* c, int i){
-    if(c->size == 0)
-        return -1;
-    for ( ; i <= c->size; i++)
-        c->children[i] = c->children[i + 1];
-    c->size--;
-    return 0;
+    signal->type = (RTSignalType)fdsi.ssi_signo - SIGRTMIN;
+    signal->value = fdsi.ssi_int;
 }
 
 void send_command(FILE* out, char* format, ...){
+
     va_list args;
     va_start(args,format);
     vfprintf(out, format, args);

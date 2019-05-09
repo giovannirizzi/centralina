@@ -1,16 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <errno.h>
+#include <string.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/signalfd.h>
-#include <sys/stat.h> 
-#include <sys/types.h> 
-#include "manualcontrol.h"
+#include <sys/types.h>
 #include "utils.h"
-
+#include "manualcontrol.h"
 
 
 /*
@@ -24,12 +21,6 @@
  *
  */
 
-
-typedef struct {
-    char label[20];
-    SignalType signal;
-} SignalMapping;
-
 SignalMapping switch_labels_mapping[] = {{"open",SIG_OPEN},
                                         {"power",SIG_POWER},
                                         {"close",SIG_CLOSE}};
@@ -41,6 +32,7 @@ SignalMapping set_labels_mapping[] =    {{"time", SIG_TIME},
                     
 //./manualcontrol switch 14 power on
 //./manualcontrol set 15 temperature 45
+
 Command input_command  = {NULL, 0, NULL, 0};
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
@@ -53,7 +45,7 @@ int main(int argc, char *argv[]){
 
     if(argc>=2){
         input_command.name = argv[1];
-        int i;
+        size_t i;
         for(i=0; i<argc-2 && i<MAX_COMMAND_ARGS; i++){
             input_command.args[i] = argv[i+2];
         }
@@ -75,7 +67,7 @@ int main(int argc, char *argv[]){
     exit(EXIT_SUCCESS);
 }
 
-void send_signal(pid_t pid, SignalType signal, int val){
+void send_signal(pid_t pid, RTSignalType signal, int val){
 
     union sigval val_union = {.sival_int = val };
     if(sigqueue(pid, SIGRTMIN + signal, val_union) != 0)
@@ -100,7 +92,7 @@ void set_command(const char** args, const size_t n_args){
                 sizeof(set_labels_mapping)/sizeof(SignalMapping));
             if(retval == -1)
                 print_error_and_exit("%s not valid\n",args[1]);  
-            pid_t pid = whois();
+            pid_t pid = whois(id);
             if(pid > 0)
                 send_signal(pid, set_labels_mapping[retval].signal, value_control);
             else
@@ -126,7 +118,7 @@ void switch_command(const char** args, const size_t n_args){
                 sizeof(switch_labels_mapping)/sizeof(SignalMapping));
             if(retval == -1)
                 print_error_and_exit("%s not valid\n",args[1]);  
-            pid_t pid = whois();
+            pid_t pid = whois(id);
             if(pid > 0)
                 send_signal(pid, switch_labels_mapping[retval].signal, state_control);
             else
@@ -167,7 +159,7 @@ pid_t whois(device_id id){
     fd_whois_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
     FILE* whois_request_out = fdopen(fd_whois_request, "w");
 
-    fprintf(whois_request_out, "whois %d\n", device_id);
+    fprintf(whois_request_out, "whois %d\n", id);
     fclose(whois_request_out);
 
     fd_whois_response = open_fifo(FIFO_WHOIS_RESPONSE, O_RDWR);
@@ -185,7 +177,7 @@ pid_t whois(device_id id){
     else if(retval){
         if(FD_ISSET(fd_whois_response, &rfds)){
 
-            int nread = read_line(whois_response_in, &input_command.name,
+            ssize_t nread = read_line(whois_response_in, &input_command.name,
                     &input_command.len_name);
 
             pid_t pid; 
@@ -210,7 +202,6 @@ int get_signal_mapping(const char* label, const SignalMapping mappings[], const 
     }
     return -1;
 }
-
 
 void help_command(const char** args, const size_t n_args){
     printf("available commands: \n");

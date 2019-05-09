@@ -1,11 +1,9 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#define MAX_DEVICES 1000
-#define MAX_COMMAND_ARGS 5
+#include "common.h"
 
 typedef int device_id;
-typedef char* device_name;
 
 //Numeri negativi per i devices di controllo e positivi per iterazione
 typedef enum {
@@ -35,21 +33,6 @@ typedef struct{
 
 } DeviceBase;
 
-/* Segnali real-time usati per simulare il controllo manuale
- * Per ogni segnale si utilizza anche il valore intero associato
- * ad esso (sival_int) inviato con la syscall sigqueue().
-*/
-typedef enum{
-    SIG_POWER = 0,
-    SIG_OPEN,
-    SIG_CLOSE,
-    SIG_TIME,
-    SIG_DELAY,
-    SIG_PERC,
-    SIG_TEMP
-} SignalType;
-
-
 /**
  * Setta la signal mask del processo, con i segnali real-time
  * passati come parametro
@@ -57,55 +40,44 @@ typedef enum{
  * @param ... altri segnali
  * @return la mask dei segnali passati come argomento
  */
-sigset_t set_signal_mask(SignalType signal1, ...);
+sigset_t set_signal_mask(RTSignalType signal1, ...);
 
 
 /**
  * Signal function implementation
  *
  */
+void power_signal(int value);
 
 
-typedef void (*command_func_ptr)(const char** args, const size_t n_args);
-typedef void (*singal_func_ptr)(const int value);
-
-typedef struct{
-    char command_name[20];
-    command_func_ptr validate_and_exec_command;
-} CommandBind;
-
-typedef struct{
-    char* name;
-    size_t len_name;
-    char* args[MAX_COMMAND_ARGS];
-    size_t n_args;
-} Command;
-
-
-void power_signal(const int value);
-
-/**
- * Global var for all devices
- */
-DeviceBase device_data;
 
 /**
  * Function to implement
  */
-void info_command(const char** args, const size_t n_args);
-void del_command(const char** args, const size_t n_args);
-void setconf_command(const char** args, const size_t n_args);
-void getconf_command(const char** args, const size_t n_args);
-void getpid_command(const char** args, const size_t n_args);
+void info_command(const char** args, size_t n_args);
+void del_command(const char** args, size_t n_args);
+void setconf_command(const char** args, size_t n_args);
+void getconf_command(const char** args, size_t n_args);
+void getpid_command(const char** args, size_t n_args);
 
-int handle_device_command(const Command *c, const CommandBind custom_commands[], const size_t n);
+int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_device(device_id id, int signalfd);
 
-CommandBind base_commands[5];
+const CommandBind BASE_COMMANDS[5];
 
-FILE* command_output;
-FILE* fifo_request;
-FILE* fifo_response;
+/**
+ * Global vars for all devices
+ */
+
+DeviceBase device_data;
+
+FILE* curr_out_stream;
+FILE* fifo_in_stream;
+FILE* fifo_out_stream;
+int signal_fd;
+
+Command input_command;
+RTSignal input_signal;
 
 
 
