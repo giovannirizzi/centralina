@@ -74,9 +74,9 @@ void init_base_device(char *args[], size_t n_args){
         int fifo_out_fd = open_fifo(FIFO_DEVICES_RESPONSE, O_WRONLY);
         fifo_out_stream = fdopen(fifo_out_fd, "w");
         setlinebuf(fifo_out_stream);
+
     }
     else{
-
         fifo_out_stream = NULL;
         fifo_in_stream = NULL;
         device_data.id = -1;
@@ -84,18 +84,17 @@ void init_base_device(char *args[], size_t n_args){
     }
 
     //se il signal_fd è nell'argomento lo salvo
-    if(n_args == 3 && string_to_int(args[2], &signal_fd) == 0){
+    if(n_args == 3 && string_to_int(args[2], &signal_fd) == 0)
         device_data.signal_fd = signal_fd;
-        return;
+    else{
+        //creo un nuova signal_fd
+        sigset_t mask;
+        mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
+                               SIG_PERC, SIG_TIME);
+        device_data.signal_fd = signalfd(-1, &mask, 0);
+        if (device_data.signal_fd == -1)
+            perror_and_exit("init_base_device: signalfd");
     }
-
-    //creo un nuova signal_fd
-    sigset_t mask;
-    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
-            SIG_PERC, SIG_TIME);
-    device_data.signal_fd = signalfd(-1, &mask, 0);
-    if (signal_fd == -1)
-        perror_and_exit("init_base_device: signalfd");
 
     print_error("id: %d, signal_fd: %d\n", device_data.id, device_data.signal_fd);
 }

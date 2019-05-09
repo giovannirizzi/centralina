@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include <libgen.h>
+#include <sys/signalfd.h>
+#include <linux/limits.h>
 #include "centralina.h"
 #include "utils.h"
 #include "control_device.h"
@@ -22,8 +25,6 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
-    
-    init_control_device(argv, argc);
 
     fd_set rfds;
     int stdin_fd = fileno(stdin);
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]){
     int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
     FILE* whois_stream_request = fdopen(whois_fd_request, "r");
 
-    init_centralina();
+    init_centralina(argv[0]);
 
     while(1){
 
@@ -94,10 +95,11 @@ int add_device(DeviceType device){
     if(id == -1)
         return -1;
 
-    char exec_path[200];
+    char exec_path[PATH_MAX];
     char device_id_str[10];
 
-    sprintf(exec_path, "%s/%s", path, device_type_to_string(device));
+    sprintf(exec_path, "%s/%s", BIN_PATH, device_type_to_string(device));
+
     sprintf(device_id_str, "%d", id);
 
     pid_t pid = fork();
@@ -117,12 +119,11 @@ int add_device(DeviceType device){
     else{
 
         //Creo la FIFO per inviare comandi al device
-        char fifo_path[100];
+        char fifo_path[50];
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
         int fd = open_fifo(fifo_path, O_WRONLY);
         devices_in_stream[id] = fdopen(fd, "w");
         setlinebuf(devices_in_stream[id]);
-
     }
 
 }
@@ -268,26 +269,51 @@ void whois_command(const char** args, const size_t n_args){
 
 }
 
-void init_centralina(){
+void init_centralina(char* arg0){
 
-    //Creo la FIFO per ricevere comandi dal device
-     
+    //Salvo l'absolute path dove si trovano gli eseguibili
+    char* real_path = realpath(arg0, NULL);
+    if(real_path){
+        strcpy(BIN_PATH, dirname(real_path));
+    }else{
+        print_error("error, realpath\n");
+    }
+
+    //Creo la FIFO per ricevere comandi dai devices
     int fd = open_fifo(FIFO_DEVICES_RESPONSE, O_RDWR);
     devices_response_stream = fdopen(fd, "r");
 
-    
-    //fork();
+    //Maschero e creo il signal fd per i real time signal.
+    sigset_t mask;
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
+                           SIG_PERC, SIG_TIME);
+    device_data.signal_fd = signalfd(-1, &mask, 0);
+    if (device_data.signal_fd == -1)
+        perror_and_exit("init_base_device: signalfd");
 
-    /* pid_t pid = fork();
+    pid_t pid = fork();
     if(pid == -1){
         perror_and_exit("[-] error, init_centralina: fork");
     }
     else if(pid == 0){
 
+        char signal_fd_str[5];
+        sprintf(signal_fd_str, "%d", device_data.signal_fd);
+        char* tmp[3] = {arg0, "0", signal_fd_str};
+
+        init_control_device(tmp, 3);
+
         //Codice device centralina
+
+        //TODO
+
+        exit(EXIT_SUCCESS);
     }
     else{
 
-        //devicesIn[0] = m;
-    } */
+        //Creo la FIFO per inviare comandi manuali alla centralina
+        int fd = open_fifo("/tmp/centralina/devices/0", O_WRONLY);
+        devices_in_stream[0] = fdopen(fd, "w");
+        setlinebuf(devices_in_stream[0]);
+    }
 }

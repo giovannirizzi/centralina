@@ -96,6 +96,8 @@ Device di iterazione:
     
         set <registro> <value> STDIN
         
+Funzioni per implementare il tempo di accensione di lamadine: timer_create, timer_settime
+        
         
 Centralina:
     Segnali:
@@ -104,8 +106,6 @@ Centralina:
         non deve eseguire comandi
     Registro:
         num: numero di dispositivi direttamente connessi
-    Args per inizializzazione
-        nessuno
     Stato:
         on/off
     interruttore:
@@ -122,10 +122,6 @@ Bulb:
         delete?
     Registro
         time: tempo di utilizzo. come lo calcolo??
-    Args per inizializzazione:  
-        id ?? per named pipe eventualmente
-        stato
-        registro
         
 Hub:
     Segnali: 
@@ -140,9 +136,6 @@ Hub:
         mirroring dei figli, cosa vuol dire??
     Stato:
         mirroring dei filgi, lo calcola on/off con ovverride eventualmente
-    Args per inizializzazione:
-        id per le pipe?
-        e basta perché è tutto un mirroring
     
 Windows:
     
@@ -185,6 +178,7 @@ Frigo:
         registro
         
 Timer:
-    boh, no si capisce...
+    
+    funzioni per gestire il time: strptime e strftime
         
         
