@@ -66,11 +66,10 @@ void init_base_device(char *args[], size_t n_args){
         char fifo_path[100];
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
 
-        int fifo_out_fd = open_fifo(fifo_path, O_RDONLY);
-        fifo_out_stream = fdopen(fifo_out_fd, "r");
+        int fifo_in_fd = open_fifo(fifo_path, O_RDONLY);
+        fifo_in_stream = fdopen(fifo_in_fd, "r");
 
         device_data.id = id;
-        setlinebuf(fifo_out_stream);
     }
     else{
 

@@ -50,19 +50,19 @@ int main(int argc, char *argv[]){
                 curr_out_stream = stdout;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "Unknown command %s\n",
+                    fprintf(curr_out_stream, "unknown command %s\n",
                             input_command.name);
             }
 
             //FIFO
-            if(fifo_fd != -1 && FD_ISSET(device_data.signal_fd, &rfds)){
-
+            if(fifo_fd != -1 && FD_ISSET(fifo_fd, &rfds)){
+                
                 read_incoming_command(fifo_in_stream, &input_command);
 
-                curr_out_stream = stdout;
+                curr_out_stream = stderr;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "Unknown command %s\n",
+                    fprintf(curr_out_stream, "unknown command %s\n",
                             input_command.name);
             }
 
