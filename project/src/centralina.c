@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <libgen.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
@@ -92,8 +93,19 @@ int add_device(DeviceType device){
 
     char exec_path[200];
     char device_id_str[10];
+
+    char* path = realpath(argv[0], NULL);
+    if(path == NULL)
+        printf("cannot find file with name[%s]\n", argv[0]);
+    else 
+        char* abs_path = dirname(path);
+
+    char* realpath = strcat(abs_path,device_type_to_string(device));
+    printf("realpath: %s\n",realpath);
     sprintf(exec_path, "./%s", device_type_to_string(device));
     sprintf(device_id_str, "%d", id);
+
+    free(path);
 
     pid_t pid = fork();
     if(pid == -1){
