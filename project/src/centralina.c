@@ -29,6 +29,8 @@ int main(int argc, char *argv[]){
     int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
     FILE* whois_stream_request = fdopen(whois_fd_request, "r");
 
+    init_centralina();
+
     while(1){
 
         printf("#>");
@@ -116,6 +118,7 @@ int add_device(DeviceType device){
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
         int fd = open_fifo(fifo_path, O_WRONLY);
         devices_in_stream[id] = fdopen(fd, "w");
+        setlinebuf(devices_in_stream[id]);
 
     }
 
@@ -255,18 +258,24 @@ void whois_command(const char** args, const size_t n_args){
     if (id_control != 0 && id<0 && id>=MAX_DEVICES && devices_in_stream[id] == NULL)
         print_error("invalid id %s\n", args[0]);
     else{
-        printf("Ciao bello sei dentro\n");
         fprintf(devices_in_stream[id], "getpid\n");
-        fflush(devices_in_stream[id]);    
+
+        read_incoming_command(devices_response_stream, &input_command);
     }
 
 }
 
 void init_centralina(){
 
+    //Creo la FIFO per ricevere comandi dal device
+     
+    int fd = open_fifo(FIFO_DEVICES_RESPONSE, O_RDWR);
+    devices_response_stream = fdopen(fd, "r");
+
+    
     //fork();
 
-    pid_t pid = fork();
+    /* pid_t pid = fork();
     if(pid == -1){
         perror_and_exit("[-] error, init_centralina: fork");
     }
@@ -277,5 +286,5 @@ void init_centralina(){
     else{
 
         //devicesIn[0] = m;
-    }
+    } */
 }

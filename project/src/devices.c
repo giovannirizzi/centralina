@@ -70,9 +70,14 @@ void init_base_device(char *args[], size_t n_args){
         fifo_in_stream = fdopen(fifo_in_fd, "r");
 
         device_data.id = id;
+
+        int fifo_out_fd = open_fifo(FIFO_DEVICES_RESPONSE, O_WRONLY);
+        fifo_out_stream = fdopen(fifo_out_fd, "w");
+        setlinebuf(fifo_out_stream);
     }
     else{
 
+        fifo_out_stream = NULL;
         fifo_in_stream = NULL;
         device_data.id = -1;
         print_error("Debug mode\n");

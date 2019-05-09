@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
                 
                 read_incoming_command(fifo_in_stream, &input_command);
 
-                curr_out_stream = stderr;
+                curr_out_stream = fifo_out_stream;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
                     fprintf(curr_out_stream, "unknown command %s\n",

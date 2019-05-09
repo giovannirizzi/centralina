@@ -6,6 +6,7 @@
 
 
 FILE* devices_in_stream[MAX_DEVICES] = {NULL};
+FILE* devices_response_stream;
 
 void init_centralina();
 
