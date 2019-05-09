@@ -27,8 +27,8 @@ int main(int argc, char *argv[]){
     fd_set rfds;
     int stdin_fd = fileno(stdin);
 
-    int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
-    FILE* whois_request_in = fdopen(whois_request_fd, "r");
+    int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
+    FILE* whois_stream_request = fdopen(whois_fd_request, "r");
 
     while(1){
 
@@ -36,10 +36,10 @@ int main(int argc, char *argv[]){
         fflush(stdout);
 
         FD_ZERO(&rfds);
-        FD_SET(whois_request_fd, &rfds);
+        FD_SET(whois_fd_request, &rfds);
         FD_SET(stdin_fd, &rfds);
 
-        if(select(whois_request_fd+1, &rfds, NULL, NULL, NULL) == -1)
+        if(select(whois_fd_request+1, &rfds, NULL, NULL, NULL) == -1)
             perror_and_exit("select");
         else{
 
@@ -56,9 +56,9 @@ int main(int argc, char *argv[]){
             }
 
             //WHOIS REQUEST
-            if (FD_ISSET(whois_request_fd, &rfds)) {
+            if (FD_ISSET(whois_fd_request, &rfds)) {
 
-                read_incoming_command(whois_request_in, &input_command);
+                read_incoming_command(whois_stream_request, &input_command);
 
                 handle_command(&input_command, whois_request_bindings,
                         sizeof(whois_request_bindings)/sizeof(CommandBind));
@@ -262,6 +262,16 @@ void exit_shell_command(const char** args, const size_t n_args){
 void whois_command(const char** args, const size_t n_args){
 
     fprintf(stdout, "whois command reviced with id: %s\n", n_args > 0 ? args[0] : " ");
+    device_id id;
+    int id_control = string_to_int(args[0], &id);
+    if (id_control != 0 && id<0 && id>=MAX_DEVICES && devices_in_stream[id] == NULL)
+        print_error("invalid id %s\n", args[0]);
+    else{
+        printf("Ciao bello sei dentro\n");
+        fprintf(devices_in_stream[id], "getpid\n");
+        fflush(devices_in_stream[id]);    
+    }
+
 }
 
 void init_centralina(){

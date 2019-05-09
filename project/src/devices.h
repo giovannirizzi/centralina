@@ -20,7 +20,7 @@ typedef struct{
 
     DeviceType type;
     device_id id;
-    int singal_fd;
+    int signal_fd;
 
     // 0 spento 1 acceso
     int state;
@@ -61,7 +61,7 @@ void getconf_command(const char** args, size_t n_args);
 void getpid_command(const char** args, size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
-void init_device(device_id id, int signalfd);
+void init_base_device(char *args[], size_t n_args);
 
 const CommandBind BASE_COMMANDS[5];
 
@@ -74,7 +74,6 @@ DeviceBase device_data;
 FILE* curr_out_stream;
 FILE* fifo_in_stream;
 FILE* fifo_out_stream;
-int signal_fd;
 
 Command input_command;
 RTSignal input_signal;

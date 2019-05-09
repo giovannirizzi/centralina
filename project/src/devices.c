@@ -46,32 +46,53 @@ void power_signal(const int value){
     device_data.state = value;
 }
 
-void init_device(device_id id, int signalfd){
+void init_base_device(char *args[], size_t n_args){
 
-    /**
-     * Apri la fifo /tmp/centralina/devices/0 -> fifo_response in write
-     * Apri la fifo /tmp/centralina/devices/<id> -> fifo_request in read
-     * Inizializza signalfd.....
+    /*
+     * esempio ./bulb <id> <fd_signal>
+     * se l'id non è presente significa che il dispositivo non viene controllato
+     * (usato per debuging) quindi il device accetta comandi solo da stdin
+     * se il fd_signal non è presente ne creo uno nuovo
      */
+
+    device_id id;
+    int signal_fd;
 
     curr_out_stream = stdout;
     setlinebuf(stdout);
-    print_error("ID: %d\n", id);
 
-    //Se è un valid id apro la fifo per ascoltare i comandi
-    if(id > 0){
+    if(n_args >= 2 && string_to_int(args[1], &id) == 0 && id >= 0){
 
         char fifo_path[100];
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
 
-        int fifo_out_fd = open_fifo(fifo_path, O_RDONLY);
-        fifo_out_stream = fdopen(fifo_out_fd, "r");
+        int fifo_in_fd = open_fifo(fifo_path, O_RDONLY);
+        fifo_in_stream = fdopen(fifo_in_fd, "r");
 
-        setlinebuf(fifo_out_stream);
+        device_data.id = id;
     }
     else{
-        print_error("Invalid device id, cant init fifo\n");
+
+        fifo_in_stream = NULL;
+        device_data.id = -1;
+        print_error("Debug mode\n");
     }
+
+    //se il signal_fd è nell'argomento lo salvo
+    if(n_args == 3 && string_to_int(args[2], &signal_fd) == 0){
+        device_data.signal_fd = signal_fd;
+        return;
+    }
+
+    //creo un nuova signal_fd
+    sigset_t mask;
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
+            SIG_PERC, SIG_TIME);
+    device_data.signal_fd = signalfd(-1, &mask, 0);
+    if (signal_fd == -1)
+        perror_and_exit("init_base_device: signalfd");
+
+    print_error("id: %d, signal_fd: %d\n", device_data.id, device_data.signal_fd);
 }
 
 void getpid_command(const char** args, const size_t n_args){

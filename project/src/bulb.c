@@ -14,52 +14,29 @@
 int main(int argc, char *argv[]){
 
     Command input_command = {NULL, 0, NULL, 0};
-    RTSignal input_singal;
+    RTSignal input_signal;
 
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
-    /**
-     * Prendo l'id dagli arogmenti, da modificare...
-     */
-    device_id id;
-    if(argc >= 2){
-        if(string_to_int(argv[1], &id) == 0)
-            init_device(id, -1);
-        else
-            init_device(-1, -1);
-    }
-
-
-    /**
-     * Il signal fd deve essere passato per il main non serve crearlo ogni
-     * volta perché esso viene ereditato dai processi filgi, quindi basta
-     * fare la set_signal_mask e singalfd nella centrlaina.
-     * Però per debug se esso non viene passato per il main si può creare...
-     */
-
-    /**
-     * Init signal file descriptor, dovebbe stare in init_device però
-     */
-
-    int signal_fd;
-    sigset_t mask;
-
-    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE);
-    signal_fd = signalfd(-1, &mask, 0);
-
-    if (signal_fd == -1)
-        perror_and_exit("signalfd");
+    //Inizializzo il device in base agli argomenti passaati
+    init_base_device(argv, argc);
 
     fd_set rfds;
     int stdin_fd = fileno(stdin);
 
+    int fifo_fd = -1;
+    if(fifo_in_stream)
+        fifo_fd = fileno(fifo_in_stream);
+
     while(1){
         FD_ZERO(&rfds);
 
-        FD_SET(signal_fd, &rfds);
+        FD_SET(device_data.signal_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
+        if(fifo_fd != -1)
+            FD_SET(fifo_fd, &rfds);
 
-        if(select(signal_fd+1, &rfds, NULL, NULL, NULL) == -1)
+        if(select(device_data.signal_fd+1, &rfds, NULL, NULL, NULL) == -1)
             perror_and_exit("select");
         else{
 
@@ -73,16 +50,28 @@ int main(int argc, char *argv[]){
                 curr_out_stream = stdout;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "Unknown command %s\n",
+                    fprintf(curr_out_stream, "unknown command %s\n",
+                            input_command.name);
+            }
+
+            //FIFO
+            if(fifo_fd != -1 && FD_ISSET(fifo_fd, &rfds)){
+                
+                read_incoming_command(fifo_in_stream, &input_command);
+
+                curr_out_stream = stderr;
+
+                if(handle_device_command(&input_command, NULL, 0) == -1)
+                    fprintf(curr_out_stream, "unknown command %s\n",
                             input_command.name);
             }
 
             //SIGNAL
-            if (FD_ISSET(signal_fd, &rfds)) {
+            if (FD_ISSET(device_data.signal_fd, &rfds)) {
 
-                read_incoming_signal(signal_fd, &input_singal);
+                read_incoming_signal(device_data.signal_fd, &input_signal);
 
-                handle_signal(&input_singal, signal_bindings,
+                handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));
             }
         }

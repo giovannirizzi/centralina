@@ -30,10 +30,10 @@ typedef struct{
     int value;
 } RTSignal;
 
-typedef void (*singal_func_ptr)(const int value);
+typedef void (*signal_func_ptr)(const int value);
 typedef struct{
     RTSignalType type;
-    singal_func_ptr exec_command;
+    signal_func_ptr exec_command;
 } SignalBind;
 
 
