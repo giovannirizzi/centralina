@@ -3,41 +3,100 @@
 #include "control_device.h"
 #include "utils.h"
 
-const CommandBind control_device_commands[] = {"add", &add_command};
+const const CommandBind CONTROL_DEVICE_COMMANDS[] = {"add", &add_command};
 
-int handle_device_command(const Command *c, const CommandBind custom_commands[], const size_t n){
+int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
 
-    if(handle_command(c, base_commands,
-            sizeof(base_commands)/ sizeof(CommandBind)) == 0)
+    if(handle_command(c, BASE_COMMANDS,
+            sizeof(BASE_COMMANDS)/ sizeof(CommandBind)) == 0)
         return 0;
-    if(handle_command(c, control_device_commands, 1) == 0)
+    if(handle_command(c, CONTROL_DEVICE_COMMANDS, 1) == 0)
         return 0;
-    return handle_command(c, custom_commands, n);
+    return handle_command(c, extra_commands, n);
 }
 
 void info_command(const char** args, const size_t n_args){
 
-    fprintf(command_output, "info command\n");
+    fprintf(curr_out_stream, "info command\n");
 }
 
 void del_command(const char** args, const size_t n_args){
 
-    fprintf(command_output, "del command\n");
+    fprintf(curr_out_stream, "del command\n");
 }
 
 void setconf_command(const char** args, const size_t n_args){
 
-    fprintf(command_output, "setconf command\n");
+    fprintf(curr_out_stream, "setconf command\n");
 }
 
 void getconf_command(const char** args, const size_t n_args){
 
-    fprintf(command_output, "getconf command\n");
+    fprintf(curr_out_stream, "getconf command\n");
 }
 
 void add_command(const char** args, const size_t n_args){
 
-    fprintf(command_output, "add command\n");
+    fprintf(curr_out_stream, "add command\n");
+
+    /*
+    char path[50];
+
+    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(device));
+
+    printf("Adding %s...\n", device_type_to_string(device));
+    printf("PID padre: %d\n", getpid());
+
+    int fd_parent_to_child[2];
+    int fd_child_to_parent[2];
+    char *line_buffer = NULL;
+    size_t len = 0;
+    char buffer[20] = {0};
+
+    if(pipe(fd_parent_to_child) != 0){
+        perror("pipe");
+        return -1;
+    }
+    if(pipe(fd_child_to_parent) != 0){
+        perror("pipe");
+        return -1;
+    }
+    pid_t pid = fork();
+    if(pid == -1){
+        perror("fork");
+        return -1;
+    }
+    else if(pid == 0){
+        dup2(fd_parent_to_child[0], STDIN_FILENO);
+        dup2(fd_child_to_parent[1], STDOUT_FILENO);
+
+        close(fd_parent_to_child[0]);
+        close(fd_parent_to_child[1]);
+        close(fd_child_to_parent[0]);
+        close(fd_child_to_parent[1]);
+
+        execl(path, NULL);
+        perror_and_exit("[-] Error execl");
+    }
+    else{
+        close(fd_parent_to_child[0]);
+        close(fd_child_to_parent[1]);
+        close(fd_parent_to_child[1]);
+
+        FILE* file = fdopen(fd_child_to_parent[0],"r");
+        if(file == NULL){
+            perror("[-] Error fdopen");
+        }
+
+        printf("Ciao\n");
+
+        ssize_t byteread = read_line(file, &line_buffer, &len);
+        printf("Figlio: %s, num byte %d\n", line_buffer, (int) byteread);
+        free(line_buffer);
+        close(fd_child_to_parent[0]);
+    }
+
+     */
 }
 
 int add_child(ChildrenDevices* c, ChildDevice d){

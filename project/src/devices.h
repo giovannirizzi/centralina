@@ -50,10 +50,7 @@ sigset_t set_signal_mask(RTSignalType signal1, ...);
  */
 void power_signal(int value);
 
-/**
- * Global var for all devices
- */
-DeviceBase device_data;
+
 
 /**
  * Function to implement
@@ -64,14 +61,24 @@ void setconf_command(const char** args, size_t n_args);
 void getconf_command(const char** args, size_t n_args);
 void getpid_command(const char** args, size_t n_args);
 
-int handle_device_command(const Command *c, const CommandBind custom_commands[], size_t n);
+int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_device(device_id id, int signalfd);
 
-CommandBind base_commands[5];
+const CommandBind BASE_COMMANDS[5];
 
-FILE* command_output;
-FILE* fifo_request;
-FILE* fifo_response;
+/**
+ * Global vars for all devices
+ */
+
+DeviceBase device_data;
+
+FILE* curr_out_stream;
+FILE* fifo_in_stream;
+FILE* fifo_out_stream;
+int signal_fd;
+
+Command input_command;
+RTSignal input_signal;
 
 
 

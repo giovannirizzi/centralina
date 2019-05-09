@@ -77,60 +77,46 @@ int add_device(DeviceType device){
      * Magari attendo una risposta
      */
 
-    char path[50];
+    device_id id = -1;
+    int i;
 
-    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(device));
+    for(i=1; i<MAX_DEVICES; i++){
 
-    printf("Adding %s...\n", device_type_to_string(device));
-    printf("PID padre: %d\n", getpid());
-
-    int fd_parent_to_child[2];
-    int fd_child_to_parent[2];
-    char *line_buffer = NULL;
-    size_t len = 0;
-    char buffer[20] = {0};
-
-    if(pipe(fd_parent_to_child) != 0){
-        perror("pipe");
-        return -1;
+        if(devices_in_stream[i] == NULL){
+            id = i;
+            break;
+        }
     }
-    if(pipe(fd_child_to_parent) != 0){
-        perror("pipe");
+    if(id == -1)
         return -1;
-    }
+
+    char exec_path[200];
+    char device_id_str[10];
+    sprintf(exec_path, "./%s", device_type_to_string(device));
+    sprintf(device_id_str, "%d", id);
+
     pid_t pid = fork();
-    if(pid == -1){
-        perror("fork");
+    if(pid == -1){s
+        perror("[-] Error add_device: fork\n");
+        fclose(devices_in_stream[id]);
+        devices_in_stream[id] = NULL;
         return -1;
     }
     else if(pid == 0){
-        dup2(fd_parent_to_child[0], STDIN_FILENO);
-        dup2(fd_child_to_parent[1], STDOUT_FILENO);
 
-        close(fd_parent_to_child[0]);
-        close(fd_parent_to_child[1]);
-        close(fd_child_to_parent[0]);
-        close(fd_child_to_parent[1]);
-
-        execl(path, NULL);
-        perror_and_exit("[-] Error execl");
+        char *argv[] = {"/usr/bin/xterm", "-T", exec_path, "-e" ,exec_path, device_id_str, 0};
+        execv("/usr/bin/xterm", argv);
+        fprintf(stderr, "execl path: %s\n", exec_path);
+        perror_and_exit("[-] Error execl\n");
     }
     else{
-        close(fd_parent_to_child[0]);
-        close(fd_child_to_parent[1]);
-        close(fd_parent_to_child[1]);
 
-        FILE* file = fdopen(fd_child_to_parent[0],"r");
-        if(file == NULL){
-            perror("[-] Error fdopen");
-        }
+        //Creo la FIFO per inviare comandi al device
+        char fifo_path[100];
+        sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
+        int fd = open_fifo(fifo_path, O_WRONLY);
+        devices_in_stream[id] = fdopen(fd, "w");
 
-        printf("Ciao\n");
-
-        ssize_t byteread = read_line(file, &line_buffer, &len);
-        printf("Figlio: %s, num byte %d\n", line_buffer, (int) byteread);
-        free(line_buffer);
-        close(fd_child_to_parent[0]);
     }
 
 }

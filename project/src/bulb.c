@@ -18,7 +18,17 @@ int main(int argc, char *argv[]){
 
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
-    init_device(0, 0);
+    /**
+     * Prendo l'id dagli arogmenti, da modificare...
+     */
+    device_id id;
+    if(argc >= 2){
+        if(string_to_int(argv[1], &id) == 0)
+            init_device(id, -1);
+        else
+            init_device(-1, -1);
+    }
+
 
     /**
      * Il signal fd deve essere passato per il main non serve crearlo ogni
@@ -60,10 +70,10 @@ int main(int argc, char *argv[]){
                 read_incoming_command(stdin, &input_command);
 
                 //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
-                command_output = stdout;
+                curr_out_stream = stdout;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(command_output, "Unknown command %s\n",
+                    fprintf(curr_out_stream, "Unknown command %s\n",
                             input_command.name);
             }
 
