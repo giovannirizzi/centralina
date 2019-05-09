@@ -42,7 +42,11 @@ typedef struct{
 typedef enum{
     SIG_POWER = 0,
     SIG_OPEN,
-    SIG_CLOSE
+    SIG_CLOSE,
+    SIG_TIME,
+    SIG_DELAY,
+    SIG_PERC,
+    SIG_TEMP
 } SignalType;
 
 

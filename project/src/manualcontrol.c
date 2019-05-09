@@ -20,7 +20,6 @@
  * per restituire il PID dato un id
  *
  * manaulcontrol set <id/PID> <label> <value>
- * set 18039 temperature 34
  * per inviare un segnale...
  *
  */
@@ -31,20 +30,17 @@ typedef struct {
     SignalType signal;
 } SignalMapping;
 
-SignalMapping switch_labels_mapping[] ={
-                        {"open",SIG_OPEN},
-                        {"power",SIG_POWER},
-                        {"close",SIG_CLOSE}
-                    };
-
-SignalMapping set_labels_mapping[] ={
-                                        {"open",SIG_OPEN},
+SignalMapping switch_labels_mapping[] = {{"open",SIG_OPEN},
                                         {"power",SIG_POWER},
-                                        {"close",SIG_CLOSE}
-                                    };
+                                        {"close",SIG_CLOSE}};
+
+SignalMapping set_labels_mapping[] =    {{"time", SIG_TIME},
+                                        {"delay", SIG_DELAY},
+                                        {"percentage", SIG_PERC},
+                                        {"temperature", SIG_TEMP}};
                     
 //./manualcontrol switch 14 power on
-
+//./manualcontrol set 15 temperature 45
 Command input_command  = {NULL, 0, NULL, 0};
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
@@ -88,34 +84,60 @@ void send_signal(pid_t pid, SignalType signal, int val){
 
 void set_command(const char** args, const size_t n_args){
     //manca ancora il controllo su temperature, ecc. Anche il value secondo me dovrebbe avere un controllo però boh
-    if(n_args !=3){
+    if(n_args !=3)
         print_error("usage: <set> <id> <register> <value>\n");
-        exit(EXIT_FAILURE);
-    }
     else {
-        int device_id;
-        int id_control = string_to_int(args[0], &device_id);
-        int value_control = string_to_int(args[2], &device_id);
-        if (id_control != 0){
-            print_error("conversion failed, id not valid\n");
-            exit(EXIT_FAILURE);
-        }
-        if (value_control != 0){
-            print_error("conversion failed, value not valid\n");
-            exit(EXIT_FAILURE);
-        }
-        else
+        device_id id;
+        int id_control = string_to_int(args[0], &id);
+        int value_control = string_to_int(args[2], &id);    //sta cosa è campata in aria, usa id solo perchè vuole un int
+        if (id_control != 0)
+            print_error_and_exit("invalid id %s\n", args[0]);
+        if (value_control != 0)
+            print_error_and_exit("invalid valued %s\n", args[2]);
+        else{
             //ora posso mandare la signal
-            printf("signal1\n");
-        //send_signal(device_id, state_control);
+            int retval = get_signal_mapping(args[1], set_labels_mapping, 
+                sizeof(set_labels_mapping)/sizeof(SignalMapping));
+            if(retval == -1)
+                print_error_and_exit("%s not valid\n",args[1]);  
+            pid_t pid = whois();
+            if(pid > 0)
+                send_signal(pid, set_labels_mapping[retval].signal, value_control);
+            else
+                print_error_and_exit("failed to resolve id %d\n",id);
+        }
+    }
+}
+
+void switch_command(const char** args, const size_t n_args){
+    if(n_args !=3)
+        print_error("usage: <switch> <id> <label> <state>\n");
+    else {
+        device_id id;
+        int id_control = string_to_int(args[0], &id);
+        int state_control = string_to_state(args[2]);
+        if (id_control != 0)
+            print_error_and_exit("invalid id %s\n",args[0]);
+        if (state_control == -1)
+            print_error_and_exit("invalid state %s\n", args[2]);
+        else{
+            //ora posso mandare la signal
+            int retval = get_signal_mapping(args[1], switch_labels_mapping, 
+                sizeof(switch_labels_mapping)/sizeof(SignalMapping));
+            if(retval == -1)
+                print_error_and_exit("%s not valid\n",args[1]);  
+            pid_t pid = whois();
+            if(pid > 0)
+                send_signal(pid, switch_labels_mapping[retval].signal, state_control);
+            else
+                print_error_and_exit("failed to resolve id %d\n",id);
+        }
     }
 }
 
 void whois_command(const char** args, const size_t n_args){
-   
-    if(n_args !=1){
+    if(n_args !=1)
         print_error("usage: <whois> <id>\n");
-    }
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0){
@@ -133,36 +155,6 @@ void whois_command(const char** args, const size_t n_args){
             default:
                 printf("pid: %d\n",pid); 
             }
-        }
-    }
-}
-
-void switch_command(const char** args, const size_t n_args){
-    //manca ancora il controllo su open-power-close 
-    if(n_args !=3){
-        print_error("usage: <switch> <id> <label> <state>\n");
-        exit(EXIT_FAILURE);
-    }
-    else {
-        device_id id;
-        int id_control = string_to_int(args[0], &id);
-        int state_control = string_to_state(args[2]);
-        if (id_control != 0){
-            print_error_and_exit("invalid id %s\n",args[0]);
-        }
-        if (state_control == -1){
-            print_error_and_exit("state on/off not valid\n");
-        }else{
-            //ora posso mandare la signal
-            int retval = get_signal_mapping(args[1], switch_labels_mapping, 
-                sizeof(switch_labels_mapping)/sizeof(SignalMapping));
-            if(retval == -1)
-                print_error_and_exit("%s not valid\n",args[1]);  
-            pid_t pid = whois();
-            if(pid > 0)
-                send_signal(pid, switch_labels_mapping[retval].signal, state_control);
-            else
-                print_error_and_exit("failed to resolve id %d\n",id);
         }
     }
 }
