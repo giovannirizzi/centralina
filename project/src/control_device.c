@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <libgen.h>
 #include "control_device.h"
 #include "utils.h"
 
@@ -115,4 +116,14 @@ int delete_child(ChildrenDevices* c, int i){
         c->children[i] = c->children[i + 1];
     c->size--;
     return 0;
+}
+
+void init_control_device(char *args[], size_t n_args){
+
+	//init_base_device(args, n_args);
+	char* real_path = realpath(args[0], NULL);
+    if(real_path == NULL)
+        printf("cannot find file with name[%s]\n", args[0]);
+    else
+        path = dirname(real_path);
 }

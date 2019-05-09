@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include "centralina.h"
 #include "utils.h"
-
+#include "control_device.h"
 
 Command input_command = {NULL, 0, NULL, 0};
 
@@ -22,6 +22,8 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
+    
+    init_control_device(argv, argc);
 
     fd_set rfds;
     int stdin_fd = fileno(stdin);
@@ -94,7 +96,8 @@ int add_device(DeviceType device){
 
     char exec_path[200];
     char device_id_str[10];
-    sprintf(exec_path, "./%s", device_type_to_string(device));
+
+    sprintf(exec_path, "%s/%s", path, device_type_to_string(device));
     sprintf(device_id_str, "%d", id);
 
     pid_t pid = fork();
