@@ -18,5 +18,8 @@ typedef struct{
 int add_child(ChildrenDevices* c, ChildDevice d);
 int delete_child(ChildrenDevices* c, int i);
 
+char* path;
+void init_control_device(char *args[], size_t n_args);
+
 
 #endif // CONTROL_DEVICES_H
