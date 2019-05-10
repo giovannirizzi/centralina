@@ -5,6 +5,7 @@
 #define FIFO_WHOIS_RESPONSE "/tmp/centralina/whois_response"
 #define FIFO_DEVICES_RESPONSE "/tmp/centralina/devices_response"
 
+
 #define MAX_CHILDREN 50
 #define MAX_DEVICES 1000
 #define MAX_COMMAND_ARGS 5

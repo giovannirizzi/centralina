@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include <libgen.h>
+#include <sys/signalfd.h>
+#include <linux/limits.h>
 #include "centralina.h"
 #include "utils.h"
 #include "control_device.h"
@@ -22,8 +25,6 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
-    
-    init_control_device(argv, argc);
 
     fd_set rfds;
     int stdin_fd = fileno(stdin);
@@ -94,11 +95,15 @@ int add_device(DeviceType device){
     if(id == -1)
         return -1;
 
-    char exec_path[200];
+    char exec_path[PATH_MAX];
     char device_id_str[10];
+    char signal_fd_str[5];
 
-    sprintf(exec_path, "%s/%s", path, device_type_to_string(device));
+    sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
+            ,device_type_to_string(device));
+
     sprintf(device_id_str, "%d", id);
+    sprintf(signal_fd_str, "%d", device_data.signal_fd);
 
     pid_t pid = fork();
     if(pid == -1){
@@ -109,20 +114,43 @@ int add_device(DeviceType device){
     }
     else if(pid == 0){
 
-        char *argv[] = {"/usr/bin/xterm", "-T", exec_path, "-e" ,exec_path, device_id_str, 0};
+
+#define XTERM
+
+#ifdef XTERM
+        //int fd_null = open("/dev/null", O_WRONLY, 0666);
+        char xterm_title[100];
+        sprintf(xterm_title, "%s, id:%d", device_type_to_string(device), id);
+
+        char *argv[] = {"/usr/bin/xterm",
+                        "-T", xterm_title,
+                        "-e", exec_path, device_id_str, signal_fd_str,
+                        0};
+
+        freopen("/dev/null", "w", stderr);
         execv("/usr/bin/xterm", argv);
+#else
+
+        char *argv[] = {exec_path, device_id_str,
+                        signal_fd_str, 0};
+        //Cambio l'stdin
+        //fclose(stdin);
+        freopen ("/tmp/centralina/null", "r", stdin);
+
+        execv(exec_path, argv);
+#endif
+
         fprintf(stderr, "execl path: %s\n", exec_path);
         perror_and_exit("[-] Error execl\n");
     }
     else{
 
         //Creo la FIFO per inviare comandi al device
-        char fifo_path[100];
+        char fifo_path[50];
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
         int fd = open_fifo(fifo_path, O_WRONLY);
         devices_in_stream[id] = fdopen(fd, "w");
         setlinebuf(devices_in_stream[id]);
-
     }
 
 }
@@ -255,39 +283,61 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
 
-    fprintf(stdout, "whois command reviced with id: %s\n", n_args > 0 ? args[0] : " ");
     device_id id;
     int id_control = string_to_int(args[0], &id);
-    if (id_control != 0 && id<0 && id>=MAX_DEVICES && devices_in_stream[id] == NULL)
+    if (id_control != 0 || id<0 || id>=MAX_DEVICES || devices_in_stream[id] == NULL)
         print_error("invalid id %s\n", args[0]);
     else{
+
         fprintf(devices_in_stream[id], "getpid\n");
+        fflush(devices_in_stream[id]);
 
         read_incoming_command(devices_response_stream, &input_command);
+
+        printf("Centralina: ho ricevuto dal device %d, %s\n", id, input_command.name);
     }
 
 }
 
 void init_centralina(){
 
-    //Creo la FIFO per ricevere comandi dal device
-     
-    int fd = open_fifo(FIFO_DEVICES_RESPONSE, O_RDWR);
-    devices_response_stream = fdopen(fd, "r");
+    //Maschero e creo il signal fd per i real time signal.
+    sigset_t mask;
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
+                           SIG_PERC, SIG_TIME);
+    device_data.signal_fd = signalfd(-1, &mask, 0);
+    if (device_data.signal_fd == -1)
+        perror_and_exit("init_base_device: signalfd");
 
-    
-    //fork();
-
-    /* pid_t pid = fork();
+    pid_t pid = fork();
     if(pid == -1){
         perror_and_exit("[-] error, init_centralina: fork");
     }
     else if(pid == 0){
 
+        //freopen ("/dev/null", "r", stdin);
+
+        char signal_fd_str[5];
+        sprintf(signal_fd_str, "%d", device_data.signal_fd);
+        char* tmp[3] = {" ", "0", signal_fd_str};
+
+        init_control_device(tmp, 3);
+
         //Codice device centralina
+
+        //TODO
+
+        exit(EXIT_SUCCESS);
     }
     else{
 
-        //devicesIn[0] = m;
-    } */
+        //Creo la FIFO per inviare comandi manuali alla centralina
+        int fd = open_fifo("/tmp/centralina/devices/0", O_WRONLY);
+        devices_in_stream[0] = fdopen(fd, "w");
+        setlinebuf(devices_in_stream[0]);
+
+        //Creo la FIFO per ricevere comandi dai devices
+        int fd_response = open_fifo(FIFO_DEVICES_RESPONSE, O_RDONLY);
+        devices_response_stream = fdopen(fd_response, "r");
+    }
 }

@@ -5,6 +5,7 @@
 #include "common.h"
 #include "devices.h"
 
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define perror_and_exit(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -103,5 +104,12 @@ int string_to_state(const char* device_state);
  * @return il numero di sottostringhe salvate <= max_args, uguale al numero di elementi inseriti in args
  */
 size_t divide_string(char *line, char **substrings, size_t max_substrings, const char *delimiter);
+
+/**
+ * TODO
+ * @return
+ */
+char* get_absolute_executable_dir();
+
 
 #endif // UTILS_H

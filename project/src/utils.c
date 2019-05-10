@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <linux/limits.h>
 #include <fcntl.h>
 #include "utils.h"
 
@@ -109,7 +110,7 @@ ssize_t read_line(FILE* stream, char** buffer, size_t *n){
     ssize_t nread = getline(buffer, n, stream);
 
     if(nread < 0)
-        perror_and_exit("error getline\n");
+        perror_and_exit("error getline");
 
     //Se alla fine della linea letta c'è un \n lo sostituisce con \0
     if(nread > 0 && (*buffer)[nread-1] == '\n')
@@ -162,4 +163,21 @@ void send_command(FILE* out, char* format, ...){
     if(format[strlen(format)-1] != '\n')
         fprintf(out,"\n");
     va_end(args);
+}
+
+char* get_absolute_executable_dir(){
+
+    static char path[PATH_MAX] = {0};
+
+    if(*path == 0){
+
+        ssize_t  pra = readlink("/proc/self/exe", path, PATH_MAX - 1);
+        const char ch = '/';
+        char *last_slash = strrchr(path, ch);
+        if (last_slash)
+            *last_slash = '\0';
+        else
+            print_error("error: get_absolute_executable_dir\n");
+    }
+    return path;
 }

@@ -28,6 +28,8 @@ int main(int argc, char *argv[]){
     if(fifo_in_stream)
         fifo_fd = fileno(fifo_in_stream);
 
+    int max_fd = MAX(device_data.signal_fd, fifo_fd);
+
     while(1){
         FD_ZERO(&rfds);
 
@@ -36,13 +38,13 @@ int main(int argc, char *argv[]){
         if(fifo_fd != -1)
             FD_SET(fifo_fd, &rfds);
 
-        if(select(device_data.signal_fd+1, &rfds, NULL, NULL, NULL) == -1)
+        if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
             perror_and_exit("select");
         else{
 
             //STDIN
             if (FD_ISSET(stdin_fd, &rfds)) {
-
+                print_error("Device: stdin pronta per essere letta\n");
                 //Legge un comando (una linea)
                 read_incoming_command(stdin, &input_command);
 
@@ -50,19 +52,19 @@ int main(int argc, char *argv[]){
                 curr_out_stream = stdout;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "unknown command %s\n",
+                    fprintf(curr_out_stream, "device: unknown command %s\n",
                             input_command.name);
             }
 
             //FIFO
             if(fifo_fd != -1 && FD_ISSET(fifo_fd, &rfds)){
-                
+                print_error("Device: fifo pronta per essere letta\n");
                 read_incoming_command(fifo_in_stream, &input_command);
 
                 curr_out_stream = fifo_out_stream;
 
-                if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "unknown command %s\n",
+                if(handle_device_command(&input_command, NULL, 0) != 0)
+                    fprintf(curr_out_stream, "device: unknown command %s\n",
                             input_command.name);
             }
 
