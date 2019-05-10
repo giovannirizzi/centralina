@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
     int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
     FILE* whois_stream_request = fdopen(whois_fd_request, "r");
 
-    init_centralina();
+    init_centralina(argv[0]);
 
     while(1){
 
@@ -299,7 +299,7 @@ void whois_command(const char** args, const size_t n_args){
 
 }
 
-void init_centralina(){
+void init_centralina(char* arg0){
 
     //Maschero e creo il signal fd per i real time signal.
     sigset_t mask;
