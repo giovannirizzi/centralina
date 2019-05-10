@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <linux/limits.h>
 #include <fcntl.h>
 #include "utils.h"
 
@@ -162,4 +163,21 @@ void send_command(FILE* out, char* format, ...){
     if(format[strlen(format)-1] != '\n')
         fprintf(out,"\n");
     va_end(args);
+}
+
+char* get_absolute_executable_dir(){
+
+    static char path[PATH_MAX] = {0};
+
+    if(*path == 0){
+
+        ssize_t  pra = readlink("/proc/self/exe", path, PATH_MAX - 1);
+        const char ch = '/';
+        char *last_slash = strrchr(path, ch);
+        if (last_slash)
+            *last_slash = '\0';
+        else
+            print_error("error: get_absolute_executable_dir\n");
+    }
+    return path;
 }

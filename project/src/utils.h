@@ -104,4 +104,11 @@ int string_to_state(const char* device_state);
  */
 size_t divide_string(char *line, char **substrings, size_t max_substrings, const char *delimiter);
 
+/**
+ * TODO
+ * @return
+ */
+char* get_absolute_executable_dir();
+
+
 #endif // UTILS_H

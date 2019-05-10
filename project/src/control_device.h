@@ -19,7 +19,6 @@ typedef struct{
 int add_child(ChildrenDevices* c, ChildDevice d);
 int delete_child(ChildrenDevices* c, int i);
 
-char BIN_PATH[PATH_MAX];
 void init_control_device(char *args[], size_t n_args);
 
 

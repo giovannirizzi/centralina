@@ -123,10 +123,4 @@ void init_control_device(char *args[], size_t n_args){
 
 	init_base_device(args, n_args);
 
-	char* real_path = realpath(args[0], NULL);
-    if(real_path){
-        strcpy(BIN_PATH, dirname(real_path));
-    }else{
-        print_error("error, realpath\n");
-    }
 }

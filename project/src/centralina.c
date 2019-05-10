@@ -97,10 +97,16 @@ int add_device(DeviceType device){
 
     char exec_path[PATH_MAX];
     char device_id_str[10];
+    char signal_fd_str[5];
 
-    sprintf(exec_path, "%s/%s", BIN_PATH, device_type_to_string(device));
+    char xterm_title[100];
+    sprintf(xterm_title, "%s, id:%d", device_type_to_string(device), id);
+
+    sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
+            ,device_type_to_string(device));
 
     sprintf(device_id_str, "%d", id);
+    sprintf(signal_fd_str, "%d", device_data.signal_fd);
 
     pid_t pid = fork();
     if(pid == -1){
@@ -111,7 +117,11 @@ int add_device(DeviceType device){
     }
     else if(pid == 0){
 
-        char *argv[] = {"/usr/bin/xterm", "-T", exec_path, "-e" ,exec_path, device_id_str, 0};
+        char *argv[] = {"/usr/bin/xterm",
+                        "-T", xterm_title,
+                        "-e", exec_path, device_id_str, signal_fd_str,
+                        0};
+
         execv("/usr/bin/xterm", argv);
         fprintf(stderr, "execl path: %s\n", exec_path);
         perror_and_exit("[-] Error execl\n");
@@ -270,14 +280,6 @@ void whois_command(const char** args, const size_t n_args){
 }
 
 void init_centralina(char* arg0){
-
-    //Salvo l'absolute path dove si trovano gli eseguibili
-    char* real_path = realpath(arg0, NULL);
-    if(real_path){
-        strcpy(BIN_PATH, dirname(real_path));
-    }else{
-        print_error("error, realpath\n");
-    }
 
     //Creo la FIFO per ricevere comandi dai devices
     int fd = open_fifo(FIFO_DEVICES_RESPONSE, O_RDWR);
