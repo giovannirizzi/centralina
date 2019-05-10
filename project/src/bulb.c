@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 
         FD_SET(device_data.signal_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
-        if(fifo_fd != -1)
+        if(fifo_fd != -1 && fifo_fd != STDIN_FILENO)
             FD_SET(fifo_fd, &rfds);
 
         if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
 
             //STDIN
             if (FD_ISSET(stdin_fd, &rfds)) {
-                print_error("Device: stdin pronta per essere letta\n");
+
                 //Legge un comando (una linea)
                 read_incoming_command(stdin, &input_command);
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
             }
 
             //FIFO
-            if(fifo_fd != -1 && FD_ISSET(fifo_fd, &rfds)){
+            if(fifo_fd != -1 && fifo_fd != STDIN_FILENO && FD_ISSET(fifo_fd, &rfds)){
                 print_error("Device: fifo pronta per essere letta\n");
                 read_incoming_command(fifo_in_stream, &input_command);
 

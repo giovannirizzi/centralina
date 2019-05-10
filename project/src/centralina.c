@@ -115,7 +115,7 @@ int add_device(DeviceType device){
     else if(pid == 0){
 
 
-#define XTERM
+//#define XTERM
 
 #ifdef XTERM
         //int fd_null = open("/dev/null", O_WRONLY, 0666);
@@ -135,7 +135,9 @@ int add_device(DeviceType device){
                         signal_fd_str, 0};
         //Cambio l'stdin
         //fclose(stdin);
-        freopen ("/tmp/centralina/null", "r", stdin);
+        //fclose ("/tmp/centralina/null", "r", stdin);
+        fclose(stdin);
+        fclose(stdout);
 
         execv(exec_path, argv);
 #endif

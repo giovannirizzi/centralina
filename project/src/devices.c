@@ -100,6 +100,6 @@ void getpid_command(const char** args, const size_t n_args){
 
     //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
     //send_command(curr_out_stream, "%d", getpid());
-    print_error("Device: Recived getpid command\n");
+    print_error("Device %d: recived getpid command\n", device_data.id);
     fprintf(curr_out_stream, "%d\n", getpid());
 }
