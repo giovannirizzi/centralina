@@ -244,7 +244,25 @@ void link_shell_command(const char** args, const size_t n_args){
 }
 void list_shell_command(const char** args, const size_t n_args){
 
-    printf("Lista devices: \n");
+    printf("\
+    available devices: \n\
+    interaction devices: \n\
+    - bulb:\n\
+            switch power : turn on/off the bulb\n\
+    - window:\n\
+            switch open/close: open/close the window\n\
+    - fridge:\n\
+            switch power: turn on/off the fridge\n\
+            set delay: closes automatically the fridge after the time set\n\
+            set percentage: (only manually) add/remove content from the fridge\n\
+            set temperature: allows to manage and set the internal temperature\n\
+    interaction devices: \n\
+    - hub:\n\
+            allows multiple devices of the same type to be connected in parallel\n\
+    - timer:\n\
+            allows to define a schedule to control a connected device\n\
+    active devices...\
+    \n");
 }
 void switch_shell_command(const char** args, const size_t n_args){
 
@@ -274,7 +292,22 @@ void info_shell_command(const char** args, const size_t n_args){
 
 void help_shell_command(const char** args, const size_t n_args){
 
-    printf("Help...\n");
+    printf("\
+    available commands: \n\
+    - list: show the list of available and active devices\n\
+            usage: <list>\n\
+    - add: add a new device to the system\n\
+            usage: <add> <device>\n\
+    - del: remove the identified device from the system\n\
+            it also remove connected devices, if it's a control device \n\
+            usage: <del> <id>\n\
+    - link: connect the first device to the second\n\
+            usage: <link> <id> <id>\n\
+    - switch: turn on/off the identified device \n\
+            usage: <switch> <id> <label> <on/off>\n\
+    - info: show details of the identified device \n\
+            usage: <info> <id>\
+    \n");
 }
 
 void exit_shell_command(const char** args, const size_t n_args){

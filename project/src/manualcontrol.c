@@ -204,26 +204,15 @@ int get_signal_mapping(const char* label, const SignalMapping mappings[], const 
 }
 
 void help_command(const char** args, const size_t n_args){
-    printf("available commands: \n");
-    printf(" - set: set value of the identified device\n");
-    printf("   usage: <set> <id> <register> <value>\n");
-    printf(" - whois: return pid of the identified device\n");
-    printf("   usage: <whois> <id>\n");
-    printf(" - switch: change status of the identified device\n");
-    printf("   usage: <switch> <id> <label> <state>\n");
-    printf(" - help: show available commands\n");
-    printf("   usage: <help>\n");
-}
-
-void list(){
-    printf("available devices: \n");
-    printf("interaction devices: \n");
-    printf(" -  bulb\n");
-    printf(" -  window\n");
-    printf(" -  fridge\n");
-    printf("interaction devices: \n");
-    printf(" - controller\n");
-    printf(" - hub\n");
-    printf(" - timer\n");
-    printf("active devices...\n");
+    printf("\
+    available commands: \n\
+    - set: set value of the identified device\n\
+            usage: <set> <id> <register> <value>\n\
+    - whois: return pid of the identified device\n\
+            usage: <whois> <id>\n\
+    - switch: turn on/off the identified device\n\
+            usage: <switch> <id> <label> <on/off>\n\
+    - help: show available commands\n\
+            usage: <help>\
+    \n");
 }
