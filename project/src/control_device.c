@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <libgen.h>
 #include <string.h>
+#include <signal.h>
 #include "control_device.h"
 #include "utils.h"
 
@@ -113,6 +114,7 @@ int add_child(ChildrenDevices* c, ChildDevice d){
 int delete_child(ChildrenDevices* c, int i){
     if(c->size == 0)
         return -1;
+    //Penso ci sia un errore i <= c->size
     for ( ; i <= c->size; i++)
         c->children[i] = c->children[i + 1];
     c->size--;
@@ -122,5 +124,11 @@ int delete_child(ChildrenDevices* c, int i){
 void init_control_device(char *args[], size_t n_args){
 
 	init_base_device(args, n_args);
+
+    /*^
+     * Ignoro il segnale SIGPIPE generato quando si tenta di scrivere
+     * su una read end di una pipe chiusa.
+     */
+    signal(SIGPIPE, SIG_IGN);
 
 }

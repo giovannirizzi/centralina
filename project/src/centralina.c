@@ -7,6 +7,7 @@
 #include <libgen.h>
 #include <sys/signalfd.h>
 #include <linux/limits.h>
+#include <signal.h>
 #include "centralina.h"
 #include "utils.h"
 #include "control_device.h"
@@ -32,12 +33,12 @@ int main(int argc, char *argv[]){
     int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
     FILE* whois_stream_request = fdopen(whois_fd_request, "r");
 
-    init_centralina(argv[0]);
+    init_centralina();
+
+    printf("#>");
+    fflush(stdout);
 
     while(1){
-
-        printf("#>");
-        fflush(stdout);
 
         FD_ZERO(&rfds);
         FD_SET(whois_fd_request, &rfds);
@@ -53,10 +54,14 @@ int main(int argc, char *argv[]){
                 //Legge un comando (una linea)
                 read_incoming_command(stdin, &input_command);
 
-                if(handle_command(&input_command, shell_command_bindings, 8) == -1)
-                    fprintf(stdout, "Unknown command %s\n",
-                            input_command.name);
+                if(input_command.name[0] != '\0'){
+                    if(handle_command(&input_command, shell_command_bindings, 8) == -1)
+                        fprintf(stdout, "Unknown command %s\n",
+                                input_command.name);
+                }
 
+                printf("#>");
+                fflush(stdout);
             }
 
             //WHOIS REQUEST
@@ -115,7 +120,7 @@ int add_device(DeviceType device){
     else if(pid == 0){
 
 
-//#define XTERM
+#define XTERM
 
 #ifdef XTERM
         //int fd_null = open("/dev/null", O_WRONLY, 0666);
@@ -324,18 +329,26 @@ void whois_command(const char** args, const size_t n_args){
         print_error("invalid id %s\n", args[0]);
     else{
 
-        fprintf(devices_in_stream[id], "getpid\n");
-        fflush(devices_in_stream[id]);
+        print_error("Centralina: sto per scrivere\n");
 
-        read_incoming_command(devices_response_stream, &input_command);
+        int code = fprintf(devices_in_stream[id], "getpid\n");
 
-        printf("Centralina: ho ricevuto dal device %d, %s\n", id, input_command.name);
+        print_error("fprintf code: %d, errno %d", code, errno);
+
+        //read_incoming_command(devices_response_stream, &input_command);
+
+        //printf("Centralina: ho ricevuto dal device %d, %s\n", id, input_command.name);
     }
 
 }
 
-void init_centralina(char* arg0){
+void init_centralina(){
 
+    /*^
+     * Ignoro il segnale SIGPIPE generato quando si tenta di scrivere
+     * su una read end di una pipe chiusa.
+     */
+    signal(SIGPIPE, SIG_IGN);
     //Maschero e creo il signal fd per i real time signal.
     sigset_t mask;
     mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
