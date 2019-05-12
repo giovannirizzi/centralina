@@ -28,30 +28,28 @@ CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
 
-    running = 1;
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
+    g_running = 1;
 
     printf("\033[1;31mbold red text\033[0m\n");
 
-    fd_set rfds;
-    int stdin_fd = fileno(stdin);
-
-    int whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
-    FILE* whois_stream_request = fdopen(whois_fd_request, "r");
-
     init_centralina();
 
-    printf("#>");
+    fd_set rfds;
+    int stdin_fd = fileno(stdin);
+    int whois_request_fd = fileno(g_whois_request_stream);
+
+    printf("#> ");
     fflush(stdout);
 
-    while(running){
+    while(g_running){
 
         FD_ZERO(&rfds);
-        FD_SET(whois_fd_request, &rfds);
+        FD_SET(whois_request_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
 
-        if(select(whois_fd_request+1, &rfds, NULL, NULL, NULL) == -1)
+        if(select(whois_request_fd+1, &rfds, NULL, NULL, NULL) == -1)
             perror_and_exit("select");
         else{
 
@@ -67,14 +65,14 @@ int main(int argc, char *argv[]){
                                 input_command.name);
                 }
 
-                printf("#>");
+                printf("#> ");
                 fflush(stdout);
             }
 
             //WHOIS REQUEST
-            if (FD_ISSET(whois_fd_request, &rfds)) {
+            if (FD_ISSET(whois_request_fd, &rfds)) {
 
-                read_incoming_command(whois_stream_request, &input_command, &line_buffer);
+                read_incoming_command(g_whois_request_stream, &input_command, &line_buffer);
 
                 handle_command(&input_command, whois_request_bindings,
                         sizeof(whois_request_bindings)/sizeof(CommandBind));
@@ -82,6 +80,8 @@ int main(int argc, char *argv[]){
             }
         }
     }
+
+    clean_centralina();
 
     free(line_buffer.buffer);
     exit(EXIT_SUCCESS);
@@ -99,7 +99,7 @@ int add_device(DeviceType device){
 
     for(i=1; i<MAX_DEVICES; i++){
 
-        if(devices_request_stream[i] == NULL){
+        if(g_devices_request_stream[i] == NULL){
             id = i;
             break;
         }
@@ -115,12 +115,12 @@ int add_device(DeviceType device){
             ,device_type_to_string(device));
 
     sprintf(device_id_str, "%d", id);
-    sprintf(signal_fd_str, "%d", device_data.signal_fd);
+    sprintf(signal_fd_str, "%d", g_signal_fd);
 
     pid_t pid = fork();
     if(pid == -1){
         perror("error add_device: fork");
-        devices_request_stream[id] = NULL;
+        g_devices_request_stream[id] = NULL;
     }
     else if(pid == 0) {
 
@@ -158,12 +158,12 @@ int add_device(DeviceType device){
         char fifo_path[PATH_MAX];
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
         int fd = open_fifo(fifo_path, O_WRONLY | O_CLOEXEC);
-        devices_request_stream[id] = fdopen(fd, "w");
-        if(devices_request_stream[id] == NULL){
+        g_devices_request_stream[id] = fdopen(fd, "w");
+        if(g_devices_request_stream[id] == NULL){
             perror("add_device: fopen");
             return -1;
         }
-        setlinebuf(devices_request_stream[id]);
+        setlinebuf(g_devices_request_stream[id]);
     }
 
     return id;
@@ -171,14 +171,14 @@ int add_device(DeviceType device){
 
 int delete_device(device_id device){
 
-    if(devices_request_stream[device] == NULL) return -1;
+    if(g_devices_request_stream[device] == NULL) return -1;
 
-    if(fclose(devices_request_stream[device]) != 0){
+    if(fclose(g_devices_request_stream[device]) != 0){
         perror("delete_device: fclose:");
         return -1;
     }
 
-    devices_request_stream[device] = NULL;
+    g_devices_request_stream[device] = NULL;
 
     int child_exit_code;
 
@@ -363,23 +363,20 @@ void help_shell_command(const char** args, const size_t n_args){
 
 void exit_shell_command(const char** args, const size_t n_args){
 
-    running = 0;
+    g_running = 0;
 }
 
 void whois_command(const char** args, const size_t n_args){
 
     device_id id;
     int id_control = string_to_int(args[0], &id);
-    if (id_control != 0 || id<0 || id>=MAX_DEVICES || devices_request_stream[id] == NULL)
+    if (id_control != 0 || id<0 || id>=MAX_DEVICES || g_devices_request_stream[id] == NULL)
         print_error("invalid id %s\n", args[0]);
     else{
-
-        print_error("Centralina: sto per scrivere\n");
 
         send_command_to_device(id, "getpid\n");
 
         LineBuffer line_buffer;
-
         int retval = read_device_response(&line_buffer);
 
         switch(retval){
@@ -390,9 +387,16 @@ void whois_command(const char** args, const size_t n_args){
                 print_error("Read device response error\n");
                 break;
             default:
-                print_error("Ho letto in risposta %s", line_buffer.buffer);
+                print_error("Ho letto in risposta %s\n", line_buffer.buffer);
         }
 
+        int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
+        g_whois_response_stream = fdopen(whois_response_fd, "w");
+
+        fprintf(g_whois_response_stream, line_buffer.buffer);
+        fclose(g_whois_response_stream);
+
+        //Devo aprire la fifo response e whois_response_stream
         //read_incoming_command(devices_response_stream, &input_command);
 
         //printf("Centralina: ho ricevuto dal device %d, %s\n", id, input_command.name);
@@ -411,9 +415,13 @@ void init_centralina(){
     sigset_t mask;
     mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
                            SIG_PERC, SIG_TIME);
-    device_data.signal_fd = signalfd(-1, &mask, 0);
-    if (device_data.signal_fd == -1)
+    g_signal_fd = signalfd(-1, &mask, 0);
+    if (g_signal_fd == -1)
         perror_and_exit("init_base_device: signalfd");
+
+    //Apro la fifo per le richieste di whois
+    int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_CLOEXEC);
+    g_whois_request_stream = fdopen(whois_request_fd, "r");
 
     pid_t pid = fork();
     if(pid == -1){
@@ -424,7 +432,7 @@ void init_centralina(){
         //freopen ("/dev/null", "r", stdin);
 
         char signal_fd_str[5];
-        sprintf(signal_fd_str, "%d", device_data.signal_fd);
+        sprintf(signal_fd_str, "%d", g_signal_fd);
         char* tmp[3] = {" ", "0", signal_fd_str};
 
         init_control_device(tmp, 3);
@@ -438,13 +446,13 @@ void init_centralina(){
     else{
 
         //Creo la FIFO per inviare comandi manuali alla centralina
-        int fd = open_fifo("/tmp/centralina/devices/0", O_WRONLY);
-        devices_request_stream[0] = fdopen(fd, "w");
-        setlinebuf(devices_request_stream[0]);
+        int fd = open_fifo("/tmp/centralina/devices/0", O_WRONLY | O_CLOEXEC);
+        g_devices_request_stream[0] = fdopen(fd, "w");
+        setlinebuf(g_devices_request_stream[0]);
 
         //Creo la FIFO per ricevere comandi dai devices
-        int fd_response = open_fifo(FIFO_DEVICES_RESPONSE, O_RDONLY);
-        devices_response_stream = fdopen(fd_response, "r");
+        int fd_response = open_fifo(FIFO_DEVICES_RESPONSE, O_RDONLY | O_CLOEXEC);
+        g_devices_response_stream = fdopen(fd_response, "r");
 
         printf("Rimuovo la centralina perché ha già finito\n");
         delete_device(0);
@@ -453,7 +461,7 @@ void init_centralina(){
 
 void send_command_to_device(device_id id, const char* command){
 
-    int retval = fprintf(devices_request_stream[id], command);
+    int retval = fprintf(g_devices_request_stream[id], command);
     if(retval == -1){
         //La pipe è stata chiusa dal device
         if(errno == EPIPE){
@@ -466,7 +474,7 @@ int read_device_response(LineBuffer *buffer){
 
     fd_set rfds;
     struct timeval tv  = {1, 0};
-    int devices_response_fd = fileno(devices_response_stream);
+    int devices_response_fd = fileno(g_devices_response_stream);
     FD_ZERO(&rfds);
     FD_SET(devices_response_fd, &rfds);
 
@@ -476,8 +484,14 @@ int read_device_response(LineBuffer *buffer){
         return -1;
     }
     else if(retval) {
-        return read_line(devices_response_stream, buffer);
+        return read_line(g_devices_response_stream, buffer);
     }
     else
         return 0;
+}
+
+void clean_centralina(){
+    int i;
+    for(i=0; i<MAX_DEVICES; i++)
+        delete_device(i);
 }

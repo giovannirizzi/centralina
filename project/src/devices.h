@@ -1,6 +1,7 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
+#include <stdbool.h>
 #include "common.h"
 
 typedef int device_id;
@@ -20,7 +21,6 @@ typedef struct{
 
     DeviceType type;
     device_id id;
-    int signal_fd;
 
     // 0 spento 1 acceso
     int state;
@@ -62,6 +62,7 @@ void getpid_command(const char** args, size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);
+_Bool is_controlled();
 
 const CommandBind BASE_COMMANDS[5];
 
@@ -69,11 +70,14 @@ const CommandBind BASE_COMMANDS[5];
  * Global vars for all devices
  */
 
-DeviceBase device_data;
+DeviceBase g_device;
 
-FILE* curr_out_stream;
-FILE* fifo_in_stream;
-FILE* fifo_out_stream;
+FILE* g_curr_out_stream;
+FILE* g_fifo_in_stream;
+FILE* g_fifo_out_stream;
+
+int g_signal_fd;
+
 
 
 

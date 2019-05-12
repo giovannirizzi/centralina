@@ -7,7 +7,7 @@
 
 
 #define MAX_CHILDREN 50
-#define MAX_DEVICES 1000
+#define MAX_DEVICES 500
 #define MAX_COMMAND_ARGS 5
 #define MAX_COMMAND_NAME_LENGTH 30
 

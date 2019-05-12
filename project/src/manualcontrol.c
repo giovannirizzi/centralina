@@ -154,32 +154,32 @@ void whois_command(const char** args, const size_t n_args){
 
 pid_t whois(device_id id){
     int device_id;
-    int whois_fd_request, whois_fd_response;
+    int whois_request_fd, whois_response_fd;
     fd_set rfds;
 
-    whois_fd_request = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR);
-    FILE* whois_stream_request = fdopen(whois_fd_request, "w");
+    whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_WRONLY | O_NONBLOCK);
+    FILE* whois_request_stream = fdopen(whois_request_fd, "w");
 
-    fprintf(whois_stream_request, "whois %d\n", id);
-    fclose(whois_stream_request);
+    fprintf(whois_request_stream, "whois %d\n", id);
+    fclose(whois_request_stream);
 
-    whois_fd_response = open_fifo(FIFO_WHOIS_RESPONSE, O_RDWR);
-    FILE* whois_stream_response = fdopen(whois_fd_response, "r");
+    whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_RDONLY | O_NONBLOCK);
+    FILE* whois_response_stream = fdopen(whois_response_fd, "r");
 
     FD_ZERO(&rfds);
-    FD_SET(whois_fd_response, &rfds);
+    FD_SET(whois_response_fd, &rfds);
 
     struct timeval timeout = {1, 0};
-    int retval = select(whois_fd_response+1, &rfds, NULL, NULL, &timeout);
+    int retval = select(whois_response_fd+1, &rfds, NULL, NULL, &timeout);
 
     if (retval == -1){
         perror_and_exit("select");
     }
     else if(retval){
-        if(FD_ISSET(whois_fd_response, &rfds)){
+        if(FD_ISSET(whois_response_fd, &rfds)){
 
             LineBuffer line_buffer  = {NULL, 0};
-            ssize_t nread = read_line(whois_stream_response, &line_buffer);
+            ssize_t nread = read_line(whois_response_stream, &line_buffer);
 
             pid_t pid;
             int retval = string_to_int(line_buffer.buffer, &pid);
@@ -195,7 +195,7 @@ pid_t whois(device_id id){
         return -1; //timeout
     }
 
-    close(whois_fd_response);
+    fclose(whois_response_stream);
 }
 
 int get_signal_mapping(const char* label, const SignalMapping mappings[], const size_t n){

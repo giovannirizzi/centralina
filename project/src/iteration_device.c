@@ -15,21 +15,21 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 
 void info_command(const char** args, const size_t n_args){
 
-    fprintf(curr_out_stream, "info command\n");
+    fprintf(g_curr_out_stream, "info command\n");
 }
 
 void del_command(const char** args, const size_t n_args){
 
-    fprintf(curr_out_stream, "del command\n");
+    fprintf(g_curr_out_stream, "del command\n");
     exit(EXIT_SUCCESS);
 }
 
 void setconf_command(const char** args, const size_t n_args){
 
-    fprintf(curr_out_stream, "setconf command\n");
+    fprintf(g_curr_out_stream, "setconf command\n");
 }
 
 void getconf_command(const char** args, const size_t n_args){
 
-    fprintf(curr_out_stream, "getconf command\n");
+    fprintf(g_curr_out_stream, "getconf command\n");
 }

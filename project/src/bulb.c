@@ -26,15 +26,15 @@ int main(int argc, char *argv[]){
     int stdin_fd = fileno(stdin);
 
     int fifo_fd = -1;
-    if(fifo_in_stream)
-        fifo_fd = fileno(fifo_in_stream);
+    if(g_fifo_in_stream)
+        fifo_fd = fileno(g_fifo_in_stream);
 
-    int max_fd = MAX(device_data.signal_fd, fifo_fd);
+    int max_fd = MAX(g_signal_fd, fifo_fd);
 
     while(1){
         FD_ZERO(&rfds);
 
-        FD_SET(device_data.signal_fd, &rfds);
+        FD_SET(g_signal_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
         if(fifo_fd != -1 && fifo_fd != STDIN_FILENO)
             FD_SET(fifo_fd, &rfds);
@@ -51,30 +51,30 @@ int main(int argc, char *argv[]){
                     break;
 
                 //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
-                curr_out_stream = stdout;
+                g_curr_out_stream = stdout;
 
                 if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(curr_out_stream, "device: unknown command %s\n",
+                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
                             input_command.name);
             }
 
             //FIFO
-            if(fifo_fd != -1 && fifo_fd != STDIN_FILENO && FD_ISSET(fifo_fd, &rfds)){
+            if(is_controlled() && FD_ISSET(fifo_fd, &rfds)){
 
-                if(read_incoming_command(fifo_in_stream, &input_command, &line_buffer) == -1)
+                if(read_incoming_command(g_fifo_in_stream, &input_command, &line_buffer) == -1)
                     break;
 
-                curr_out_stream = fifo_out_stream;
+                g_curr_out_stream = g_fifo_out_stream;
 
                 if(handle_device_command(&input_command, NULL, 0) != 0)
-                    fprintf(curr_out_stream, "device: unknown command %s\n",
+                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
                             input_command.name);
             }
 
             //SIGNAL
-            if (FD_ISSET(device_data.signal_fd, &rfds)) {
+            if (FD_ISSET(g_signal_fd, &rfds)) {
 
-                read_incoming_signal(device_data.signal_fd, &input_signal);
+                read_incoming_signal(g_signal_fd, &input_signal);
 
                 handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    print_error("Device %d: sto terminando\n", device_data.id);
+    print_error("Device %d: sto terminando\n", g_device.id);
 
     /**
      * CLEANUP RISORSE

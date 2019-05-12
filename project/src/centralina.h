@@ -5,11 +5,14 @@
 #include "control_device.h"
 
 
-FILE* devices_request_stream[MAX_DEVICES] = {NULL};
-FILE* devices_response_stream;
-int running;
+FILE* g_devices_request_stream[MAX_DEVICES] = {NULL};
+FILE* g_devices_response_stream;
+FILE* g_whois_request_stream;
+FILE* g_whois_response_stream;
+int g_running;
 
 void init_centralina();
+void clean_centralina();
 void send_command_to_device(device_id id, const char* command);
 int read_device_response(LineBuffer *buffer);
 
