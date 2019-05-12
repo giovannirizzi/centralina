@@ -44,12 +44,12 @@ void read_incoming_signal(int sfd, RTSignal *signal_res);
  * TODO
  * @param command
  */
-void read_incoming_command(FILE *stream, Command *command);
+int read_incoming_command(FILE* in, Command *c, LineBuffer *buffer);
 
 /**
  * Funziona esattamente come la getline però toglie il carattere \n se presente
  */
-ssize_t read_line(FILE* stream, char** buffer, size_t *n);
+ssize_t read_line(FILE* stream, LineBuffer *lb);
 
 /**
  * TODO

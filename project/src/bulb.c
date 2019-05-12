@@ -13,7 +13,8 @@
 
 int main(int argc, char *argv[]){
 
-    Command input_command = {NULL, 0, NULL, 0};
+    LineBuffer line_buffer = {NULL, 0};
+    Command input_command;
     RTSignal input_signal;
 
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]){
             if (FD_ISSET(stdin_fd, &rfds)) {
 
                 //Legge un comando (una linea)
-                read_incoming_command(stdin, &input_command);
+                if(read_incoming_command(stdin, &input_command, &line_buffer) == -1)
+                    break;
 
                 //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
                 curr_out_stream = stdout;
@@ -58,8 +60,9 @@ int main(int argc, char *argv[]){
 
             //FIFO
             if(fifo_fd != -1 && fifo_fd != STDIN_FILENO && FD_ISSET(fifo_fd, &rfds)){
-                print_error("Device: fifo pronta per essere letta\n");
-                read_incoming_command(fifo_in_stream, &input_command);
+
+                if(read_incoming_command(fifo_in_stream, &input_command, &line_buffer) == -1)
+                    break;
 
                 curr_out_stream = fifo_out_stream;
 
@@ -78,4 +81,13 @@ int main(int argc, char *argv[]){
             }
         }
     }
+
+    print_error("Device %d: sto terminando\n", device_data.id);
+
+    /**
+     * CLEANUP RISORSE
+     */
+    free(line_buffer.buffer);
+
+    exit(EXIT_SUCCESS);
 }

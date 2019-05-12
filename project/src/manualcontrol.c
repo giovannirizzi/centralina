@@ -33,7 +33,7 @@ SignalMapping set_labels_mapping[] =    {{"time", SIG_TIME},
 //./manualcontrol switch 14 power on
 //./manualcontrol set 15 temperature 45
 
-Command input_command  = {NULL, 0, NULL, 0};
+
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
                                   {"switch", &switch_command},
@@ -41,7 +41,8 @@ CommandBind command_bindings[] = {{"whois", &whois_command},
                                   {"help", &help_command}};
 
 int main(int argc, char *argv[]){
-    setlinebuf(stdout);
+
+    Command input_command;
 
     if(argc>=2){
         input_command.name = argv[1];
@@ -177,11 +178,14 @@ pid_t whois(device_id id){
     else if(retval){
         if(FD_ISSET(whois_fd_response, &rfds)){
 
-            ssize_t nread = read_line(whois_stream_response, &input_command.name,
-                    &input_command.len_name);
+            LineBuffer line_buffer  = {NULL, 0};
+            ssize_t nread = read_line(whois_stream_response, &line_buffer);
 
-            pid_t pid; 
-            if(string_to_int(input_command.name, &pid) != 0)
+            pid_t pid;
+            int retval = string_to_int(line_buffer.buffer, &pid);
+            free(line_buffer.buffer);
+
+            if(retval != 0)
                 return -2;
             else
                 return pid;

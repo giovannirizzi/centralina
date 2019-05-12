@@ -105,25 +105,31 @@ int handle_signal(const RTSignal *s, const SignalBind s_bindings[], const size_t
     return -1;
 }
 
-ssize_t read_line(FILE* stream, char** buffer, size_t *n){
+ssize_t read_line(FILE* stream, LineBuffer *lb){
 
-    ssize_t nread = getline(buffer, n, stream);
+    ssize_t nread = getline(&lb->buffer, &lb->length, stream);
 
-    if(nread < 0)
-        perror_and_exit("error getline");
+    //se ho letto un eof
+    if(nread < 0){
+        return -1;
+    }
 
     //Se alla fine della linea letta c'è un \n lo sostituisce con \0
-    if(nread > 0 && (*buffer)[nread-1] == '\n')
-        (*buffer)[nread-1] = '\0';
+    if(nread > 0 && (lb->buffer)[nread-1] == '\n')
+        lb->buffer[nread-1] = '\0';
 
     return nread;
 }
 
-void read_incoming_command(FILE* in, Command *c){
+int read_incoming_command(FILE* in, Command *c, LineBuffer *buffer){
 
-    read_line(in, &(c->name), &(c->len_name));
+    if(read_line(in, buffer) < 0)
+        return -1;
 
+    c->name = buffer->buffer;
     c->n_args = divide_string(c->name, c->args, MAX_COMMAND_ARGS, " ");
+
+    return 0;
 }
 
 int open_fifo(const char* path, mode_t access_mode){

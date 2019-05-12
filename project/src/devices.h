@@ -75,8 +75,6 @@ FILE* curr_out_stream;
 FILE* fifo_in_stream;
 FILE* fifo_out_stream;
 
-Command input_command;
-RTSignal input_signal;
 
 
 

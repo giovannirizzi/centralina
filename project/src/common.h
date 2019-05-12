@@ -46,8 +46,12 @@ typedef struct{
 } CommandBind;
 
 typedef struct{
+    char* buffer;
+    size_t length;
+} LineBuffer;
+
+typedef struct{
     char* name;
-    size_t len_name;
     char* args[MAX_COMMAND_ARGS];
     size_t n_args;
 } Command;
