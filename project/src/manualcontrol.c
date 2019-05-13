@@ -143,14 +143,14 @@ void whois_command(const char** args, const size_t n_args){
         else{
             pid_t pid = whois(id);
             switch(pid){
-            case -2:
-                print_error_and_exit("invalid response\n");
-                break;
-            case -1:
-                print_error_and_exit("timeout\n");
-                break;
-            default:
-                printf("pid: %d\n",pid); 
+                case -2:
+                    print_error_and_exit("controller offline\n");
+                    break;
+                case -1:
+                    print_error_and_exit("no such device with id %d\n", id);
+                    break;
+                default:
+                    printf("pid: %d\n",pid);
             }
         }
     }
@@ -162,6 +162,9 @@ pid_t whois(device_id id){
     fd_set rfds;
 
     whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_WRONLY | O_NONBLOCK);
+    if(whois_request_fd == -1)
+        return -2;
+
     FILE* whois_request_stream = fdopen(whois_request_fd, "w");
 
     fprintf(whois_request_stream, "whois %d\n", id);
@@ -173,7 +176,7 @@ pid_t whois(device_id id){
     FD_ZERO(&rfds);
     FD_SET(whois_response_fd, &rfds);
 
-    struct timeval timeout = {1, 0};
+    struct timeval timeout = {2, 0};
     int retval = select(whois_response_fd+1, &rfds, NULL, NULL, &timeout);
 
     if (retval == -1){
@@ -190,13 +193,10 @@ pid_t whois(device_id id){
             free(line_buffer.buffer);
 
             if(retval != 0)
-                return -2;
+                return -1;
             else
                 return pid;
         }
-    }
-    else{
-        return -1; //timeout
     }
 
     fclose(whois_response_stream);

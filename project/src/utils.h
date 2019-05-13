@@ -3,7 +3,7 @@
 
 #include <errno.h>
 #include "common.h"
-#include "devices.h"
+#include "device.h"
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
