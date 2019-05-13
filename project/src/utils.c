@@ -51,15 +51,20 @@ DeviceType device_string_to_type(const char* device_string){
     else
         return INVALID_TYPE;
 }
-int string_to_state(const char* device_state){
-    if(strcmp("on", device_state) == 0)
-        return 0;
-    if(strcmp("off", device_state) == 0)
-        return 1;
+
+int string_to_device_state(const char *string, int *state){
+
+    if(strcmp("on", string) == 0)
+       *state = 1;
+    else if(strcmp("off", string) == 0)
+        *state = 0;
     else
-        return -1;    
+        return -1;
+
+    return 0;
 }
-int string_to_int(const char* string, device_id *id){
+
+int string_to_int(const char* string, int *id){
 
     int n;
     return !(sscanf(string, "%d %n", id, &n) == 1 && !string[n]);
@@ -204,7 +209,7 @@ int time_to_string(int time, char* string_time){
     return 0;
 }
 
-int string_to_time(char* string_time, int* time){
+int string_to_time(const char* string_time, int* time){
     struct tm info;
 
     char* retval = strptime(string_time, "%H:%M", &info);

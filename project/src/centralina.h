@@ -9,7 +9,7 @@ FILE* g_devices_request_stream[MAX_DEVICES] = {NULL};
 FILE* g_devices_response_stream;
 FILE* g_whois_request_stream;
 FILE* g_whois_response_stream;
-int g_running;
+_Bool g_running;
 
 void init_centralina();
 void clean_centralina();
@@ -17,7 +17,7 @@ void send_command_to_device(device_id id, const char* command);
 int read_device_response(LineBuffer *buffer);
 
 int add_device(DeviceType device);
-int delete_device(device_id device);
+int delete_device(device_id device, _Bool non_block_wait);
 int link_device(device_id device1, device_id device2);
 int switch_device(device_id device, const char* label, const char* pos);
 int get_info(device_id device);

@@ -32,8 +32,6 @@ int main(int argc, char *argv[]){
     Command input_command;
     g_running = 1;
 
-    printf("\033[1;31mbold red text\033[0m\n");
-
     init_centralina();
 
     fd_set rfds;
@@ -65,8 +63,10 @@ int main(int argc, char *argv[]){
                                 input_command.name);
                 }
 
-                printf("#> ");
-                fflush(stdout);
+                if(g_running){
+                    printf("#> ");
+                    fflush(stdout);
+                }
             }
 
             //WHOIS REQUEST
@@ -76,7 +76,6 @@ int main(int argc, char *argv[]){
 
                 handle_command(&input_command, whois_request_bindings,
                         sizeof(whois_request_bindings)/sizeof(CommandBind));
-
             }
         }
     }
@@ -169,7 +168,7 @@ int add_device(DeviceType device){
     return id;
 }
 
-int delete_device(device_id device){
+int delete_device(device_id device, _Bool non_block_wait){
 
     if(g_devices_request_stream[device] == NULL) return -1;
 
@@ -180,10 +179,13 @@ int delete_device(device_id device){
 
     g_devices_request_stream[device] = NULL;
 
-    int child_exit_code;
+    int child_exit_code, options = 0;
+
+    if(non_block_wait)
+        options = WNOHANG;
 
     //La wait devo farla solo il device da rimuovere è figlio
-    pid_t child_pid = waitpid(-1, &child_exit_code, 0);
+    pid_t child_pid = waitpid(-1, &child_exit_code, options);
 
     if(child_pid == -1){
         perror("delete_device: wait");
@@ -272,7 +274,7 @@ void del_shell_command(const char** args, const size_t n_args){
         else{
             if(id == 0)
                 printf("[-] centralina cant be deleted\n");
-            else if(delete_device(id) == -1)
+            else if(delete_device(id, false) == -1)
                 print_error("[-] no device found with id %d\n", id);
             else
                 printf("[+] device %d deleted\n", id);
@@ -379,7 +381,7 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
 
-    int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
+    int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY | O_CLOEXEC);
     g_whois_response_stream = fdopen(whois_response_fd, "w");
 
     device_id id;
@@ -398,19 +400,8 @@ void whois_command(const char** args, const size_t n_args){
 
         if(retval <= 0)
             fprintf(g_whois_response_stream, "not found\n");
-
-        switch(retval){
-            case 0:
-                print_error("Time out\n");
-                break;
-            case -1:
-                print_error("Read device response error\n");
-                break;
-            default:
-                print_error("Ho letto in risposta %s\n", line_buffer.buffer);
-        }
-
-        fprintf(g_whois_response_stream, line_buffer.buffer);
+        else
+            fprintf(g_whois_response_stream, "%s\n", line_buffer.buffer);
     }
 
     fclose(g_whois_response_stream);
@@ -425,8 +416,9 @@ void init_centralina(){
     signal(SIGPIPE, SIG_IGN);
     //Maschero e creo il signal fd per i real time signal.
     sigset_t mask;
-    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
-                           SIG_PERC, SIG_TIME);
+
+    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
+            SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_CLOCK);
     g_signal_fd = signalfd(-1, &mask, 0);
     if (g_signal_fd == -1)
         perror_and_exit("init_base_device: signalfd");
@@ -467,7 +459,7 @@ void init_centralina(){
         g_devices_response_stream = fdopen(fd_response, "r");
 
         printf("Rimuovo la centralina perché ha già finito\n");
-        delete_device(0);
+        delete_device(0, false);
     }
 }
 
@@ -477,7 +469,7 @@ void send_command_to_device(device_id id, const char* command){
     if(retval == -1){
         //La pipe è stata chiusa dal device
         if(errno == EPIPE){
-            delete_device(id);
+            delete_device(id, true);
         }
     }
 }
@@ -503,7 +495,11 @@ int read_device_response(LineBuffer *buffer){
 }
 
 void clean_centralina(){
+
+    fclose(g_whois_request_stream);
+    fclose(g_devices_response_stream);
+
     int i;
     for(i=0; i<MAX_DEVICES; i++)
-        delete_device(i);
+        delete_device(i, false);
 }

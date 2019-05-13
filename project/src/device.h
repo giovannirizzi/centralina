@@ -1,7 +1,6 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#include <stdbool.h>
 #include "common.h"
 
 typedef int device_id;
@@ -21,6 +20,7 @@ typedef struct{
 
     DeviceType type;
     device_id id;
+    _Bool running;
 
     // 0 spento 1 acceso
     int state;

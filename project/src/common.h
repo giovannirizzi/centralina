@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdbool.h>
+
 #define FIFO_WHOIS_REQUEST "/tmp/centralina/whois_request"
 #define FIFO_WHOIS_RESPONSE "/tmp/centralina/whois_response"
 #define FIFO_DEVICES_RESPONSE "/tmp/centralina/devices_response"
@@ -21,10 +23,12 @@ typedef enum{
     SIG_POWER = 0,
     SIG_OPEN,
     SIG_CLOSE,
-    SIG_TIME,
+    SIG_BEGIN,
+    SIG_END,
     SIG_DELAY,
     SIG_PERC,
-    SIG_TEMP
+    SIG_TEMP,
+    SIG_CLOCK
 } RTSignalType;
 
 typedef struct{

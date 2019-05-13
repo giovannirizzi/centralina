@@ -88,10 +88,7 @@ const char* device_type_to_string(DeviceType device_type);
  */
 int string_to_int(const char* string, int *id);
 
-/**
- * Mappa la stringa "on" con 1 e "off" con 0, -1 altrimenti
- */
-int string_to_state(const char* device_state);
+int string_to_device_state(const char *string, int *state);
 
 /**
  * Divde una stringa in sottostringhe delimitate dal carattere delimitatore passato come parametro
@@ -113,7 +110,7 @@ char* get_absolute_executable_dir();
 
 int time_to_string(int time, char* string_time);
 
-int string_to_time(char* string_time, int *time);
+int string_to_time(const char* string_time, int *time);
 
 
 #endif // UTILS_H

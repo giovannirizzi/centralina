@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
 
     int max_fd = MAX(g_signal_fd, fifo_fd);
 
-    while(1){
+    while(g_device.running){
         FD_ZERO(&rfds);
 
         FD_SET(g_signal_fd, &rfds);
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
 
                 //Legge un comando (una linea)
                 if(read_incoming_command(stdin, &input_command, &line_buffer) == -1)
-                    break;
+                    g_device.running = false;
 
                 //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
                 g_curr_out_stream = stdout;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
             if(is_controlled() && FD_ISSET(fifo_fd, &rfds)){
 
                 if(read_incoming_command(g_fifo_in_stream, &input_command, &line_buffer) == -1)
-                    break;
+                    g_device.running = false;
 
                 g_curr_out_stream = g_fifo_out_stream;
 
@@ -75,6 +75,9 @@ int main(int argc, char *argv[]){
             if (FD_ISSET(g_signal_fd, &rfds)) {
 
                 read_incoming_signal(g_signal_fd, &input_signal);
+
+                printf("Got signal: %d, int val: %d\n",
+                        input_signal.type, input_signal.value);
 
                 handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));

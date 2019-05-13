@@ -67,11 +67,11 @@ void init_base_device(char *args[], size_t n_args){
         char fifo_path[100];
 
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
-        int fifo_in_fd = open_fifo(fifo_path, O_RDONLY);
+        int fifo_in_fd = open_fifo(fifo_path, O_RDONLY | O_CLOEXEC);
         g_fifo_in_stream = fdopen(fifo_in_fd, "r");
         g_device.id = id;
 
-        int fifo_out_fd = open_fifo(FIFO_DEVICES_RESPONSE, O_WRONLY);
+        int fifo_out_fd = open_fifo(FIFO_DEVICES_RESPONSE, O_WRONLY | O_CLOEXEC);
         g_fifo_out_stream = fdopen(fifo_out_fd, "w");
         setlinebuf(g_fifo_out_stream);
 
@@ -89,8 +89,8 @@ void init_base_device(char *args[], size_t n_args){
     else{
         //creo un nuova signal_fd
         sigset_t mask;
-        mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_DELAY,
-                               SIG_PERC, SIG_TIME);
+        mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
+                               SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_CLOCK);
         g_signal_fd = signalfd(-1, &mask, 0);
         if (g_signal_fd == -1)
             perror_and_exit("init_base_device: signalfd");
@@ -111,6 +111,13 @@ void gettype_command(const char** args, const size_t n_args){
     print_error("Device %d: recived gettype command\n", g_device.id);
     fprintf(g_curr_out_stream, "%s\n", device_type_to_string(g_device.type));
 }
+
+void del_command(const char** args, const size_t n_args){
+
+    fprintf(g_curr_out_stream, "del command\n");
+    g_device.running = false;
+}
+
 _Bool is_controlled(){
 
     return g_fifo_in_stream &&

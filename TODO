@@ -1,16 +1,7 @@
 TODO:
-
 - pensare a come finire la delete_device
-- aggiungere a SignalMapping una puntatore a funzione int func(char*, *int) (come string_to_int) che converte il secondo argomento
-    del comando set e switch ad un intero, il valore di ritorno serve per controllare se la conversione è andata a buon fine.
-    I switch label mappings avranno tutti la funzione &string_to_state
-- finire di sistemare il comando whois (funziona ma ha qualche problema)
-- finire il manual_control utilizzado il whois e il SignalMapping per scegliere il giusto segnale da inviare
-- finire il comando list della centralina
-- aggiungere il comando exit alla help della centralina
+- sistemare messaggi di log manualcontrol, poi dovrebbe essere finito
 - implementare il tempo di accensione nella bulb con timer_create e timer_settime
-
-
 
 
 Tutti i dispositivi anche la centralina hanno:
