@@ -27,31 +27,31 @@ fifo:
 $(ODIR) $(BIN):
 	@mkdir -p $@
 
-$(ODIR)/centralina.o: centralina.c centralina.h devices.h utils.h
+$(ODIR)/centralina.o: centralina.c centralina.h device.h utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/devices.o: devices.c devices.h
+$(ODIR)/device.o: device.c device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/bulb.o: bulb.c bulb.h devices.h
+$(ODIR)/bulb.o: bulb.c bulb.h device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h devices.h
+$(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/utils.o: utils.c utils.h devices.h
+$(ODIR)/utils.o: utils.c utils.h device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/iteration_device.o: iteration_device.c iteration_device.h devices.h utils.h
+$(ODIR)/iteration_device.o: iteration_device.c iteration_device.h device.h utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/control_device.o: control_device.c control_device.h devices.h utils.h
+$(ODIR)/control_device.o: control_device.c control_device.h device.h utils.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-centralina: $(ODIR)/centralina.o $(ODIR)/devices.o $(ODIR)/utils.o $(ODIR)/control_device.o
+centralina: $(ODIR)/centralina.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/control_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
-bulb: $(ODIR)/bulb.o $(ODIR)/devices.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
+bulb: $(ODIR)/bulb.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
 
 manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o

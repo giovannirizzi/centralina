@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
-#include "devices.h"
+#include "device.h"
 #include "utils.h"
 
 const CommandBind BASE_COMMANDS[] = {{"info", &info_command},

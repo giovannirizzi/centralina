@@ -2,7 +2,7 @@
 #define CONTROL_DEVICES_H
 
 #include <linux/limits.h>
-#include "devices.h"
+#include "device.h"
 
 void add_command(const char** args, size_t n_args);
 

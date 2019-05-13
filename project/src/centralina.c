@@ -28,19 +28,6 @@ CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
 
-    //TEST FUNZIONI PER TIMER
-    int a;
-    int b;
-    char str[80];
-    char time[80];
-    strcpy(time,"0:19");
-    a = string_to_time(time, &b);
-    printf("%d\n",a);
-    a = time_to_string(b, str);
-    printf("%d\n",a);
-    printf("%s\n",str);
-    //FINE TEST
-
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     g_running = 1;
@@ -393,16 +380,25 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
 
+    int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
+    g_whois_response_stream = fdopen(whois_response_fd, "w");
+
     device_id id;
     int id_control = string_to_int(args[0], &id);
-    if (id_control != 0 || id<0 || id>=MAX_DEVICES || g_devices_request_stream[id] == NULL)
-        print_error("invalid id %s\n", args[0]);
+    if (id_control != 0 || id<0 || id>=MAX_DEVICES
+        || g_devices_request_stream[id] == NULL){
+
+        fprintf(g_whois_response_stream, "not found\n");
+    }
     else{
 
         send_command_to_device(id, "getpid\n");
 
         LineBuffer line_buffer;
         int retval = read_device_response(&line_buffer);
+
+        if(retval <= 0)
+            fprintf(g_whois_response_stream, "not found\n");
 
         switch(retval){
             case 0:
@@ -415,18 +411,10 @@ void whois_command(const char** args, const size_t n_args){
                 print_error("Ho letto in risposta %s\n", line_buffer.buffer);
         }
 
-        int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
-        g_whois_response_stream = fdopen(whois_response_fd, "w");
-
         fprintf(g_whois_response_stream, line_buffer.buffer);
-        fclose(g_whois_response_stream);
-
-        //Devo aprire la fifo response e whois_response_stream
-        //read_incoming_command(devices_response_stream, &input_command);
-
-        //printf("Centralina: ho ricevuto dal device %d, %s\n", id, input_command.name);
     }
 
+    fclose(g_whois_response_stream);
 }
 
 void init_centralina(){

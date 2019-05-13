@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +9,6 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <linux/limits.h>
-#define _XOPEN_SOURCE
 #include <time.h>
 #include <fcntl.h>
 #include "utils.h"
@@ -141,7 +141,7 @@ int open_fifo(const char* path, mode_t access_mode){
         perror_and_exit("mkfifo");
     else{
         fd = open(path, access_mode);
-        if(fd == -1)
+        if(fd == -1 && errno != ENXIO)
             perror_and_exit("open_fifo");
     }
 
@@ -209,11 +209,8 @@ int string_to_time(char* string_time, int* time){
 
     char* retval = strptime(string_time, "%H:%M", &info);
 
-    if(retval == NULL)
+    if(retval == NULL || *retval != '\0')
         return -1;
-
-    //if(*retval != '\0')
-    //    return -2;
 
     *time = info.tm_min;
     *time = *time << 16;
