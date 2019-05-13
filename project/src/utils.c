@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <linux/limits.h>
+#define _XOPEN_SOURCE
+#include <time.h>
 #include <fcntl.h>
 #include "utils.h"
 
@@ -186,4 +188,36 @@ char* get_absolute_executable_dir(){
             print_error("error: get_absolute_executable_dir\n");
     }
     return path;
+}
+
+int time_to_string(int time, char* string_time){
+    struct tm info;
+
+    int hour = time & 0xffff;
+    int min = (time >> 16) & 0xffff;
+
+    info.tm_min = min;
+    info.tm_hour = hour;
+
+    if(strftime(string_time,80,"%H:%M", &info) == 0)
+        return -1;
+    return 0;
+}
+
+int string_to_time(char* string_time, int* time){
+    struct tm info;
+
+    char* retval = strptime(string_time, "%H:%M", &info);
+
+    if(retval == NULL)
+        return -1;
+
+    //if(*retval != '\0')
+    //    return -2;
+
+    *time = info.tm_min;
+    *time = *time << 16;
+    *time = *time | info.tm_hour;
+
+    return 0;
 }

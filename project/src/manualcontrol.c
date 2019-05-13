@@ -21,9 +21,9 @@
  *
  */
 
-SignalMapping switch_labels_mapping[] = {{"open",SIG_OPEN},
-                                        {"power",SIG_POWER},
-                                        {"close",SIG_CLOSE}};
+SignalMapping switch_labels_mapping[] = {{"open", SIG_OPEN},
+                                        {"power", SIG_POWER},
+                                        {"close", SIG_CLOSE}};
 
 SignalMapping set_labels_mapping[] =    {{"time", SIG_TIME},
                                         {"delay", SIG_DELAY},
@@ -32,6 +32,10 @@ SignalMapping set_labels_mapping[] =    {{"time", SIG_TIME},
                     
 //./manualcontrol switch 14 power on
 //./manualcontrol set 15 temperature 45
+
+// aggiungere a SignalMapping una puntatore a funzione int func(char*, *int) (come string_to_int) che converte il secondo argomento 
+// del comando set e switch ad un intero, il valore di ritorno serve per controllare se la conversione è andata a buon fine.
+// I switch label mappings avranno tutti la funzione &string_to_state
 
 
 

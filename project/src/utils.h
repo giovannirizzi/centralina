@@ -111,5 +111,9 @@ size_t divide_string(char *line, char **substrings, size_t max_substrings, const
  */
 char* get_absolute_executable_dir();
 
+int time_to_string(int time, char* string_time);
+
+int string_to_time(char* string_time, int *time);
+
 
 #endif // UTILS_H

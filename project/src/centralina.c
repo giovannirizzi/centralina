@@ -28,6 +28,19 @@ CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 int main(int argc, char *argv[]){
 
+    //TEST FUNZIONI PER TIMER
+    int a;
+    int b;
+    char str[80];
+    char time[80];
+    strcpy(time,"0:19");
+    a = string_to_time(time, &b);
+    printf("%d\n",a);
+    a = time_to_string(b, str);
+    printf("%d\n",a);
+    printf("%s\n",str);
+    //FINE TEST
+
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     g_running = 1;
