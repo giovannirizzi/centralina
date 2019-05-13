@@ -14,7 +14,8 @@ const CommandBind BASE_COMMANDS[] = {{"info", &info_command},
                                      {"del", &del_command},
                                      {"getconf", &getconf_command},
                                      {"setconf", &setconf_command},
-                                     {"getpid", &getpid_command}};
+                                     {"getpid", &getpid_command},
+                                     {"gettype", &gettype_command}};
 
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
@@ -103,7 +104,13 @@ void getpid_command(const char** args, const size_t n_args){
     print_error("Device %d: recived getpid command\n", g_device.id);
     fprintf(g_curr_out_stream, "%d\n", getpid());
 }
+void gettype_command(const char** args, const size_t n_args){
 
+    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
+    //send_command(g_curr_out_stream, "%d", getpid());
+    print_error("Device %d: recived gettype command\n", g_device.id);
+    fprintf(g_curr_out_stream, "%s\n", device_type_to_string(g_device.type));
+}
 _Bool is_controlled(){
 
     return g_fifo_in_stream &&
