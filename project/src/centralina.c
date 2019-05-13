@@ -71,7 +71,7 @@ int main(int argc, char *argv[]){
 
             //WHOIS REQUEST
             if (FD_ISSET(whois_request_fd, &rfds)) {
-
+                
                 read_incoming_command(g_whois_request_stream, &input_command, &line_buffer);
 
                 handle_command(&input_command, whois_request_bindings,
@@ -294,7 +294,6 @@ void link_shell_command(const char** args, const size_t n_args){
     }
 }
 void list_shell_command(const char** args, const size_t n_args){
-
     printf("\
     available devices: \n\
     interaction devices: \n\
@@ -312,8 +311,18 @@ void list_shell_command(const char** args, const size_t n_args){
             allows multiple devices of the same type to be connected in parallel\n\
     - timer:\n\
             allows to define a schedule to control a connected device\n\
-    active devices...\
+    active devices: \
     \n");
+    int i;
+    LineBuffer line_buffer;
+    for(i=0; i<MAX_DEVICES; i++){
+        if(g_devices_request_stream[i] != NULL){
+            send_command_to_device(i, "gettype\n");
+            int retval = read_device_response(&line_buffer);
+            if(retval>0)
+                printf("    - id: <%d> type: <%s>\n", i, line_buffer.buffer);
+        }
+    }
 }
 void switch_shell_command(const char** args, const size_t n_args){
 
@@ -357,7 +366,9 @@ void help_shell_command(const char** args, const size_t n_args){
     - switch: turn on/off the identified device \n\
             usage: <switch> <id> <label> <on/off>\n\
     - info: show details of the identified device \n\
-            usage: <info> <id>\
+            usage: <info> <id>\n\
+    - exit: close the controller\n\
+            usage: <exit> <id>\
     \n");
 }
 

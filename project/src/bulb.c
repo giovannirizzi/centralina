@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     RTSignal input_signal;
-
+    g_device.type = BULB;
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
     //Inizializzo il device in base agli argomenti passaati
