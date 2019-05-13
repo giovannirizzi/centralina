@@ -308,7 +308,7 @@ void link_shell_command(const char** args, const size_t n_args){
 }
 void list_shell_command(const char** args, const size_t n_args){
     printf("\
-    available devices: \n\
+    \033[1;37mavailable devices:\033[0m \n\
     interaction devices: \n\
     - bulb:\n\
             switch power : turn on/off the bulb\n\
@@ -319,12 +319,13 @@ void list_shell_command(const char** args, const size_t n_args){
             set delay: closes automatically the fridge after the time set\n\
             set percentage: (only manually) add/remove content from the fridge\n\
             set temperature: allows to manage and set the internal temperature\n\
-    interaction devices: \n\
+    control devices: \n\
     - hub:\n\
             allows multiple devices of the same type to be connected in parallel\n\
     - timer:\n\
-            allows to define a schedule to control a connected device\n\
-    active devices: \
+            allows to define a schedule to control a connected device\n\n\
+    \033[1;37mactive devices:\033[0m \n\
+    id\ttype\
     \n");
     int i;
     LineBuffer line_buffer;
@@ -333,7 +334,7 @@ void list_shell_command(const char** args, const size_t n_args){
             send_command_to_device(i, "gettype\n");
             int retval = read_device_response(&line_buffer);
             if(retval>0)
-                printf("    - id: <%d> type: <%s>\n", i, line_buffer.buffer);
+                printf("    %d\t%s\n", i, line_buffer.buffer);
         }
     }
 }
@@ -366,7 +367,7 @@ void info_shell_command(const char** args, const size_t n_args){
 void help_shell_command(const char** args, const size_t n_args){
 
     printf("\
-    available commands: \n\
+    \033[1;37mavailable commands:\033[0m \n\
     - list: show the list of available and active devices\n\
             usage: <list>\n\
     - add: add a new device to the system\n\
