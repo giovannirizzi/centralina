@@ -411,7 +411,7 @@ void whois_command(const char** args, const size_t n_args){
                 print_error("Ho letto in risposta %s\n", line_buffer.buffer);
         }
 
-        fprintf(g_whois_response_stream, line_buffer.buffer);
+        fprintf(g_whois_response_stream, "%s\n", line_buffer.buffer);
     }
 
     fclose(g_whois_response_stream);
@@ -474,7 +474,7 @@ void init_centralina(){
 
 void send_command_to_device(device_id id, const char* command){
 
-    int retval = fprintf(g_devices_request_stream[id], command);
+    int retval = fprintf(g_devices_request_stream[id], "%s\n", command);
     if(retval == -1){
         //La pipe è stata chiusa dal device
         if(errno == EPIPE){
