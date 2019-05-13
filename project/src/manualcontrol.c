@@ -219,7 +219,7 @@ int get_signal_mapping(const char* label, const SignalMapping mappings[], const 
 
 void help_command(const char** args, const size_t n_args){
     printf("\
-    available commands: \n\
+    \033[1;37mavailable commands:\033[0m \n\
     - set: set value of the identified device\n\
             usage: <set> <id> <registry> <value>\n\
     - whois: return pid of the identified device\n\

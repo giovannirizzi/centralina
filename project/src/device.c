@@ -80,7 +80,7 @@ void init_base_device(char *args[], size_t n_args){
         g_fifo_out_stream = NULL;
         g_fifo_in_stream = NULL;
         g_device.id = -1;
-        print_error("Debug mode, id: %d, signal_fd: %d\n", g_signal_fd);
+        print_error("Debug mode, id: %d, signal_fd: %d\n", g_device.id, g_signal_fd);
     }
 
     //se il signal_fd è nell'argomento lo salvo
