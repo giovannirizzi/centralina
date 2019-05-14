@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
 
                 if(input_command.name[0] != '\0'){
                     if(handle_command(&input_command, shell_command_bindings, 8) == -1)
-                        fprintf(stdout, "Unknown command %s\n",
+                        fprintf(stdout, "unknown command %s\n",
                                 input_command.name);
                 }
 
@@ -232,12 +232,17 @@ int switch_device(device_id device, const char* label, const char* pos){
 
 int get_info(device_id device){
 
+    LineBuffer line_buffer = {NULL, 0};
     printf("Info %d\n",device);
-
+    send_command_to_device(device, "info\n");
+    int retval = read_device_response(&line_buffer);
+    if(retval>0)
+        printf("%s\n", line_buffer.buffer);
     /*
     * Mando una info <device>
     * Parsing della risosta e visualizzo a video le info
     */
+    if(line_buffer.buffer) free(line_buffer.buffer);
 }
 
 void add_shell_command(const char** args, const size_t n_args){
@@ -326,6 +331,7 @@ void list_shell_command(const char** args, const size_t n_args){
                 printf("    %d\t%s\n", i, line_buffer.buffer);
         }
     }
+    if(line_buffer.buffer) free(line_buffer.buffer);
 }
 void switch_shell_command(const char** args, const size_t n_args){
 

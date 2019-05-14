@@ -63,6 +63,24 @@ int string_to_device_state(const char *string, int *state){
 
     return 0;
 }
+const char* device_state_to_string(int device_state, DeviceType dt){
+    if(device_state == 0){
+        if(dt == WINDOW || dt == FRIDGE)
+            return "close";
+        else  
+            return "off";
+    }
+    else if(device_state == 1){
+        if(dt == WINDOW || dt == FRIDGE)
+            return "open";
+        else  
+            return "on";
+    }
+    else if(device_state == 2)
+        return "off with override";
+    else
+        return "on with override";
+}
 
 int string_to_int(const char* string, int *id){
 

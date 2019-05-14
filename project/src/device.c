@@ -58,7 +58,7 @@ void init_base_device(char *args[], size_t n_args){
 
     device_id id;
     int signal_fd;
-
+    g_device.running = true;
     g_curr_out_stream = stdout;
     setlinebuf(stdout);
 
@@ -110,6 +110,16 @@ void gettype_command(const char** args, const size_t n_args){
     //send_command(g_curr_out_stream, "%d", getpid());
     print_error("Device %d: recived gettype command\n", g_device.id);
     fprintf(g_curr_out_stream, "%s\n", device_type_to_string(g_device.type));
+}
+void info_command(const char** args, const size_t n_args){
+
+    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
+    //send_command(g_curr_out_stream, "%d", getpid());
+    print_error("Device %d: recived info command\n", g_device.id);
+    char info_string[200];
+    sprintf(info_string, "%d %d %d", g_device.id, g_device.type, g_device.state);
+
+    fprintf(g_curr_out_stream, "%s\n", info_string);
 }
 
 void del_command(const char** args, const size_t n_args){

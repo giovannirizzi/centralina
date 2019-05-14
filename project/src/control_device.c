@@ -18,10 +18,10 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
     return handle_command(c, extra_commands, n);
 }
 
-void info_command(const char** args, const size_t n_args){
+/*void info_command(const char** args, const size_t n_args){
 
     fprintf(g_curr_out_stream, "info command\n");
-}
+}*/
 
 void setconf_command(const char** args, const size_t n_args){
 

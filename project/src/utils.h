@@ -88,7 +88,23 @@ const char* device_type_to_string(DeviceType device_type);
  */
 int string_to_int(const char* string, int *id);
 
+
+/**
+ * modifica la stringa passata come parametro in 0 o 1
+ * @param state stato del device
+ * @param string da convertire nello stato
+ * @return 0 se la conversione è andata a buon fine altrimenti -1
+ */
 int string_to_device_state(const char *string, int *state);
+
+
+/**
+ * Dato lo stato di un device (0 , 1 , 2 , 3) restituisce on / off / open / close 
+ * @param int device_state stato del device
+ * @param DeviceType tipo di device
+ * @return string relativa allo stato del device corretto
+ */
+const char* device_state_to_string(int device_state, DeviceType dt);
 
 /**
  * Divde una stringa in sottostringhe delimitate dal carattere delimitatore passato come parametro
