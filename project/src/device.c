@@ -117,7 +117,7 @@ void info_command(const char** args, const size_t n_args){
     //send_command(g_curr_out_stream, "%d", getpid());
     print_error("Device %d: recived info command\n", g_device.id);
     char info_string[200];
-    sprintf(info_string, "%d %d %d", g_device.id, g_device.type, g_device.state);
+    sprintf(info_string, "%d-%d-%d", g_device.id, g_device.type, g_device.state);
 
     fprintf(g_curr_out_stream, "%s\n", info_string);
 }

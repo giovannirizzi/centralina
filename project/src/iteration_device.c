@@ -19,11 +19,9 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 }*/
 
 void setconf_command(const char** args, const size_t n_args){
-
-    fprintf(g_curr_out_stream, "setconf command\n");
+    sscanf(args[0], "%d-%d-%d", &g_device.id, &g_device.type, &g_device.state);
 }
 
 void getconf_command(const char** args, const size_t n_args){
-
-    fprintf(g_curr_out_stream, "getconf command\n");
+    info_command(NULL, 0);
 }
