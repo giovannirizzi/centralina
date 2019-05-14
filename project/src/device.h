@@ -45,8 +45,8 @@ typedef struct{
     Registry *records;
     size_t num_records;
 
-    Switch *swtiches;
-    size_t num_swtiches;
+    Switch *switches;
+    size_t num_switches;
 
 } DeviceBase;
 

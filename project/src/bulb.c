@@ -6,26 +6,68 @@
 #include <sys/signalfd.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <time.h>
 #include "utils.h"
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 
+timer_t timerid;
+struct itimerspec itval;
+
+timer_t create_timer(int signo, int sec){
+        struct sigevent sigev;
+
+        // Create the POSIX timer to generate signo
+        sigev.sigev_notify = SIGEV_SIGNAL;
+        sigev.sigev_signo = signo;
+        sigev.sigev_value.sival_ptr = &timerid;
+
+        if (timer_create(CLOCK_REALTIME, &sigev, &timerid) == 0) {
+            itval.it_value.tv_sec = sec;
+            itval.it_value.tv_nsec = 0;
+            itval.it_interval.tv_sec = itval.it_value.tv_sec;
+            itval.it_interval.tv_nsec = 0;
+            if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+                perror("time_settime error!");
+            }
+        } else {
+            perror("timer_create error!");
+            return -1;
+        }
+        return timerid;
+}
+
+void stop_timer(){
+    itval.it_value.tv_sec = 0;
+    itval.it_value.tv_nsec = 0;
+    itval.it_interval.tv_sec = 0;
+    itval.it_interval.tv_nsec = 0;
+    if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+        perror("time_settime error!");
+    }
+}
+
 int main(int argc, char *argv[]){
+
+    timerid = create_timer(SIGRTMIN+SIG_CLOCK, 1);
 
     g_device.type = BULB;
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
     Registry records[] = {"time", 0, &string_to_int};
     Switch switches[] = {"power", NULL};
 
-    g_device.swtiches = (Switch*)&switches;
-    g_device.num_swtiches = 1;
+    g_device.switches = (Switch*)&switches;
+    g_device.num_switches = 1;
     g_device.records = (Registry*)&records;
     g_device.num_records = 1;
 
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     RTSignal input_signal;
+    g_device.type = BULB;
+    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
+                                    //{SIG_CLOCK, &clock_signal}};
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
@@ -77,6 +119,21 @@ int main(int argc, char *argv[]){
 
                 printf("Got signal: %d, int val: %d\n",
                         input_signal.type, input_signal.value);
+                /*int i=0;
+                for(;i<5; i++){
+                    printf("Got signal: %d, int val: %d\n",
+                        input_signal.type, input_signal.value);
+                    printf("%ld-%ld\n",itval.it_value.tv_sec,
+                        itval.it_value.tv_nsec);
+                }
+
+                printf("%d\n",timerid);
+                stop_timer();
+
+                printf("\n\n%ld-%ld\n",itval.it_value.tv_sec,
+                    itval.it_value.tv_nsec);
+
+                timerid = create_timer(SIGTIMER, 1);*/
 
                 handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));

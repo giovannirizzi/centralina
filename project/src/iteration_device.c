@@ -10,6 +10,8 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
             sizeof(BASE_COMMANDS)/ sizeof(CommandBind)) == 0)
         return 0;
 
+
+
     return handle_command(c, extra_commands, n);
 }
 
