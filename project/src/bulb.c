@@ -13,16 +13,25 @@
 
 int main(int argc, char *argv[]){
 
+    g_device.type = BULB;
+    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
+    Registry records[] = {"time", 0, &string_to_int};
+    Switch switches[] = {"power", NULL};
+
+    g_device.swtiches = (Switch*)&switches;
+    g_device.num_swtiches = 1;
+    g_device.records = (Registry*)&records;
+    g_device.num_records = 1;
+
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     RTSignal input_signal;
-    g_device.type = BULB;
-    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
 
     fd_set rfds;
+    FILE *curr_in;
     int stdin_fd = fileno(stdin);
 
     int fifo_fd = -1;
@@ -36,40 +45,30 @@ int main(int argc, char *argv[]){
 
         FD_SET(g_signal_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
-        if(fifo_fd != -1 && fifo_fd != STDIN_FILENO)
+        if(is_controlled())
             FD_SET(fifo_fd, &rfds);
 
         if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
             perror_and_exit("select");
         else{
 
-            //STDIN
             if (FD_ISSET(stdin_fd, &rfds)) {
-
-                //Legge un comando (una linea)
-                if(read_incoming_command(stdin, &input_command, &line_buffer) == -1)
-                    g_device.running = false;
-
-                //SETTA LA VARIABILE GLOBALE FILE* dove scrivere l'output dei comandi
+                curr_in = stdin;
                 g_curr_out_stream = stdout;
-
-                if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                            input_command.name);
             }
 
-            //FIFO
-            if(is_controlled() && FD_ISSET(fifo_fd, &rfds)){
-
-                if(read_incoming_command(g_fifo_in_stream, &input_command, &line_buffer) == -1)
-                    g_device.running = false;
-
+            if(FD_ISSET(fifo_fd, &rfds)){
+                curr_in = g_fifo_in_stream;
                 g_curr_out_stream = g_fifo_out_stream;
-
-                if(handle_device_command(&input_command, NULL, 0) != 0)
-                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                            input_command.name);
             }
+
+            //Legge un comando (una linea)
+            if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
+                g_device.running = false;
+
+            if(handle_device_command(&input_command, NULL, 0) == -1)
+                fprintf(g_curr_out_stream, "device: unknown command %s\n",
+                        input_command.name);
 
             //SIGNAL
             if (FD_ISSET(g_signal_fd, &rfds)) {

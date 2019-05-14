@@ -18,20 +18,39 @@ typedef enum {
 
 typedef struct{
 
+    char label[MAX_LABEL_LENGTH];
+    int value;
+    string_to_int_func_ptr convert_value;
+
+} Registry;
+
+typedef struct{
+
+    char label[MAX_LABEL_LENGTH];
+    action_func_ptr action;
+
+} Switch;
+
+typedef struct{
+
     DeviceType type;
     device_id id;
     _Bool running;
 
     // 0 spento 1 acceso
     int state;
-
     /*
      * Questi sono puntatori ad altre strutture,
      * possono cambiare in base al tipo di device */
-    const void* interruttori_struct;
-    const void* data_struct;
+    Registry *records;
+    size_t num_records;
+
+    Switch *swtiches;
+    size_t num_swtiches;
 
 } DeviceBase;
+
+
 
 /**
  * Setta la signal mask del processo, con i segnali real-time

@@ -146,6 +146,7 @@ int add_device(DeviceType device){
         //fclose ("/tmp/centralina/null", "r", stdin);
         fclose(stdin);
         fclose(stdout);
+        freopen("/dev/null", "w", stderr);
 
         execv(exec_path, argv);
 #endif
@@ -322,7 +323,7 @@ void list_shell_command(const char** args, const size_t n_args){
     id\ttype\
     \n");
     int i;
-    LineBuffer line_buffer;
+    LineBuffer line_buffer = {NULL, 0};
     for(i=0; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
             send_command_to_device(i, "gettype\n");

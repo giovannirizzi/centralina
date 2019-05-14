@@ -12,6 +12,7 @@
 #define MAX_DEVICES 500
 #define MAX_COMMAND_ARGS 5
 #define MAX_COMMAND_NAME_LENGTH 30
+#define MAX_LABEL_LENGTH 30
 
 /**
  * Segnali real-time usati per simulare il controllo manuale
@@ -31,15 +32,17 @@ typedef enum{
     SIG_CLOCK
 } RTSignalType;
 
+typedef int (*string_to_int_func_ptr)(const char* label, int* n);
+
 typedef struct{
     RTSignalType type;
     int value;
 } RTSignal;
 
-typedef void (*signal_func_ptr)(const int value);
+typedef void (*action_func_ptr)(const int value);
 typedef struct{
     RTSignalType type;
-    signal_func_ptr exec_command;
+    action_func_ptr exec_command;
 } SignalBind;
 
 
