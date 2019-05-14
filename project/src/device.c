@@ -47,6 +47,13 @@ void power_signal(const int value){
     g_device.state = value;
 }
 
+void open_signal(const int value){
+
+    //TODO
+    printf("Got SIG_OPEN, int val: %d\n", value);
+    g_device.state = value;
+}
+
 void init_base_device(char *args[], size_t n_args){
 
     /*
@@ -116,8 +123,13 @@ void info_command(const char** args, const size_t n_args){
     //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
     //send_command(g_curr_out_stream, "%d", getpid());
     print_error("Device %d: recived info command\n", g_device.id);
-    char info_string[200];
+    char info_string[200], tmp[50];
     sprintf(info_string, "%d-%d-%d", g_device.id, g_device.type, g_device.state);
+    int i;
+    for(i=0; i<g_device.num_records; i++){
+        sprintf(tmp, "-%s=%d", g_device.records[i].label, g_device.records[i].value);
+        strcat(info_string, tmp);
+    }
 
     fprintf(g_curr_out_stream, "%s\n", info_string);
 }
