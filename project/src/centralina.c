@@ -233,17 +233,17 @@ int switch_device(device_id device, const char* label, const char* pos){
 
 int get_info(device_id device){
 
+    if(g_devices_request_stream[device] == NULL)
+        return -1;
+
     LineBuffer line_buffer = {NULL, 0};
-    printf("Info %d\n",device);
     send_command_to_device(device, "info\n");
     int retval = read_device_response(&line_buffer);
     if(retval>0)
         printf("%s\n", line_buffer.buffer);
-    /*
-    * Mando una info <device>
-    * Parsing della risosta e visualizzo a video le info
-    */
+
     if(line_buffer.buffer) free(line_buffer.buffer);
+    return 0;
 }
 
 void add_shell_command(const char** args, const size_t n_args){
@@ -354,9 +354,10 @@ void info_shell_command(const char** args, const size_t n_args){
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0)
-            print_error("invalid id %s\n", args[0]);
+            print_error("[-] invalid id %s\n", args[0]);
         else
-            get_info(id);
+            if(get_info(id)==-1)
+                print_error("[-] no device found with id %s\n", args[0]);        
     }
 }
 
