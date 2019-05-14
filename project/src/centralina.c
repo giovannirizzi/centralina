@@ -474,7 +474,7 @@ void init_centralina(){
 
 void send_command_to_device(device_id id, const char* command){
 
-    int retval = fprintf(g_devices_request_stream[id], "%s\n", command);
+    int retval = fprintf(g_devices_request_stream[id], "%s", command);
     if(retval == -1){
         //La pipe è stata chiusa dal device
         if(errno == EPIPE){

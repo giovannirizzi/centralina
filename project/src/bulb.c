@@ -18,8 +18,8 @@ int main(int argc, char *argv[]){
     Registry records[] = {"time", 0, &string_to_int};
     Switch switches[] = {"power", NULL};
 
-    g_device.swtiches = (Switch*)&switches;
-    g_device.num_swtiches = 1;
+    g_device.switches = (Switch*)&switches;
+    g_device.num_switches = 1;
     g_device.records = (Registry*)&records;
     g_device.num_records = 1;
 
