@@ -15,27 +15,29 @@
 timer_t timerid;
 struct itimerspec itval;
 
-timer_t create_timer(int signo, int sec){
-        struct sigevent sigev;
+void clock_signal(int a);
 
-        // Create the POSIX timer to generate signo
-        sigev.sigev_notify = SIGEV_SIGNAL;
-        sigev.sigev_signo = signo;
-        sigev.sigev_value.sival_ptr = &timerid;
+timer_t create_timer(int sec){
+    struct sigevent sigev;
 
-        if (timer_create(CLOCK_REALTIME, &sigev, &timerid) == 0) {
-            itval.it_value.tv_sec = sec;
-            itval.it_value.tv_nsec = 0;
-            itval.it_interval.tv_sec = itval.it_value.tv_sec;
-            itval.it_interval.tv_nsec = 0;
-            if (timer_settime(timerid, 0, &itval, NULL) != 0) {
-                perror("time_settime error!");
-            }
-        } else {
-            perror("timer_create error!");
-            return -1;
+    // Create the POSIX timer to generate signo
+    sigev.sigev_notify = SIGEV_SIGNAL;
+    sigev.sigev_signo = SIGRTMIN+SIG_CLOCK;
+    sigev.sigev_value.sival_ptr = &timerid;
+
+    if (timer_create(CLOCK_REALTIME, &sigev, &timerid) == 0) {
+        itval.it_value.tv_sec = sec;
+        itval.it_value.tv_nsec = 0;
+        itval.it_interval.tv_sec = itval.it_value.tv_sec;
+        itval.it_interval.tv_nsec = 0;
+        if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+            perror("time_settime error!");
         }
-        return timerid;
+    } else {
+        perror("timer_create error!");
+        return -1;
+    }
+    return timerid;
 }
 
 void stop_timer(){
@@ -50,10 +52,10 @@ void stop_timer(){
 
 int main(int argc, char *argv[]){
 
-    timerid = create_timer(SIGRTMIN+SIG_CLOCK, 1);
-
+    //timerid = create_timer(1);
     g_device.type = BULB;
     SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
+                                    //{SIG_CLOCK, &clock_signal}};
     Registry records[] = {"time", 0, &string_to_int};
     Switch switches[] = {"power", NULL};
 
@@ -66,12 +68,10 @@ int main(int argc, char *argv[]){
     Command input_command;
     RTSignal input_signal;
     g_device.type = BULB;
-    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
-                                    //{SIG_CLOCK, &clock_signal}};
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
-
+    
     fd_set rfds;
     FILE *curr_in;
     int stdin_fd = fileno(stdin);
@@ -114,26 +114,11 @@ int main(int argc, char *argv[]){
 
             //SIGNAL
             if (FD_ISSET(g_signal_fd, &rfds)) {
-
+            
                 read_incoming_signal(g_signal_fd, &input_signal);
 
                 printf("Got signal: %d, int val: %d\n",
                         input_signal.type, input_signal.value);
-                /*int i=0;
-                for(;i<5; i++){
-                    printf("Got signal: %d, int val: %d\n",
-                        input_signal.type, input_signal.value);
-                    printf("%ld-%ld\n",itval.it_value.tv_sec,
-                        itval.it_value.tv_nsec);
-                }
-
-                printf("%d\n",timerid);
-                stop_timer();
-
-                printf("\n\n%ld-%ld\n",itval.it_value.tv_sec,
-                    itval.it_value.tv_nsec);
-
-                timerid = create_timer(SIGTIMER, 1);*/
 
                 handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));
@@ -149,4 +134,8 @@ int main(int argc, char *argv[]){
     free(line_buffer.buffer);
 
     exit(EXIT_SUCCESS);
+}
+
+void clock_signal(const int a){
+    printf("%d\n",g_device.records[0].value);
 }
