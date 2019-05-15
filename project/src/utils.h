@@ -6,6 +6,12 @@
 #include "common.h"
 #include "device.h"
 
+//colori
+#define RED   "\x1B[1;31m"
+#define GRN   "\x1B[1;32m"
+#define YLW   "\x1B[1;33m"
+#define RESET "\x1B[0m"
+
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define perror_and_exit(msg) \
