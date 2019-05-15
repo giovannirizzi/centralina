@@ -104,34 +104,38 @@ int main(int argc, char *argv[]){
             perror_and_exit("select");
         else{
 
-            if (FD_ISSET(stdin_fd, &rfds)) {
-                curr_in = stdin;
-                g_curr_out_stream = stdout;
-            }
-
-            if(FD_ISSET(fifo_fd, &rfds)){
-                curr_in = g_fifo_in_stream;
-                g_curr_out_stream = g_fifo_out_stream;
-            }
-
-            //Legge un comando (una linea)
-            if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
-                g_device.running = false;
-
-            if(handle_device_command(&input_command, NULL, 0) == -1)
-                fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                        input_command.name);
-
             //SIGNAL
             if (FD_ISSET(g_signal_fd, &rfds)) {
-            
+
+                printf("Device: arriva un signal\n");
+
                 read_incoming_signal(g_signal_fd, &input_signal);
 
                 printf("Got signal: %d, int val: %d\n",
-                        input_signal.type, input_signal.value);
+                       input_signal.type, input_signal.value);
 
                 handle_signal(&input_signal, signal_bindings,
                               sizeof(signal_bindings) / sizeof(SignalBind));
+            }
+            else{
+
+                if (FD_ISSET(stdin_fd, &rfds)) {
+                    curr_in = stdin;
+                    g_curr_out_stream = stdout;
+                }
+
+                if(FD_ISSET(fifo_fd, &rfds)){
+                    curr_in = g_fifo_in_stream;
+                    g_curr_out_stream = g_fifo_out_stream;
+                }
+
+                //Legge un comando (una linea)
+                if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
+                    g_device.running = false;
+
+                if(handle_device_command(&input_command, NULL, 0) == -1)
+                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
+                            input_command.name);
             }
         }
     }
