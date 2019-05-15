@@ -19,6 +19,7 @@ typedef enum {
 typedef struct{
 
     char label[MAX_LABEL_LENGTH];
+    char description[MAX_REGISTRY_DESC_LENGTH];
     int value;
     string_to_int_func_ptr convert_value;
 
@@ -35,7 +36,6 @@ typedef struct{
 
     DeviceType type;
     device_id id;
-    _Bool running;
 
     // 0 spento 1 acceso
     int state;
@@ -62,13 +62,6 @@ typedef struct{
 sigset_t set_signal_mask(RTSignalType signal1, ...);
 
 
-/**
- * Signal function implementation
- *
- */
-void power_signal(int value);
-
-
 
 /**
  * Function to implement
@@ -84,8 +77,8 @@ void switch_command(const char** args, const size_t n_args);
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);
 _Bool is_controlled();
-
-void switch_power_action(int state);
+void device_loop(const SignalBind signal_bindings[], size_t n_sb, const CommandBind extra_commands[],
+        size_t n_dc);
 
 const CommandBind BASE_COMMANDS[7];
 
@@ -98,6 +91,8 @@ DeviceBase g_device;
 FILE* g_curr_out_stream;
 FILE* g_fifo_in_stream;
 FILE* g_fifo_out_stream;
+
+_Bool g_running;
 
 int g_signal_fd;
 
