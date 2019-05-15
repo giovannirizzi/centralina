@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
                                   sizeof(command_bindings)/sizeof(CommandBind));
 
         if(code == -1){
-            print_error("uknown command\n");
+            print_error(RED "[-] uknown command\n" RESET);
             help_command(NULL, 0);
             exit(EXIT_FAILURE);
         }
@@ -83,56 +83,56 @@ void send_signal(pid_t pid, RTSignalType signal, int val){
 void set_command(const char** args, const size_t n_args){
 
     if(n_args !=3)
-        print_error("usage: <set> <id> <registry> <value>\n");
+        print_error(YLW "usage: <set> <id> <registry> <value>\n" RESET);
     else {
         device_id id;
         int value;
         if (string_to_int(args[0], &id) != 0)
-            print_error_and_exit("invalid id %s\n",args[0]);
+            print_error_and_exit(RED "[-] invalid id %s\n" RESET, args[0]);
         else{
             int retval = get_signal_mapping(args[1], registry_names_mappings,
                                             sizeof(registry_names_mappings)/sizeof(SignalMapping));
             if(retval == -1)
-                print_error_and_exit("%s not a valid registry name\n",args[1]);
+                print_error_and_exit(RED "[-] %s not a valid registry name\n" RESET, args[1]);
 
             int code = registry_names_mappings[retval].
                     string_to_signal_value(args[2], &value);
 
             if(code != 0)
-                print_error_and_exit("%s not a valid value for the registry %s", args[2], args[1]);
+                print_error_and_exit(RED "[-] %s not a valid value for the registry %s" RESET, args[2], args[1]);
 
             pid_t pid = whois(id);
             if(pid > 0)
                 send_signal(pid, registry_names_mappings[retval].signal, value);
             else
-                print_error_and_exit("no such device with id %d\n",id);
+                print_error_and_exit(RED "[-] no such device with id %d\n" RESET, id);
         }
     }
 }
 
 void switch_command(const char** args, const size_t n_args){
     if(n_args !=3)
-        print_error("usage: <switch> <id> <label> <state>\n");
+        print_error(YLW "usage: <switch> <id> <label> <state>\n" RESET);
     else {
         device_id id;
         int device_state;
 
         if (string_to_int(args[0], &id) != 0)
-            print_error_and_exit("invalid id %s\n",args[0]);
+            print_error_and_exit(RED "[-] invalid id %s\n" RESET, args[0]);
 
         if (string_to_device_state(args[2], &device_state) != 0)
-            print_error_and_exit("invalid state %s\n", args[2]);
+            print_error_and_exit(RED "[-] invalid state %s\n" RESET, args[2]);
 
         else{
             int retval = get_signal_mapping(args[1], switch_names_mappings,
                 sizeof(switch_names_mappings)/sizeof(SignalMapping));
             if(retval == -1)
-                print_error_and_exit("%s not a valid switch name\n",args[1]);
+                print_error_and_exit(RED "[-] %s not a valid switch name\n" RESET, args[1]);
             pid_t pid = whois(id);
             if(pid > 0)
                 send_signal(pid, switch_names_mappings[retval].signal, device_state);
             else
-                print_error_and_exit("no such device with id %d\n",id);
+                print_error_and_exit(RED "[-] no such device with id %d\n" RESET, id);
         }
     }
 }
@@ -143,19 +143,19 @@ void whois_command(const char** args, const size_t n_args){
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0){
-            print_error_and_exit("invalid id %s\n",args[0]);
+            print_error_and_exit(RED "[-] invalid id %s\n" RESET, args[0]);
         }
         else{
             pid_t pid = whois(id);
             switch(pid){
                 case -2:
-                    print_error_and_exit("controller offline\n");
+                    print_error_and_exit(RED "[-] controller offline\n" RESET);
                     break;
                 case -1:
-                    print_error_and_exit("no such device with id %d\n", id);
+                    print_error_and_exit(RED "[-] no such device with id %d\n" RESET, id);
                     break;
                 default:
-                    printf("pid: %d\n",pid);
+                    printf(GRN "[+] pid: %d\n" RESET, pid);
             }
         }
     }

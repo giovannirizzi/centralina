@@ -9,6 +9,8 @@
 #include "utils.h"
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "utils.h"
+#include "iteration_device.h"
 
 void switch_power_action(int state);
 void tick_signal(int a);
