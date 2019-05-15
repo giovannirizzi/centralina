@@ -41,13 +41,6 @@ sigset_t set_signal_mask(RTSignalType signal1, ...){
     return mask;
 }
 
-void power_signal(const int value){
-
-    //TODO
-    printf("Got SIG_POWER, int val: %d\n", value);
-    g_device.state = value;
-}
-
 void open_signal(const int value){
 
     //TODO
@@ -66,7 +59,7 @@ void init_base_device(char *args[], size_t n_args){
 
     device_id id;
     int signal_fd;
-    g_device.running = true;
+    g_running = true;
     g_curr_out_stream = stdout;
     setlinebuf(stdout);
 
@@ -138,7 +131,7 @@ void info_command(const char** args, const size_t n_args){
 void del_command(const char** args, const size_t n_args){
 
     fprintf(g_curr_out_stream, "del command\n");
-    g_device.running = false;
+    g_running = false;
 }
 
 _Bool is_controlled(){
@@ -147,7 +140,68 @@ _Bool is_controlled(){
                 fileno(g_fifo_in_stream) != STDIN_FILENO;
 }
 
-void switch_power_action(int state){
+void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
+        const CommandBind extra_commands[], const size_t n_dc){
 
-    g_device.state = state;
+    LineBuffer line_buffer = {NULL, 0};
+    Command input_command;
+    RTSignal input_signal;
+
+    fd_set rfds;
+    FILE *curr_in;
+    int stdin_fd = fileno(stdin);
+
+    int fifo_fd = -1;
+    if(g_fifo_in_stream)
+        fifo_fd = fileno(g_fifo_in_stream);
+
+    int max_fd = MAX(g_signal_fd, fifo_fd);
+
+    while(g_running){
+        FD_ZERO(&rfds);
+
+        FD_SET(g_signal_fd, &rfds);
+        FD_SET(stdin_fd, &rfds);
+        if(is_controlled())
+            FD_SET(fifo_fd, &rfds);
+
+        if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
+            perror_and_exit("select");
+        else{
+
+            //SIGNAL
+            if (FD_ISSET(g_signal_fd, &rfds)) {
+
+                read_incoming_signal(g_signal_fd, &input_signal);
+
+                printf("device: got signal: %d, int val: %d\n",
+                       input_signal.type, input_signal.value);
+
+                handle_signal(&input_signal, signal_bindings, n_sb);
+
+                g_curr_out_stream = NULL;
+            }
+            else{
+
+                if (FD_ISSET(stdin_fd, &rfds)) {
+                    curr_in = stdin;
+                    g_curr_out_stream = stdout;
+                }
+
+                if(FD_ISSET(fifo_fd, &rfds)){
+                    curr_in = g_fifo_in_stream;
+                    g_curr_out_stream = g_fifo_out_stream;
+                }
+
+                //Legge un comando (una linea)
+                if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
+                    g_running = false;
+
+                if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
+                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
+                            input_command.name);
+            }
+        }
+    }
+    free(line_buffer.buffer);
 }

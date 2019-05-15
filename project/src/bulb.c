@@ -15,6 +15,7 @@
 timer_t timerid;
 struct itimerspec itval;
 
+void switch_power_action(int state);
 void clock_signal(int a);
 
 timer_t create_timer(int sec){
@@ -52,9 +53,7 @@ void stop_timer(){
 
 int main(int argc, char *argv[]){
 
-    //timerid = create_timer(1);
-
-    Registry records[] = {"time", 0, &string_to_int};
+    Registry records[] = {"time", "descrizione", 0, &string_to_int};
     Switch switches[] = {"power", &switch_power_action};
 
     SignalBind signal_bindings[] = {
@@ -65,7 +64,6 @@ int main(int argc, char *argv[]){
     DeviceBase bulb = {
             BULB, //DEVICE TYPE
             -1, //ID
-            true, //RUNNING
             0, //STATE
             (Registry*)&records,
             1, //NUM RECORDS
@@ -75,81 +73,27 @@ int main(int argc, char *argv[]){
 
     g_device = bulb;
 
-    LineBuffer line_buffer = {NULL, 0};
-    Command input_command;
-    RTSignal input_signal;
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
     
-    fd_set rfds;
-    FILE *curr_in;
-    int stdin_fd = fileno(stdin);
+    device_loop(signal_bindings, 2, NULL, 0);
 
-    int fifo_fd = -1;
-    if(g_fifo_in_stream)
-        fifo_fd = fileno(g_fifo_in_stream);
 
-    int max_fd = MAX(g_signal_fd, fifo_fd);
-
-    while(g_device.running){
-        FD_ZERO(&rfds);
-
-        FD_SET(g_signal_fd, &rfds);
-        FD_SET(stdin_fd, &rfds);
-        if(is_controlled())
-            FD_SET(fifo_fd, &rfds);
-
-        if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
-            perror_and_exit("select");
-        else{
-
-            //SIGNAL
-            if (FD_ISSET(g_signal_fd, &rfds)) {
-
-                printf("Device: arriva un signal\n");
-
-                read_incoming_signal(g_signal_fd, &input_signal);
-
-                printf("Got signal: %d, int val: %d\n",
-                       input_signal.type, input_signal.value);
-
-                handle_signal(&input_signal, signal_bindings,
-                              sizeof(signal_bindings) / sizeof(SignalBind));
-            }
-            else{
-
-                if (FD_ISSET(stdin_fd, &rfds)) {
-                    curr_in = stdin;
-                    g_curr_out_stream = stdout;
-                }
-
-                if(FD_ISSET(fifo_fd, &rfds)){
-                    curr_in = g_fifo_in_stream;
-                    g_curr_out_stream = g_fifo_out_stream;
-                }
-
-                //Legge un comando (una linea)
-                if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
-                    g_device.running = false;
-
-                if(handle_device_command(&input_command, NULL, 0) == -1)
-                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                            input_command.name);
-            }
-        }
-    }
 
     print_error("Device %d: sto terminando\n", g_device.id);
 
     /**
      * CLEANUP RISORSE
      */
-    free(line_buffer.buffer);
 
     exit(EXIT_SUCCESS);
 }
 
 void clock_signal(const int a){
     printf("%d\n",g_device.records[0].value);
+}
+
+void switch_power_action(int state){
+    g_device.state = state;
 }

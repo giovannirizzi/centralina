@@ -5,13 +5,14 @@
 #include <sys/types.h>
 #include <sys/signalfd.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <linux/limits.h>
+#include <signal.h>
 #include <time.h>
+#include <linux/limits.h>
 #include <fcntl.h>
 #include "utils.h"
+//#include "common.h"
 
 const char* device_type_to_string(DeviceType device_type){
 
@@ -241,3 +242,50 @@ int string_to_time(const char* string_time, int* time){
 
     return 0;
 }
+
+/*timer_t start_timer(timer_t* timerid, int sec){
+    struct sigevent sigev;
+
+    // Create the POSIX timer to generate signo
+    sigev.sigev_notify = SIGEV_SIGNAL;
+    sigev.sigev_signo = SIGRTMIN+SIG_CLOCK;
+    sigev.sigev_value.sival_ptr = timerid;
+
+    if (timer_create(CLOCK_REALTIME, &sigev, timerid) == 0) {
+        itval.it_value.tv_sec = sec;
+        itval.it_value.tv_nsec = (long)(sec * 1000000L);
+        itval.it_interval.tv_sec = itval.it_value.tv_sec;
+        itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+        if (timer_settime(*timerid, 0, &itval, &oitval) != 0) {
+            perror("time_settime error!");
+        }
+    } else {
+        perror("timer_create error!");
+        return -1;
+    }
+    return timerid;
+}
+
+void stop_timer(timer_t timerid){
+    itval.it_value.tv_sec = 0;
+    itval.it_value.tv_nsec = 0;
+    itval.it_interval.tv_sec = 0;
+    itval.it_interval.tv_nsec = 0;
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
+        perror("time_settime error!");
+    }
+}
+
+void restart_timer(timer_t timerid, int sec){
+    itval.it_value.tv_sec = sec;
+    itval.it_value.tv_nsec = (long)(sec * 1000000L);
+    itval.it_interval.tv_sec = itval.it_value.tv_sec;
+    itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
+        perror("time_settime error!");
+    }   
+}
+
+void delete_timer(timer_t* timerid){
+    *timerid = timer_delete(*timerid);
+}*/
