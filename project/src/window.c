@@ -54,17 +54,16 @@ int main(int argc, char *argv[]){
 
     //timerid = create_timer(1);
 
-    Registry records[] = {"time", 0, &string_to_int, "temp", 0, &string_to_int, "perc", 0, &string_to_int, "delay", 0, &string_to_int};
+    Registry records[] = {"time", 0, &string_to_int};
     Switch switches[] = {"open", &switch_open_action, "close", &switch_close_action};
 
     SignalBind signal_bindings[] = {
-            {SIG_OPEN, &switch_open_action},
-            {SIGN_CLOSE, &switch_close_action},
+            {SIG_POWER, &switch_power_action},
             {SIG_CLOCK, &clock_signal}
     };
 
-    DeviceBase fridge = {
-            FRIDGE, //DEVICE TYPE
+    DeviceBase window = {
+            WINDOW, //DEVICE TYPE
             -1, //ID
             true, //RUNNING
             0, //STATE
@@ -74,7 +73,7 @@ int main(int argc, char *argv[]){
             1 //NUM SWITCHES
     };
 
-    g_device = fridge;
+    g_device = window;
 
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
