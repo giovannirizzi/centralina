@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
     int stdin_fd = fileno(stdin);
     int whois_request_fd = fileno(g_whois_request_stream);
 
-    printf("#> ");
+    printf("#>  ");
     fflush(stdout);
 
     while(g_running){
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
                 }
 
                 if(g_running){
-                    printf("#> ");
+                    printf("#>  ");
                     fflush(stdout);
                 }
             }
@@ -241,14 +241,15 @@ int get_info(device_id device){
     int retval = read_device_response(&line_buffer);
     if(retval>0){
         //TO DO TILTING
-        /*char* substrings[10];
-        int state, type;
-        int num = divide_string(line_buffer.buffer, substrings, 10, '-');
-        string_to_int(substring[0], type);
-        string_to_int(substring[1], state);
-        printf("\tid:\t\n\t%s", line_buffer.buffer);
-        printf("\ttype:\t\n\t%s", );
-        printf("\tstate:\t\n\t%s", );*/
+        char* substrings[50]; 
+        char *device_state, *device_type;
+        int state, type, num;
+        num = divide_string(line_buffer.buffer, substrings, 10, "-");
+        string_to_int(substrings[0], &type);
+        string_to_int(substrings[1], &state);
+        printf("    id:     %s\n", line_buffer.buffer);
+        printf("    type:   %s\n", device_type_to_string(type));   
+        printf("    state:  %s\n", device_state_to_string(state, type)); 
     }
 
     if(line_buffer.buffer) free(line_buffer.buffer);
