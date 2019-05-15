@@ -401,7 +401,12 @@ void exit_shell_command(const char** args, const size_t n_args){
 void whois_command(const char** args, const size_t n_args){
 
     int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY | O_CLOEXEC);
+
     g_whois_response_stream = fdopen(whois_response_fd, "w");
+    if(g_whois_response_stream == NULL){
+        perror("whois_command: fdopen");
+        return;
+    }
 
     device_id id;
     int id_control = string_to_int(args[0], &id);
@@ -484,13 +489,21 @@ void init_centralina(){
 
 void send_command_to_device(device_id id, const char* command){
 
-    int retval = fprintf(g_devices_request_stream[id], "%s", command);
-    if(retval == -1){
-        //La pipe è stata chiusa dal device
-        if(errno == EPIPE){
-            delete_device(id, true);
+    if(g_devices_request_stream[id] != NULL){
+        int n_write;
+        n_write = fprintf(g_devices_request_stream[id], "%s", command);
+        if(command[strlen(command)-1] != '\n')
+            n_write = fprintf(g_devices_request_stream[id],"\n");
+        if(n_write == -1){
+            //La pipe è stata chiusa dal device
+            if(errno == EPIPE)
+                delete_device(id, true);
+            else
+                print_error("error send_command_to_device\n");
         }
     }
+    else
+        print_error("invalid id send_command_to_device\n");
 }
 
 int read_device_response(LineBuffer *buffer){

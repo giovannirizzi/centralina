@@ -5,7 +5,7 @@ SDIR = ./src
 BIN = ./bin
 VPATH = $(SDIR)
 
-.PHONY: clean help
+.PHONY: clean help fifo
 DEFAULT: help
 
 #Lista di tutti gli eseguibili da compilare

@@ -1,4 +1,6 @@
 #define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200809L
+#define  _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -164,10 +166,9 @@ int open_fifo(const char* path, mode_t access_mode){
         perror_and_exit("mkfifo");
     else{
         fd = open(path, access_mode);
-        if(fd == -1 && errno != ENXIO)
+        if(fd == -1)
             perror_and_exit("open_fifo");
     }
-
     return fd;
 }
 

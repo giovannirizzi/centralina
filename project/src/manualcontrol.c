@@ -171,13 +171,13 @@ pid_t whois(device_id id){
     if(whois_request_fd == -1)
         return -2;
 
+    whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_RDONLY | O_NONBLOCK);
+    FILE* whois_response_stream = fdopen(whois_response_fd, "r");
+
     FILE* whois_request_stream = fdopen(whois_request_fd, "w");
 
     fprintf(whois_request_stream, "whois %d\n", id);
     fclose(whois_request_stream);
-
-    whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_RDONLY | O_NONBLOCK);
-    FILE* whois_response_stream = fdopen(whois_response_fd, "r");
 
     FD_ZERO(&rfds);
     FD_SET(whois_response_fd, &rfds);
