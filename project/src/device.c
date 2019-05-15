@@ -15,7 +15,8 @@ const CommandBind BASE_COMMANDS[] = {{"info", &info_command},
                                      {"getconf", &getconf_command},
                                      {"setconf", &setconf_command},
                                      {"getpid", &getpid_command},
-                                     {"gettype", &gettype_command}};
+                                     {"gettype", &gettype_command},
+                                     {"switch", &switch_command}};
 
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
@@ -144,4 +145,9 @@ _Bool is_controlled(){
 
     return g_fifo_in_stream &&
                 fileno(g_fifo_in_stream) != STDIN_FILENO;
+}
+
+void switch_power_action(int state){
+
+    g_device.state = state;
 }
