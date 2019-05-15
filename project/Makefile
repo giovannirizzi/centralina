@@ -9,7 +9,7 @@ VPATH = $(SDIR)
 DEFAULT: help
 
 #Lista di tutti gli eseguibili da compilare
-LIST = fifo centralina bulb manualcontrol
+LIST = fifo centralina bulb manualcontrol window
 
 all : $(LIST)
 
@@ -33,7 +33,10 @@ $(ODIR)/centralina.o: centralina.c centralina.h device.h utils.h
 $(ODIR)/device.o: device.c device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ODIR)/bulb.o: bulb.c bulb.h device.h
+$(ODIR)/bulb.o: bulb.c device.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(ODIR)/window.o: window.c device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h device.h
@@ -56,6 +59,9 @@ bulb: $(ODIR)/bulb.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
 
 manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^
+
+window: $(ODIR)/window.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
+	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
 
 build: all
 

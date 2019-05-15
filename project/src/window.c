@@ -7,17 +7,18 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <time.h>
-#include "utils.h"
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include "utils.h"
+#include "iteration_device.h"
 
 timer_t timerid;
 struct itimerspec itval;
+struct itimerspec oitval;
+int i = 0;
 
-void clock_signal(int a);
-
-timer_t create_timer(int sec){
+timer_t start_timer(int sec){
     struct sigevent sigev;
 
     // Create the POSIX timer to generate signo
@@ -27,10 +28,10 @@ timer_t create_timer(int sec){
 
     if (timer_create(CLOCK_REALTIME, &sigev, &timerid) == 0) {
         itval.it_value.tv_sec = sec;
-        itval.it_value.tv_nsec = 0;
+        itval.it_value.tv_nsec = (long)(sec * 1000000L);
         itval.it_interval.tv_sec = itval.it_value.tv_sec;
-        itval.it_interval.tv_nsec = 0;
-        if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+        itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+        if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
             perror("time_settime error!");
         }
     } else {
@@ -45,27 +46,46 @@ void stop_timer(){
     itval.it_value.tv_nsec = 0;
     itval.it_interval.tv_sec = 0;
     itval.it_interval.tv_nsec = 0;
-    if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
         perror("time_settime error!");
     }
 }
 
+void restart_timer(int sec){
+    itval.it_value.tv_sec = sec;
+    itval.it_value.tv_nsec = (long)(sec * 1000000L);
+    itval.it_interval.tv_sec = itval.it_value.tv_sec;
+    itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
+        perror("time_settime error!");
+    }   
+}
+
+void delete_timer(){
+    timerid = timer_delete(&timerid);
+}
+
+void switch_open_action(int state);
+void switch_close_action(int state);
+void clock_signal(int a);
+
 int main(int argc, char *argv[]){
 
-    //timerid = create_timer(1);
-
-    Registry records[] = {"time", 0, &string_to_int};
-    Switch switches[] = {"open", &switch_open_action, "close", &switch_close_action};
+    Registry records[] = {"time", "descrizione", 0, &string_to_int};
+    Switch switches[] = {
+            {"open", &switch_open_action},
+            {"close", &switch_close_action}
+    };
 
     SignalBind signal_bindings[] = {
-            {SIG_POWER, &switch_power_action},
+            {SIG_OPEN, &switch_open_action},
+            {SIG_CLOSE, &switch_close_action},
             {SIG_CLOCK, &clock_signal}
     };
 
     DeviceBase window = {
             WINDOW, //DEVICE TYPE
             -1, //ID
-            true, //RUNNING
             0, //STATE
             (Registry*)&records,
             1, //NUM RECORDS
@@ -75,87 +95,46 @@ int main(int argc, char *argv[]){
 
     g_device = window;
 
-    LineBuffer line_buffer = {NULL, 0};
-    Command input_command;
-    RTSignal input_signal;
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
     
-    fd_set rfds;
-    FILE *curr_in;
-    int stdin_fd = fileno(stdin);
-
-    int fifo_fd = -1;
-    if(g_fifo_in_stream)
-        fifo_fd = fileno(g_fifo_in_stream);
-
-    int max_fd = MAX(g_signal_fd, fifo_fd);
-
-    while(g_device.running){
-        FD_ZERO(&rfds);
-
-        FD_SET(g_signal_fd, &rfds);
-        FD_SET(stdin_fd, &rfds);
-        if(is_controlled())
-            FD_SET(fifo_fd, &rfds);
-
-        if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
-            perror_and_exit("select");
-        else{
-
-            if (FD_ISSET(stdin_fd, &rfds)) {
-                curr_in = stdin;
-                g_curr_out_stream = stdout;
-            }
-
-            if(FD_ISSET(fifo_fd, &rfds)){
-                curr_in = g_fifo_in_stream;
-                g_curr_out_stream = g_fifo_out_stream;
-            }
-
-            //Legge un comando (una linea)
-            if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
-                g_device.running = false;
-
-            if(handle_device_command(&input_command, NULL, 0) == -1)
-                fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                        input_command.name);
-
-            //SIGNAL
-            if (FD_ISSET(g_signal_fd, &rfds)) {
-            
-                read_incoming_signal(g_signal_fd, &input_signal);
-
-                printf("Got signal: %d, int val: %d\n",
-                        input_signal.type, input_signal.value);
-
-                handle_signal(&input_signal, signal_bindings,
-                              sizeof(signal_bindings) / sizeof(SignalBind));
-            }
-        }
-    }
+    device_loop(signal_bindings, 2, NULL, 0);
 
     print_error("Device %d: sto terminando\n", g_device.id);
 
     /**
      * CLEANUP RISORSE
      */
-    free(line_buffer.buffer);
 
     exit(EXIT_SUCCESS);
 }
 
 void clock_signal(const int a){
-    printf("%d\n",g_device.records[0].value);
+    g_device.records[0].value++;
 }
 
 void switch_open_action(int state){
-
-    g_device.state = state;
+    if(g_curr_out_stream != NULL){
+        if((state == g_device.state) || (state == 0))
+            fprintf(g_curr_out_stream,"Already set\n");
+        else{
+            //timerid = start_timer(1);
+            g_device.state = state;
+            fprintf(g_curr_out_stream,"Done\n");
+        }
+    }
 }
 
 void switch_close_action(int state){
-
-    g_device.state = state;
+    if(g_curr_out_stream != NULL){
+        if((state == g_device.state) || (state == 0))
+            fprintf(g_curr_out_stream,"Already set\n");
+        else{
+            /*stop_timer();
+            g_device.records[0].value = 0;*/
+            g_device.state = state;
+            fprintf(g_curr_out_stream,"Done\n");
+        }
+    }
 }
