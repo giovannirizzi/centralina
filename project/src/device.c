@@ -10,7 +10,7 @@
 #include "device.h"
 #include "utils.h"
 
-const CommandBind BASE_COMMANDS[] = {{"info", &info_command},
+const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"del", &del_command},
                                      {"getconf", &getconf_command},
                                      {"setconf", &setconf_command},
@@ -81,7 +81,6 @@ void init_base_device(char *args[], size_t n_args){
         g_fifo_out_stream = NULL;
         g_fifo_in_stream = NULL;
         g_device.id = -1;
-        print_error("Debug mode, id: %d, signal_fd: %d\n", g_device.id, g_signal_fd);
     }
 
     //se il signal_fd è nell'argomento lo salvo
@@ -95,6 +94,8 @@ void init_base_device(char *args[], size_t n_args){
         g_signal_fd = signalfd(-1, &mask, 0);
         if (g_signal_fd == -1)
             perror_and_exit("init_base_device: signalfd");
+
+        print_error("Debug mode, id: %d, signal_fd: %d\n", g_device.id, g_signal_fd);
     }
 }
 
@@ -112,11 +113,11 @@ void gettype_command(const char** args, const size_t n_args){
     print_error("Device %d: recived gettype command\n", g_device.id);
     fprintf(g_curr_out_stream, "%s\n", device_type_to_string(g_device.type));
 }
-void info_command(const char** args, const size_t n_args){
+void getinfo_command(const char **args, size_t n_args){
 
     //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
     //send_command(g_curr_out_stream, "%d", getpid());
-    print_error("Device %d: recived info command\n", g_device.id);
+    print_error("Device %d: recived getinfo command\n", g_device.id);
     char info_string[200], tmp[50];
     sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
     int i;

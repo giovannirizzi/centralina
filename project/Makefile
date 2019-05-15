@@ -58,7 +58,7 @@ bulb: $(ODIR)/bulb.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
 
 manualcontrol : $(ODIR)/manualcontrol.o $(ODIR)/utils.o
-	${CC} ${CFLAGS} -o $(BIN)/$@ $^
+	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
 
 window: $(ODIR)/window.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt

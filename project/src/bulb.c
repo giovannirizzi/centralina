@@ -1,14 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/signalfd.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include "utils.h"
-#include <sys/stat.h>
-#include <sys/types.h>
 #include "utils.h"
 #include "iteration_device.h"
 
@@ -32,28 +23,22 @@ int main(int argc, char *argv[]){
             -1, //ID
             0, //STATE
             (Registry*)&records,
-            1, //NUM RECORDS
+            sizeof(records) / sizeof(Registry), //NUM RECORDS
             (Switch*)&switches,
-            1 //NUM SWITCHES
+            sizeof(switches) / sizeof(Switch) //NUM SWITCHES
     };
 
     g_device = bulb;
-
     create_timer(&timer);
 
-    //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
     
-    device_loop(signal_bindings, 2, NULL, 0);
+    device_loop(signal_bindings, sizeof(signal_bindings)/ sizeof(SignalBind),
+            NULL, 0);
 
 
     print_error("Device %d: sto terminando\n", g_device.id);
-
     delete_timer(&timer);
-
-    /**
-     * CLEANUP RISORSE
-     */
 
     exit(EXIT_SUCCESS);
 }

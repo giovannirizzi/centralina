@@ -73,11 +73,11 @@ void switch_command(const char** args, const size_t n_args){
 
     int i;
 
-    for(i=0; i<g_device.num_switches; i++){
-
-        if(strcmp(g_device.switches[i].label, args[0]) == 0)
+    for(i=0; i<g_device.num_switches; i++)
+        if(strcmp(g_device.switches[i].label, args[0]) == 0) {
             g_device.switches[i].action(device_state);
-        else
-            fprintf(g_curr_out_stream, "invalid siwtch\n");
-    }
+            return;
+        }
+
+    fprintf(g_curr_out_stream, "invalid switch\n");
 }

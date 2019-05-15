@@ -66,7 +66,7 @@ sigset_t set_signal_mask(RTSignalType signal1, ...);
 /**
  * Function to implement
  */
-void info_command(const char** args, size_t n_args);
+void getinfo_command(const char **args, size_t n_args);
 void del_command(const char** args, size_t n_args);
 void setconf_command(const char** args, size_t n_args);
 void getconf_command(const char** args, size_t n_args);
