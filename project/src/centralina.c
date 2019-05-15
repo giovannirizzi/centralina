@@ -244,7 +244,7 @@ int get_info(device_id device){
         char* substrings[50]; 
         char *device_state, *device_type;
         int state, type, num;
-        num = divide_string(line_buffer.buffer, substrings, 10, "-");
+        num = divide_string(line_buffer.buffer, substrings, 10, "|");
         string_to_int(substrings[0], &type);
         string_to_int(substrings[1], &state);
         printf("    id:     %s\n", line_buffer.buffer);

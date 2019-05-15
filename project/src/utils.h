@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <errno.h>
+//#include <time.h>
 #include "common.h"
 #include "device.h"
 
@@ -15,7 +16,6 @@
 
 #define print_error_and_exit(args...) \
             do { fprintf(stderr, ##args); exit(EXIT_FAILURE); } while (0)
-
 
 /**
  * TODO???
@@ -128,5 +128,12 @@ int time_to_string(int time, char* string_time);
 
 int string_to_time(const char* string_time, int *time);
 
+/*timer_t start_timer(timer_t* timerid, int sec);
+
+void stop_timer(timer_t timerid);
+
+void restart_timer(timer_t timerid, int sec);
+
+void delete_timer(timer_t* timerid);*/
 
 #endif // UTILS_H
