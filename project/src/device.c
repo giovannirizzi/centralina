@@ -174,8 +174,8 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
 
                 read_incoming_signal(g_signal_fd, &input_signal);
 
-                printf("device: got signal: %d, int val: %d\n",
-                       input_signal.type, input_signal.value);
+                //printf("device: got signal: %d, int val: %d\n",
+                       //input_signal.type, input_signal.value);
 
                 handle_signal(&input_signal, signal_bindings, n_sb);
 
