@@ -23,14 +23,6 @@
             do { fprintf(stderr, ##args); exit(EXIT_FAILURE); } while (0)
 
 /**
- * TODO???
- * @param out
- * @param format
- * @param ...
- */
-void send_command(FILE* out, char* format, ...);
-
-/**
  * TODO
  * @param path
  * @param mode

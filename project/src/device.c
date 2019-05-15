@@ -18,6 +18,8 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"gettype", &gettype_command},
                                      {"switch", &switch_command}};
 
+FILE* g_curr_out_stream;
+
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
     va_list ap;
@@ -39,13 +41,6 @@ sigset_t set_signal_mask(RTSignalType signal1, ...){
         perror_and_exit("sigprocmask");
 
     return mask;
-}
-
-void open_signal(const int value){
-
-    //TODO
-    printf("Got SIG_OPEN, int val: %d\n", value);
-    g_device.state = value;
 }
 
 void init_base_device(char *args[], size_t n_args){
@@ -101,23 +96,20 @@ void init_base_device(char *args[], size_t n_args){
 
 void getpid_command(const char** args, const size_t n_args){
 
-    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
-    //send_command(g_curr_out_stream, "%d", getpid());
-    print_error("Device %d: recived getpid command\n", g_device.id);
-    fprintf(g_curr_out_stream, "%d\n", getpid());
+    print_error("Device %d: received getpid command\n", g_device.id);
+
+    send_response("%d", getpid());
 }
 void gettype_command(const char** args, const size_t n_args){
 
-    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
-    //send_command(g_curr_out_stream, "%d", getpid());
-    print_error("Device %d: recived gettype command\n", g_device.id);
-    fprintf(g_curr_out_stream, "%s\n", device_type_to_string(g_device.type));
+    print_error("Device %d: received gettype command\n", g_device.id);
+
+    send_response("%s", device_type_to_string(g_device.type));
 }
 void getinfo_command(const char **args, size_t n_args){
 
-    //Se non scrivi \n alla fino lo mette, BISOGNA SCRIVERLO SEMPREEE
-    //send_command(g_curr_out_stream, "%d", getpid());
-    print_error("Device %d: recived getinfo command\n", g_device.id);
+    print_error("Device %d: received getinfo command\n", g_device.id);
+
     char info_string[200], tmp[50];
     sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
     int i;
@@ -126,7 +118,7 @@ void getinfo_command(const char **args, size_t n_args){
         strcat(info_string, tmp);
     }
 
-    fprintf(g_curr_out_stream, "%s\n", info_string);
+    send_response("%s", info_string);
 }
 
 void del_command(const char** args, const size_t n_args){
@@ -175,9 +167,6 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
 
                 read_incoming_signal(g_signal_fd, &input_signal);
 
-                //printf("device: got signal: %d, int val: %d\n",
-                //       input_signal.type, input_signal.value);
-
                 handle_signal(&input_signal, signal_bindings, n_sb);
 
                 g_curr_out_stream = NULL;
@@ -199,10 +188,34 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
                     g_running = false;
 
                 if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
-                    fprintf(g_curr_out_stream, "device: unknown command %s\n",
-                            input_command.name);
+                    send_response("UNKNOWN COMMAND");
             }
         }
     }
     free(line_buffer.buffer);
+}
+
+void clean_base_device(){
+
+    if(g_fifo_in_stream) fclose(g_fifo_in_stream);
+    if(g_fifo_out_stream ) fclose(g_fifo_out_stream);
+
+    if(close(g_signal_fd) != 0);
+        perror("clean_base_device: close singal fd");
+
+    print_error("Device %d: sto terminando\n", g_device.id);
+}
+
+int send_response(char* response, ...){
+
+    int n_write = 0;
+    if(g_curr_out_stream != NULL){
+        va_list args;
+        va_start(args,response);
+        n_write = vfprintf(g_curr_out_stream, response, args);
+        if(response[strlen(response)-1] != '\n')
+            n_write = fprintf(g_curr_out_stream,"\n");
+        va_end(args);
+    }
+    return n_write;
 }

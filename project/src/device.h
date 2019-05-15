@@ -48,19 +48,19 @@ typedef struct{
     Switch *switches;
     size_t num_switches;
 
-} DeviceBase;
+} DeviceData;
 
-
+const CommandBind BASE_COMMANDS[7];
 
 /**
- * Setta la signal mask del processo, con i segnali real-time
- * passati come parametro
- * @param signal1 segnale real-time da mascherare
- * @param ... altri segnali
- * @return la mask dei segnali passati come argomento
+ * Global vars for all devices
  */
-sigset_t set_signal_mask(RTSignalType signal1, ...);
+DeviceData g_device;
 
+FILE* g_fifo_in_stream;
+FILE* g_fifo_out_stream;
+_Bool g_running;
+int g_signal_fd;
 
 
 /**
@@ -78,23 +78,18 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 void init_base_device(char *args[], size_t n_args);
 _Bool is_controlled();
 void device_loop(const SignalBind signal_bindings[], size_t n_sb, const CommandBind extra_commands[],
-        size_t n_dc);
-
-const CommandBind BASE_COMMANDS[7];
+                 size_t n_dc);
+void clean_base_device();
+int send_response(char* response, ...);
 
 /**
- * Global vars for all devices
+ * Setta la signal mask del processo, con i segnali real-time
+ * passati come parametro
+ * @param signal1 segnale real-time da mascherare
+ * @param ... altri segnali
+ * @return la mask dei segnali passati come argomento
  */
-
-DeviceBase g_device;
-
-FILE* g_curr_out_stream;
-FILE* g_fifo_in_stream;
-FILE* g_fifo_out_stream;
-
-_Bool g_running;
-
-int g_signal_fd;
+sigset_t set_signal_mask(RTSignalType signal1, ...);
 
 
 

@@ -55,29 +55,27 @@ void getconf_command(const char** args, const size_t n_args){
         strcat(info_string, tmp);
     }
 
-    fprintf(g_curr_out_stream, "%s\n", info_string);
+    send_response("%s", info_string);
 }
 
 void switch_command(const char** args, const size_t n_args){
 
     if(n_args != 2){
-        fprintf(g_curr_out_stream, "invalid args\n");
+        send_response("INVALID ARGS");
         return;
     }
 
     int device_state;
     if(string_to_device_state(args[1], &device_state)==-1){
-        fprintf(g_curr_out_stream, "invalid state\n");
+        send_response("INVALID SWITCH STATE");
         return;
     }
 
     int i;
-
     for(i=0; i<g_device.num_switches; i++)
         if(strcmp(g_device.switches[i].label, args[0]) == 0) {
             g_device.switches[i].action(device_state);
             return;
         }
-
-    fprintf(g_curr_out_stream, "invalid switch\n");
+    send_response("INVALID SWITCH NAME");
 }

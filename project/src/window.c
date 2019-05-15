@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
             {SIG_TICK, &tick_signal}
     };
 
-    DeviceBase window = {
+    DeviceData window = {
             WINDOW, //DEVICE TYPE
             -1, //ID
             0, //STATE
@@ -59,26 +59,24 @@ void tick_signal(int a){
 }
 
 void switch_open_action(int state){
-    if(g_curr_out_stream != NULL){
-        if((state == g_device.state) || (state == 0))
-            fprintf(g_curr_out_stream,"Already set\n");
-        else{
-            set_timer_tick(timer, true);
-            g_device.state = state;
-            fprintf(g_curr_out_stream,"Done\n");
-        }
+
+    if((state == g_device.state) || (state == 0))
+        send_response("ALREADY SET");
+    else{
+        set_timer_tick(timer, true);
+        g_device.state = state;
+        send_response("DONE");
     }
 }
 
 void switch_close_action(int state){
-    if(g_curr_out_stream != NULL){
-        if((state == !g_device.state) || (state == 0))
-            fprintf(g_curr_out_stream,"Already set\n");
-        else{
-            set_timer_tick(timer, false);
-            g_device.records[0].value = 0;
-            g_device.state = state;
-            fprintf(g_curr_out_stream,"Done\n");
-        }
+
+    if((state == !g_device.state) || (state == 0))
+        send_response("ALREADY SET");
+    else{
+        set_timer_tick(timer, false);
+        g_device.records[0].value = 0;
+        g_device.state = state;
+        send_response("DONE");
     }
 }

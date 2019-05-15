@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
             {SIG_TICK, &tick_signal}
     };
 
-    DeviceBase bulb = {
+    DeviceData bulb = {
             BULB, //DEVICE TYPE
             -1, //ID
             0, //STATE
@@ -37,8 +37,8 @@ int main(int argc, char *argv[]){
             NULL, 0);
 
 
-    print_error("Device %d: sto terminando\n", g_device.id);
     delete_timer(&timer);
+    clean_base_device();
 
     exit(EXIT_SUCCESS);
 }

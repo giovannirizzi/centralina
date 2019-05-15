@@ -186,16 +186,6 @@ void read_incoming_signal(int sfd, RTSignal *signal){
     signal->value = fdsi.ssi_int;
 }
 
-void send_command(FILE* out, char* format, ...){
-
-    va_list args;
-    va_start(args,format);
-    vfprintf(out, format, args);
-    if(format[strlen(format)-1] != '\n')
-        fprintf(out,"\n");
-    va_end(args);
-}
-
 char* get_absolute_executable_dir(){
 
     static char path[PATH_MAX] = {0};
@@ -259,20 +249,18 @@ int create_timer(timer_t *timer){
 
 int set_timer_tick(timer_t timer, _Bool tick){
 
+    struct itimerspec value = {{0,0},{0,0}};
+
     if(tick){
-        struct itimerspec new_value = {{1,1000000L},{0,1000000L}};
-        if (timer_settime(timer, 0, &new_value, NULL) != 0) {
-            perror("time_settime error!");
-            return -1;
-        }
+        value.it_value.tv_sec = 1;
+        value.it_interval.tv_sec = 1;
     }
-    else{
-        struct itimerspec new_value = {{0,0},{0,0}};
-        if (timer_settime(timer, 0, &new_value, NULL) != 0) {
-            perror("stop_timer");
-            return -1;
-        }
+
+    if (timer_settime(timer, 0, &value, NULL) != 0) {
+        perror("time_settime error!");
+        return -1;
     }
+
     return 0;
 }
 
