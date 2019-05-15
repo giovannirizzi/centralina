@@ -53,21 +53,31 @@ void stop_timer(){
 int main(int argc, char *argv[]){
 
     //timerid = create_timer(1);
-    g_device.type = BULB;
-    SignalBind signal_bindings[] = {{SIG_POWER, &power_signal}};
-                                    //{SIG_CLOCK, &clock_signal}};
-    Registry records[] = {"time", 0, &string_to_int};
-    Switch switches[] = {"power", NULL};
 
-    g_device.switches = (Switch*)&switches;
-    g_device.num_switches = 1;
-    g_device.records = (Registry*)&records;
-    g_device.num_records = 1;
+    Registry records[] = {"time", 0, &string_to_int};
+    Switch switches[] = {"power", &switch_power_action};
+
+    SignalBind signal_bindings[] = {
+            {SIG_POWER, &switch_power_action},
+            {SIG_CLOCK, &clock_signal}
+    };
+
+    DeviceBase bulb = {
+            BULB, //DEVICE TYPE
+            -1, //ID
+            true, //RUNNING
+            0, //STATE
+            (Registry*)&records,
+            1, //NUM RECORDS
+            (Switch*)&switches,
+            1 //NUM SWITCHES
+    };
+
+    g_device = bulb;
 
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
     RTSignal input_signal;
-    g_device.type = BULB;
 
     //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);

@@ -97,6 +97,12 @@ void add_command(const char** args, const size_t n_args){
      */
 }
 
+void switch_command(const char** args, const size_t n_args){
+
+
+
+}
+
 int add_child(ChildrenDevices* c, ChildDevice d){
     if(c->size == MAX_CHILDREN)
         return -1;
