@@ -14,11 +14,10 @@
 
 timer_t timerid;
 struct itimerspec itval;
+struct itimerspec oitval;
+int i = 0;
 
-void switch_power_action(int state);
-void clock_signal(int a);
-
-timer_t create_timer(int sec){
+timer_t start_timer(int sec){
     struct sigevent sigev;
 
     // Create the POSIX timer to generate signo
@@ -28,10 +27,10 @@ timer_t create_timer(int sec){
 
     if (timer_create(CLOCK_REALTIME, &sigev, &timerid) == 0) {
         itval.it_value.tv_sec = sec;
-        itval.it_value.tv_nsec = 0;
+        itval.it_value.tv_nsec = (long)(sec * 1000000L);
         itval.it_interval.tv_sec = itval.it_value.tv_sec;
-        itval.it_interval.tv_nsec = 0;
-        if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+        itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+        if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
             perror("time_settime error!");
         }
     } else {
@@ -46,10 +45,27 @@ void stop_timer(){
     itval.it_value.tv_nsec = 0;
     itval.it_interval.tv_sec = 0;
     itval.it_interval.tv_nsec = 0;
-    if (timer_settime(timerid, 0, &itval, NULL) != 0) {
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
         perror("time_settime error!");
     }
 }
+
+void restart_timer(int sec){
+    itval.it_value.tv_sec = sec;
+    itval.it_value.tv_nsec = (long)(sec * 1000000L);
+    itval.it_interval.tv_sec = itval.it_value.tv_sec;
+    itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
+    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
+        perror("time_settime error!");
+    }   
+}
+
+void delete_timer(){
+    timerid = timer_delete(&timerid);
+}
+
+void switch_power_action(int state);
+void clock_signal(int a);
 
 int main(int argc, char *argv[]){
 
@@ -91,9 +107,14 @@ int main(int argc, char *argv[]){
 }
 
 void clock_signal(const int a){
-    printf("%d\n",g_device.records[0].value);
+    g_device.records[0].value++;
 }
 
 void switch_power_action(int state){
+    if(state==0){
+        stop_timer();
+        g_device.records[0].value = 0;
+    } else
+        timerid = start_timer(1);
     g_device.state = state;
 }
