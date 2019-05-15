@@ -2,7 +2,6 @@
 #define UTILS_H
 
 #include <errno.h>
-//#include <time.h>
 #include "common.h"
 #include "device.h"
 
@@ -128,12 +127,10 @@ int time_to_string(int time, char* string_time);
 
 int string_to_time(const char* string_time, int *time);
 
-/*timer_t start_timer(timer_t* timerid, int sec);
+int create_timer(timer_t *timer);
 
-void stop_timer(timer_t timerid);
+int set_timer_tick(timer_t timer, _Bool tick);
 
-void restart_timer(timer_t timerid, int sec);
-
-void delete_timer(timer_t* timerid);*/
+int delete_timer(timer_t timer);
 
 #endif // UTILS_H

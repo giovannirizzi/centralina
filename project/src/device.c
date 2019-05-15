@@ -91,7 +91,7 @@ void init_base_device(char *args[], size_t n_args){
         //creo un nuova signal_fd
         sigset_t mask;
         mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
-                               SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_CLOCK);
+                               SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
         g_signal_fd = signalfd(-1, &mask, 0);
         if (g_signal_fd == -1)
             perror_and_exit("init_base_device: signalfd");

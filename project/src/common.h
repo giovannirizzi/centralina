@@ -30,7 +30,7 @@ typedef enum{
     SIG_DELAY,
     SIG_PERC,
     SIG_TEMP,
-    SIG_CLOCK
+    SIG_TICK
 } RTSignalType;
 
 typedef int (*string_to_int_func_ptr)(const char* label, int* n);

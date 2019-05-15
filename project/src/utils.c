@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,11 +8,10 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <signal.h>
-#include <time.h>
 #include <linux/limits.h>
 #include <fcntl.h>
 #include "utils.h"
-//#include "common.h"
+#include <time.h>
 
 const char* device_type_to_string(DeviceType device_type){
 
@@ -243,49 +242,45 @@ int string_to_time(const char* string_time, int* time){
     return 0;
 }
 
-/*timer_t start_timer(timer_t* timerid, int sec){
+
+int create_timer(timer_t *timer){
+
     struct sigevent sigev;
-
-    // Create the POSIX timer to generate signo
     sigev.sigev_notify = SIGEV_SIGNAL;
-    sigev.sigev_signo = SIGRTMIN+SIG_CLOCK;
-    sigev.sigev_value.sival_ptr = timerid;
+    sigev.sigev_signo = SIGRTMIN+SIG_TICK;
+    sigev.sigev_value.sival_ptr = timer;
 
-    if (timer_create(CLOCK_REALTIME, &sigev, timerid) == 0) {
-        itval.it_value.tv_sec = sec;
-        itval.it_value.tv_nsec = (long)(sec * 1000000L);
-        itval.it_interval.tv_sec = itval.it_value.tv_sec;
-        itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
-        if (timer_settime(*timerid, 0, &itval, &oitval) != 0) {
-            perror("time_settime error!");
-        }
-    } else {
-        perror("timer_create error!");
+    if (timer_create(CLOCK_MONOTONIC, &sigev, timer) != 0){
+        perror("error timer_create");
         return -1;
     }
-    return timerid;
+    return 0;
 }
 
-void stop_timer(timer_t timerid){
-    itval.it_value.tv_sec = 0;
-    itval.it_value.tv_nsec = 0;
-    itval.it_interval.tv_sec = 0;
-    itval.it_interval.tv_nsec = 0;
-    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
-        perror("time_settime error!");
+int set_timer_tick(timer_t timer, _Bool tick){
+
+    if(tick){
+        struct itimerspec new_value = {{1,1000000L},{0,1000000L}};
+        if (timer_settime(timer, 0, &new_value, NULL) != 0) {
+            perror("time_settime error!");
+            return -1;
+        }
     }
+    else{
+        struct itimerspec new_value = {{0,0},{0,0}};
+        if (timer_settime(timer, 0, &new_value, NULL) != 0) {
+            perror("stop_timer");
+            return -1;
+        }
+    }
+    return 0;
 }
 
-void restart_timer(timer_t timerid, int sec){
-    itval.it_value.tv_sec = sec;
-    itval.it_value.tv_nsec = (long)(sec * 1000000L);
-    itval.it_interval.tv_sec = itval.it_value.tv_sec;
-    itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
-    if (timer_settime(timerid, 0, &itval, &oitval) != 0) {
+int delete_timer(timer_t timer){
+
+    if(timer_delete(timer) != 0){
         perror("time_settime error!");
-    }   
+        return -1;
+    }
+    return 0;
 }
-
-void delete_timer(timer_t* timerid){
-    *timerid = timer_delete(*timerid);
-}*/
