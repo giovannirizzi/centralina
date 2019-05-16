@@ -18,10 +18,20 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
     return handle_command(c, extra_commands, n);
 }
 
-/*void info_command(const char** args, const size_t n_args){
+void getinfo_command(const char **args, size_t n_args){
 
+    print_error("Device %d: received getinfo command\n", g_device.id);
 
-}*/
+    char info_string[200], tmp[50];
+    sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
+    int i;
+    for(i=0; i<g_device.num_records; i++){
+        sprintf(tmp, "|%s=%d", g_device.records[i].label, g_device.records[i].value);
+        strcat(info_string, tmp);
+    }
+
+    send_response("%s", info_string);
+}
 
 void setconf_command(const char** args, const size_t n_args){
 

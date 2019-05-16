@@ -13,10 +13,31 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
     return handle_command(c, extra_commands, n);
 }
 
-/*void info_command(const char** args, const size_t n_args){
 
-    fprintf(g_curr_out_stream, "info command\n");
-}*/
+void getinfo_command(const char **args, size_t n_args){
+
+    print_error("Device %d: received getinfo command\n", g_device.id);
+
+    char info_string[300];
+    char tmp[100];
+    int i;
+
+    const char* state_str = device_state_to_string(g_device.state, g_device.type);
+
+    sprintf(info_string, "id=%d|type=%s|state=%s|", g_device.id,
+            device_type_to_string(g_device.type), state_str);
+
+    for(i=0; i<g_device.num_records; i++){
+        if(i==0)
+            sprintf(tmp, "%s=%s", g_device.records[i].description, "valore");
+        else
+            sprintf(tmp, "|%s=%s", g_device.records[i].description, "valore");
+
+        strcat(info_string, tmp);
+    }
+
+    send_response("%s", info_string);
+}
 
 void setconf_command(const char** args, const size_t n_args){
 
@@ -25,19 +46,19 @@ void setconf_command(const char** args, const size_t n_args){
     char *records[1];
     int value;
 
-    divide_string((char*)args[0], records, 1, "|");
-    string_to_int(args[0], &value);
-    g_device.state = value;
-
-    set_records_from_string(records[0]);
+    int num = divide_string((char*)args[0], records, 1, "|");
+    if(num == 1){
+        string_to_int(args[0], &value);
+        g_device.state = value;
+        set_records_from_string(records[0]);
+    }
 }
 
 void getconf_command(const char** args, const size_t n_args){
 
     print_error("Device %d: received getconf command\n", g_device.id);
 
-    char conf_str[300], records[200];
-    memset(conf_str, 0, sizeof(conf_str) / sizeof(char));
+    char conf_str[200], records[180];
     memset(records, 0, sizeof(conf_str) / sizeof(char));
 
     sprintf(conf_str, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
