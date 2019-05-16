@@ -107,20 +107,6 @@ void gettype_command(const char** args, const size_t n_args){
 
     send_response("%s", device_type_to_string(g_device.type));
 }
-void getinfo_command(const char **args, size_t n_args){
-
-    print_error("Device %d: received getinfo command\n", g_device.id);
-
-    char info_string[200], tmp[50];
-    sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
-    int i;
-    for(i=0; i<g_device.num_records; i++){
-        sprintf(tmp, "|%s=%d", g_device.records[i].label, g_device.records[i].value);
-        strcat(info_string, tmp);
-    }
-
-    send_response("%s", info_string);
-}
 
 void del_command(const char** args, const size_t n_args){
 
@@ -224,14 +210,17 @@ int send_response(char* response, ...){
 int get_records_string(char* buffer){
 
     int i;
+    _Bool first = true;
     char tmp[50];
     memset(tmp, 0, sizeof(tmp) / sizeof(char));
     for(i=0; i<g_device.num_records; i++){
-        if(g_device.records->is_settable){
-            if(i==0)
-                sprintf(tmp, "%s=%d", g_device.records->label, g_device.records->value);
+        if(g_device.records[i].is_settable){
+            if(first){
+                sprintf(tmp, "%s=%d", g_device.records[i].label, g_device.records[i].value);
+                first = false;
+            }
             else
-                sprintf(tmp, "&%s=%d", g_device.records->label, g_device.records->value);
+                sprintf(tmp, "&%s=%d", g_device.records[i].label, g_device.records[i].value);
             strcat(buffer, tmp);
         }
     }
