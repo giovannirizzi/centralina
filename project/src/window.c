@@ -19,7 +19,7 @@ char str[80];
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"time", "descrizione", 0, &string_to_int, false},
+            {"time", "usage time", 0, &string_to_int, false},
             {"end", "descrizione", 0, &string_to_int, true}//va cancellato
     };
 
