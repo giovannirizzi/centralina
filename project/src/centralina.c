@@ -237,19 +237,19 @@ int get_info(device_id device){
         return -1;
 
     LineBuffer line_buffer = {NULL, 0};
-    send_command_to_device(device, "info\n");
+    send_command_to_device(device, "getinfo");
     int retval = read_device_response(&line_buffer);
     if(retval>0){
-        //TO DO TILTING
-        char* substrings[50]; 
-        char *device_state, *device_type;
-        int state, type, num;
-        num = divide_string(line_buffer.buffer, substrings, 10, "|");
-        string_to_int(substrings[0], &type);
-        string_to_int(substrings[1], &state);
-        printf("    id:     %s\n", line_buffer.buffer);
-        printf("    type:   %s\n", device_type_to_string(type));   
-        printf("    state:  %s\n", device_state_to_string(state, type)); 
+        //id=1|type=bulb|state=on|time since bulb on=10|temperature of gays=20
+        char* pipe_str[10], *substrings[1];
+        int i, num_pipe, num_sub;
+        num_pipe=divide_string(line_buffer.buffer, pipe_str, 10, "|");
+        num_sub=divide_string(line_buffer.buffer, substrings, 1, "=");
+        printf("    %s:\t%s\n", line_buffer.buffer, substrings[0]); 
+        for(i=0; i<num_pipe; i++){
+            divide_string(pipe_str[i], substrings, 1, "=");
+            printf("    %s:\t%s\n", pipe_str[i], substrings[0]); 
+        } 
     }
 
     if(line_buffer.buffer) free(line_buffer.buffer);
