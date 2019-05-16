@@ -22,6 +22,7 @@ typedef struct{
     char description[MAX_REGISTRY_DESC_LENGTH];
     int value;
     string_to_int_func_ptr convert_value;
+    _Bool is_settable;
 
 } Registry;
 
@@ -81,6 +82,8 @@ void device_loop(const SignalBind signal_bindings[], size_t n_sb, const CommandB
                  size_t n_dc);
 void clean_base_device();
 int send_response(char* response, ...);
+int get_records_string(char* buffer);
+int set_records_from_string(char *records);
 
 /**
  * Setta la signal mask del processo, con i segnali real-time

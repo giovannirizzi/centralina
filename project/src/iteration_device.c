@@ -19,43 +19,34 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 }*/
 
 void setconf_command(const char** args, const size_t n_args){
-    char* records[1], *registry[10], *value_str[1];
-    int i, nRegistry, value;
-    divide_string((char*)*args, records, 1, "$");
-    sscanf(args[0], "%d|%d|%d", &g_device.id, &g_device.type, &g_device.state);
-    nRegistry = divide_string(records[0], registry, 10, "&");
 
-    divide_string(records[0], value_str, 1, "=");
-    string_to_int(value_str[0], &value);
-    for(i=0; i<g_device.num_records; i++)
-        if(strcmp(g_device.records[i].label, records[0])==0) 
-            g_device.records[i].value = value;
+    print_error("Device %d: received setconf command\n", g_device.id);
 
-    for(i=0; i<nRegistry; i++){
-        divide_string(registry[i], value_str, 1, "=");
-        string_to_int(value_str[0], &value);
-        for(i=0; i<g_device.num_records; i++)
-            if(strcmp(g_device.records[i].label, registry[i])==0) 
-                g_device.records[i].value = value; 
-    }    
+    char *records[1];
+    int value;
 
+    divide_string((char*)args[0], records, 1, "|");
+    string_to_int(args[0], &value);
+    g_device.state = value;
+
+    set_records_from_string(records[0]);
 }
 
 void getconf_command(const char** args, const size_t n_args){
-    print_error("Device %d: received getconf command\n", g_device.id);
-    char info_string[200], tmp[50];
-    sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
-    int i;
-    for(i=0; i<g_device.num_records; i++){
-        if(i==0)
-            sprintf(tmp, "$%s=%d", g_device.records[i].label, g_device.records[i].value);
-        else
-            sprintf(tmp, "&%s=%d", g_device.records[i].label, g_device.records[i].value);
-        
-        strcat(info_string, tmp);
-    }
 
-    send_response("%s", info_string);
+    print_error("Device %d: received getconf command\n", g_device.id);
+
+    char conf_str[300], records[200];
+    memset(conf_str, 0, sizeof(conf_str) / sizeof(char));
+    memset(records, 0, sizeof(conf_str) / sizeof(char));
+
+    sprintf(conf_str, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
+
+    int num = get_records_string(records);
+    if(num > 0)
+        strcat(conf_str, records);
+
+    send_response("%s", conf_str);
 }
 
 void switch_command(const char** args, const size_t n_args){

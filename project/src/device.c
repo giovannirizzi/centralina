@@ -219,3 +219,52 @@ int send_response(char* response, ...){
     }
     return n_write;
 }
+
+int get_records_string(char* buffer){
+
+    int i;
+    char tmp[50];
+    memset(tmp, 0, sizeof(tmp) / sizeof(char));
+    for(i=0; i<g_device.num_records; i++){
+        if(g_device.records->is_settable){
+            if(i==0)
+                sprintf(tmp, "%s=%d", g_device.records->label, g_device.records->value);
+            else
+                sprintf(tmp, "&%s=%d", g_device.records->label, g_device.records->value);
+            strcat(buffer, tmp);
+        }
+    }
+    return i;
+}
+
+int set_records_from_string(char *records){
+
+    if(strlen(records) == 0)
+        return 0;
+
+    char* registry[10];
+    int i, value;
+    int num_registry = divide_string(records, registry, 10, "&");
+
+    char* value_str[1];
+    divide_string(records, value_str, 1, "=");
+    string_to_int(value_str[0], &value);
+
+    for(i=0; i<g_device.num_records; i++)
+        if(strcmp(g_device.records[i].label, records)==0){
+            g_device.records[i].value = value;
+            num_registry++;
+            break;
+        }
+
+    for (i = 0; i < num_registry-1; i++) {
+
+        divide_string(registry[i], value_str, 1, "=");
+        string_to_int(value_str[0], &value);
+        for (i = 0; i < g_device.num_records; i++)
+            if (strcmp(g_device.records[i].label, registry[i]) == 0)
+                g_device.records[i].value = value;
+    }
+    return num_registry;
+}
+

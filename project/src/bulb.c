@@ -10,7 +10,7 @@ timer_t timer;
 
 int main(int argc, char *argv[]){
 
-    Registry records[] = {"time", "descrizione", 0, &string_to_int};
+    Registry records[] = {"time", "descrizione", 0, &string_to_int, true};
     Switch switches[] = {"power", &switch_power_action};
 
     SignalBind signal_bindings[] = {
