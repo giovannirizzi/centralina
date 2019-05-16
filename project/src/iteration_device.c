@@ -70,3 +70,36 @@ void switch_command(const char** args, const size_t n_args){
         }
     send_response("INVALID SWITCH NAME");
 }
+
+//switch power on
+//set temperature 40 oppure set timer hh:mm
+
+
+void set_command(const char** args, const size_t n_args){
+    if(n_args != 2){
+        send_response("INVALID ARGS");
+        return;
+    }
+
+    int device_value;
+    int i;
+    for(i=0; i<g_device.num_records; i++){
+        if(strcmp(g_device.records[i].label, args[0]) == 0){
+            if(g_device.records[i].is_settable){
+                if(g_device.records[i].convert_value(args[1], &device_value) == 0){
+                    g_device.records[i].value = device_value;
+                    send_response("DONE");
+                    return;
+                } else {
+                    send_response("INVALID SET VALUE");
+                    return;
+                }
+            } else {
+                send_response("REGISTER NOT SETTABLE");
+                return;
+            }
+        }
+    }
+
+    send_response("INVALID SET NAME");
+}

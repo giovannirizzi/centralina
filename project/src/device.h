@@ -51,7 +51,7 @@ typedef struct{
 
 } DeviceData;
 
-const CommandBind BASE_COMMANDS[7];
+const CommandBind BASE_COMMANDS[8];
 
 /**
  * Global vars for all devices
@@ -74,6 +74,7 @@ void getconf_command(const char** args, size_t n_args);
 void getpid_command(const char** args, size_t n_args);
 void gettype_command(const char** args, const size_t n_args);
 void switch_command(const char** args, const size_t n_args);
+void set_command(const char** args, const size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);

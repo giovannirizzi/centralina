@@ -16,7 +16,8 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"setconf", &setconf_command},
                                      {"getpid", &getpid_command},
                                      {"gettype", &gettype_command},
-                                     {"switch", &switch_command}};
+                                     {"switch", &switch_command},
+                                     {"set", &set_command}};
 
 FILE* g_curr_out_stream;
 
