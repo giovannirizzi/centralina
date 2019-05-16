@@ -263,18 +263,18 @@ void add_shell_command(const char** args, const size_t n_args){
     else{
         DeviceType device = device_string_to_type(args[0]);
         if(device == INVALID_TYPE || device == CENTRALINA)
-            print_error("[-] invalid device %s\n", args[0]);
+            print_error(RED "[-] invalid device %s\n" RESET, args[0]);
         else{
             int retval = add_device(device);
             switch(retval){
                 case -2:
-                    printf("[-] maximum number of devices reached\n");
+                    printf(RED "[-] maximum number of devices reached\n" RESET);
                     break;
                 case -1:
-                    printf("[-] error, device was not added\n");
+                    printf(RED "[-] error, device was not added\n" RESET);
                     break;
                 default:
-                    printf("[+] %s successfully added with id: %d\n", args[0], retval);
+                    printf(GRN "[+] %s successfully added with id: %d\n" RESET, args[0], retval);
             }
         }
     }
@@ -282,31 +282,31 @@ void add_shell_command(const char** args, const size_t n_args){
 void del_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
-        print_error("usage: del <id>\n");
+        print_error(YLW "usage: del <id>\n" RESET);
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0)
-            print_error("[-] invalid id %s\n", args[0]);
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else{
             if(id == 0)
-                printf("[-] centralina cant be deleted\n");
+                printf(RED "[-] centralina cant be deleted\n" RESET);
             else if(delete_device(id, false) == -1)
-                print_error("[-] no device found with id %d\n", id);
+                print_error(RED "[-] no device found with id %d\n" RESET, id);
             else
-                printf("[+] device %d deleted\n", id);
+                printf(GRN "[+] device %d deleted\n" RESET, id);
         }
     }
 }
 void link_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3 || strcmp(args[1], "to") != 0)
-        print_error("usage: link <id> to <id>\n");
+        print_error(YLW "usage: link <id> to <id>\n" RESET);
     else{
         device_id id1, id2;
         if(string_to_int(args[0], &id1) != 0)
-            print_error("invalid id %s\n", args[0]);
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else if(string_to_int(args[2], &id2) != 0)
-            print_error("invalid id %s\n", args[2]);
+            print_error(RED "[-] invalid id %s\n" RESET, args[2]);
         else
             link_device(id1, id2);
     }
@@ -316,19 +316,23 @@ void list_shell_command(const char** args, const size_t n_args){
     \033[1;37mavailable devices:\033[0m \n\
     interaction devices: \n\
     - bulb:\n\
-            switch power : turn on/off the bulb\n\
+            switch power : turns on/off the bulb\n\
     - window:\n\
             switch open/close: open/close the window\n\
     - fridge:\n\
-            switch power: turn on/off the fridge\n\
+            switch power: turns on/off the fridge\n\
             set delay: closes automatically the fridge after the time set\n\
             set percentage: (only manually) add/remove content from the fridge\n\
             set temperature: allows to manage and set the internal temperature\n\
     control devices: \n\
     - hub:\n\
             allows multiple devices of the same type to be connected in parallel\n\
+            switch power: turns on/off the hub\n\
     - timer:\n\
-            allows to define a schedule to control a connected device\n\n\
+            allows to define a schedule to control a connected device\n\
+            switch power: turns on/off the timer\n\
+            set begin: indicates the activation time of the timer\n\
+            set end: indicates when the timer will be deactivated\n\n\
     \033[1;37mactive devices:\033[0m \n\
     id\ttype\
     \n");
@@ -347,11 +351,11 @@ void list_shell_command(const char** args, const size_t n_args){
 void switch_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3)
-        print_error("usage: switch <id> <label> <pos>\n");
+        print_error(YLW "usage: switch <id> <label> <pos>\n" RESET);
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0)
-            print_error("invalid id %s\n", args[0]);
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else
             switch_device(id, args[1], args[2]);
     }
@@ -360,14 +364,14 @@ void switch_shell_command(const char** args, const size_t n_args){
 void info_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
-        print_error("usage: info <id>\n");
+        print_error(YLW "usage: info <id>\n" RESET);
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0)
-            print_error("[-] invalid id %s\n", args[0]);
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else
             if(get_info(id)==-1)
-                print_error("[-] no device found with id %s\n", args[0]);        
+                print_error(RED "[-] no device found with id %s\n" RESET, args[0]);        
     }
 }
 
@@ -453,7 +457,7 @@ void init_centralina(){
 
     pid_t pid = fork();
     if(pid == -1){
-        perror_and_exit("[-] error, init_centralina: fork");
+        perror_and_exit(RED "[-] error, init_centralina: fork" RESET);
     }
     else if(pid == 0){
 
