@@ -5,3 +5,4 @@ project/cmake-build-debug/
 project/.idea
 project/CMakeLists.txt
 project/.vscode
+*.vscode
