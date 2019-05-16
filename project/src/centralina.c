@@ -231,31 +231,6 @@ int switch_device(device_id device, const char* label, const char* pos){
      */
 }
 
-int get_info(device_id device){
-
-    if(g_devices_request_stream[device] == NULL)
-        return -1;
-
-    LineBuffer line_buffer = {NULL, 0};
-    send_command_to_device(device, "getinfo");
-    int retval = read_device_response(&line_buffer);
-    if(retval>0){
-        //id=1|type=bulb|state=on|time since bulb on=10|temperature of gays=20
-        char* pipe_str[10], *substrings[1];
-        int i, num_pipe, num_sub;
-        num_pipe=divide_string(line_buffer.buffer, pipe_str, 10, "|");
-        num_sub=divide_string(line_buffer.buffer, substrings, 1, "=");
-        printf("    %s:\t%s\n", line_buffer.buffer, substrings[0]); 
-        for(i=0; i<num_pipe; i++){
-            divide_string(pipe_str[i], substrings, 1, "=");
-            printf("    %s:\t%s\n", pipe_str[i], substrings[0]); 
-        } 
-    }
-
-    if(line_buffer.buffer) free(line_buffer.buffer);
-    return 0;
-}
-
 void add_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
@@ -369,9 +344,31 @@ void info_shell_command(const char** args, const size_t n_args){
         device_id id;
         if(string_to_int(args[0], &id) != 0)
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else
-            if(get_info(id)==-1)
-                print_error(RED "[-] no device found with id %s\n" RESET, args[0]);        
+        else{
+
+            if(g_devices_request_stream[id] == NULL) {
+                print_error(RED "[-] no device found with id %s\n" RESET, args[0]);
+                return;
+            }
+            //PRINT INFO
+            LineBuffer line_buffer = {NULL, 0};
+            send_command_to_device(id, "getinfo");
+            int retval = read_device_response(&line_buffer);
+            if(retval>0){
+                //id=1|type=bulb|state=on|time since bulb on=10|temperature of gays=20
+                char* pipe_str[10], *substrings[1];
+                int i, num_pipe, num_sub;
+                num_pipe=divide_string(line_buffer.buffer, pipe_str, 10, "|");
+                num_sub=divide_string(line_buffer.buffer, substrings, 1, "=");
+                printf("    %-20s: %s\n", line_buffer.buffer, substrings[0]);
+                for(i=0; i<num_pipe; i++){
+                    divide_string(pipe_str[i], substrings, 1, "=");
+                    printf("    %-20s: %s\n", pipe_str[i], substrings[0]);
+                }
+            }
+
+            if(line_buffer.buffer) free(line_buffer.buffer);
+        }
     }
 }
 
@@ -404,7 +401,11 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
 
-    int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY | O_CLOEXEC);
+    int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
+    if(whois_response_fd == -1){
+        print_error("whois_command: open_fifo: no readers\n");
+        return;
+    }
 
     g_whois_response_stream = fdopen(whois_response_fd, "w");
     if(g_whois_response_stream == NULL){
@@ -452,7 +453,7 @@ void init_centralina(){
         perror_and_exit("init_base_device: signalfd");
 
     //Apro la fifo per le richieste di whois
-    int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_CLOEXEC);
+    int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_NONBLOCK | O_CLOEXEC);
     g_whois_request_stream = fdopen(whois_request_fd, "r");
 
     pid_t pid = fork();

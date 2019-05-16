@@ -19,7 +19,8 @@ void getinfo_command(const char **args, size_t n_args){
     print_error("Device %d: received getinfo command\n", g_device.id);
 
     char info_string[300];
-    char tmp[100];
+    char tmp[200];
+    char value_str[50];
     int i;
 
     const char* state_str = device_state_to_string(g_device.state, g_device.type);
@@ -28,10 +29,11 @@ void getinfo_command(const char **args, size_t n_args){
             device_type_to_string(g_device.type), state_str);
 
     for(i=0; i<g_device.num_records; i++){
+        g_device.records[i].format_value(g_device.records[i].value, value_str);
         if(i==0)
-            sprintf(tmp, "%s=%s", g_device.records[i].description, "valore");
+            sprintf(tmp, "%s=%s", g_device.records[i].description, value_str);
         else
-            sprintf(tmp, "|%s=%s", g_device.records[i].description, "valore");
+            sprintf(tmp, "|%s=%s", g_device.records[i].description, value_str);
 
         strcat(info_string, tmp);
     }

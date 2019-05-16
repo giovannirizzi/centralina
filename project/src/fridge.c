@@ -15,10 +15,10 @@ timer_t timer;
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"time", "descrizione", 0, &string_to_int, false},
-            {"delay", "descrizione", 15, &string_to_int, true},
-            {"percentage", "descrizione", 0, &string_to_int, false},
-            {"temperature", "descrizione", 0, &string_to_int, true},
+            {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
+            {"delay", "auto close delay", 15, &string_to_int, &seconds_to_string, true},
+            {"percentage", "filling percentage", 0, &string_to_int, &seconds_to_string, false},
+            {"temperature", "temperature", 0, &string_to_int, &seconds_to_string, true},
     };
     Switch switches[] = {
             {"open", &switch_open_action},
@@ -57,10 +57,7 @@ int main(int argc, char *argv[]){
     print_error("Device %d: sto terminando\n", g_device.id);
 
     delete_timer(timer);
-
-    /**
-     * CLEANUP RISORSE
-     */
+    clean_base_device();
 
     exit(EXIT_SUCCESS);
 }

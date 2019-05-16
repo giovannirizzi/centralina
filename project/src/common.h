@@ -34,6 +34,7 @@ typedef enum{
 } RTSignalType;
 
 typedef int (*string_to_int_func_ptr)(const char* label, int* n);
+typedef int (*int_to_string_func_ptr)(const int value, char* formatted_value);
 
 typedef struct{
     RTSignalType type;

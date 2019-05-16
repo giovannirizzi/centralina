@@ -233,7 +233,7 @@ int set_records_from_string(char *records){
         return 0;
 
     char* registry[10];
-    int i, value;
+    int i,j, value, first = false;
     int num_registry = divide_string(records, registry, 10, "&");
 
     char* value_str[1];
@@ -243,18 +243,24 @@ int set_records_from_string(char *records){
     for(i=0; i<g_device.num_records; i++)
         if(strcmp(g_device.records[i].label, records)==0){
             g_device.records[i].value = value;
-            num_registry++;
+            first = true;
             break;
         }
 
-    for (i = 0; i < num_registry-1; i++) {
+    print_error("num_registry: %d\n",num_registry);
+    for (i = 0; i < num_registry; i++) {
 
         divide_string(registry[i], value_str, 1, "=");
         string_to_int(value_str[0], &value);
-        for (i = 0; i < g_device.num_records; i++)
-            if (strcmp(g_device.records[i].label, registry[i]) == 0)
-                g_device.records[i].value = value;
+        for (j = 0; j < g_device.num_records; j++)
+            if (strcmp(g_device.records[j].label, registry[i]) == 0){
+                g_device.records[j].value = value;
+                break;
+            }
     }
-    return num_registry;
+    if(first)
+        return num_registry+1;
+    else
+        return num_registry;
 }
 

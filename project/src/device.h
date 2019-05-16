@@ -22,6 +22,7 @@ typedef struct{
     char description[MAX_REGISTRY_DESC_LENGTH];
     int value;
     string_to_int_func_ptr convert_value;
+    int_to_string_func_ptr format_value;
     _Bool is_settable;
 
 } Registry;

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>//serve solo per prova
 #include "utils.h"
 #include "iteration_device.h"
@@ -19,8 +20,7 @@ char str[80];
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"time", "descrizione", 0, &string_to_int, false},
-            {"end", "descrizione", 0, &string_to_int, true}//va cancellato
+            {"time", "time open", 0, &string_to_int, &seconds_to_string, false}
     };
 
     Switch switches[] = {
@@ -64,10 +64,7 @@ int main(int argc, char *argv[]){
     print_error("Device %d: sto terminando\n", g_device.id);
 
     delete_timer(timer);
-
-    /**
-     * CLEANUP RISORSE
-     */
+    clean_base_device();
 
     exit(EXIT_SUCCESS);
 }

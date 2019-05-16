@@ -123,6 +123,8 @@ char* get_absolute_executable_dir();
 
 int time_to_string(int time, char* string_time);
 
+int seconds_to_string(int seconds, char* string);
+
 int string_to_time(const char* string_time, int *time);
 
 int create_timer(timer_t *timer);

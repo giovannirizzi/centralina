@@ -167,13 +167,12 @@ pid_t whois(device_id id){
     int whois_request_fd, whois_response_fd;
     fd_set rfds;
 
-    whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_WRONLY | O_NONBLOCK);
-    if(whois_request_fd == -1)
-        return -2;
-
     whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_RDONLY | O_NONBLOCK);
     FILE* whois_response_stream = fdopen(whois_response_fd, "r");
 
+    whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_WRONLY | O_NONBLOCK);
+    if(whois_request_fd == -1)
+        return -2;
     FILE* whois_request_stream = fdopen(whois_request_fd, "w");
 
     fprintf(whois_request_stream, "whois %d\n", id);
@@ -197,6 +196,7 @@ pid_t whois(device_id id){
             pid_t pid;
             int retval = string_to_int(line_buffer.buffer, &pid);
             free(line_buffer.buffer);
+            fclose(whois_response_stream);
 
             if(retval != 0)
                 return -1;
@@ -204,8 +204,10 @@ pid_t whois(device_id id){
                 return pid;
         }
     }
+    else
+        fclose(whois_response_stream);
 
-    fclose(whois_response_stream);
+    return -1;
 }
 
 int get_signal_mapping(const char* label, const SignalMapping mappings[], const size_t n){

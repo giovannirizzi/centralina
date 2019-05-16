@@ -18,7 +18,6 @@
 const char* device_type_to_string(DeviceType device_type){
 
     switch(device_type){
-
         case CENTRALINA:
             return "centralina";
         case HUB:
@@ -166,7 +165,7 @@ int open_fifo(const char* path, mode_t access_mode){
         perror_and_exit("mkfifo");
     else{
         fd = open(path, access_mode);
-        if(fd == -1)
+        if(fd == -1 && errno != ENXIO)
             perror_and_exit("open_fifo");
     }
     return fd;
@@ -272,4 +271,8 @@ int delete_timer(timer_t timer){
         return -1;
     }
     return 0;
+}
+
+int seconds_to_string(int seconds, char* string){
+    sprintf(string, "%d sec", seconds);
 }
