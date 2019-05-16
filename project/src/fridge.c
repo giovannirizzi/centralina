@@ -15,10 +15,10 @@ timer_t timer;
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
-            {"delay", "auto close delay", 15, &string_to_int, &seconds_to_string, true},
-            {"percentage", "filling percentage", 0, &string_to_int, &seconds_to_string, false},
             {"temperature", "temperature", 0, &string_to_int, &seconds_to_string, true},
+            {"percentage", "filling percentage", 0, &string_to_int, &seconds_to_string, false},
+            {"delay", "delay time", 15, &string_to_int, &seconds_to_string, true},
+            {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
     };
     Switch switches[] = {
             {"open", &switch_open_action},

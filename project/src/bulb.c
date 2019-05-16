@@ -11,7 +11,7 @@ timer_t timer;
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"time", "time light on", 0, &string_to_int, &seconds_to_string, false}
+            {"time", "usage time", 0, &string_to_int, &seconds_to_string, false}
     };
     Switch switches[] = {"power", &switch_power_action};
 

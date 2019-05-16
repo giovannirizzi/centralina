@@ -13,7 +13,7 @@
 #define MAX_COMMAND_ARGS 5
 #define MAX_COMMAND_NAME_LENGTH 30
 #define MAX_LABEL_LENGTH 30
-#define MAX_REGISTRY_DESC_LENGTH 100
+#define MAX_REGISTRY_DESC_LENGTH 80
 
 /**
  * Segnali real-time usati per simulare il controllo manuale
