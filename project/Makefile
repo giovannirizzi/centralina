@@ -9,7 +9,7 @@ VPATH = $(SDIR)
 DEFAULT: help
 
 #Lista di tutti gli eseguibili da compilare
-LIST = fifo centralina bulb manualcontrol window fridge
+LIST = fifo centralina bulb manualcontrol window fridge hub
 
 all : $(LIST)
 
@@ -42,6 +42,9 @@ $(ODIR)/window.o: window.c device.h
 $(ODIR)/fridge.o: fridge.c device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(ODIR)/hub.o: hub.c device.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(ODIR)/manualcontrol.o: manualcontrol.c manualcontrol.h device.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -67,6 +70,9 @@ window: $(ODIR)/window.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_devi
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
 
 fridge: $(ODIR)/fridge.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/iteration_device.o
+	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
+
+hub: $(ODIR)/hub.o $(ODIR)/device.o $(ODIR)/utils.o $(ODIR)/control_device.o
 	${CC} ${CFLAGS} -o $(BIN)/$@ $^ -lrt
 
 build: all

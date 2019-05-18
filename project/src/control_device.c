@@ -46,7 +46,8 @@ void getconf_command(const char** args, const size_t n_args){
 
 void add_command(const char** args, const size_t n_args){
 
-    print_error("Returned: %d", add_child_device(23, BULB));
+    add_child_device(99, BULB);
+    print_error("Child device aggiunto n.%d\n", children_devices.size);
 }
 
 void switch_command(const char** args, const size_t n_args){
@@ -57,8 +58,10 @@ void switch_command(const char** args, const size_t n_args){
 
 void set_command(const char** args, const size_t n_args){
 
-
-
+    send_command_to_child(0, "SWAGG\n");
+    LineBuffer buffer = {NULL, 0};
+    read_child_response(0, &buffer);
+    print_error("Ho ricevuto da child: %s", buffer.buffer);
 }
 
 int add_child(ChildrenDevices* c, ChildDevice d){
@@ -89,27 +92,24 @@ void init_control_device(char *args[], size_t n_args){
      * su una read end di una pipe chiusa.
      */
     signal(SIGPIPE, SIG_IGN);
-
+    children_devices.size = 0;
 }
 
 int add_child_device(const int id, const DeviceType d_type){
 
     char path[50];
-
     sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(d_type));
 
-    print_error("Device: adding %s...\n", device_type_to_string(d_type));
+    if(children_devices.size >= MAX_CHILDREN)
+        return -1;
+
+    print_error("Device %d: adding %s\n", g_device.id, device_type_to_string(d_type));
 
     int fd_request[2];
     int fd_response[2];
 
-
-    if(pipe(fd_request) != 0){
-        perror("pipe");
-        return -1;
-    }
-    if(pipe(fd_response) != 0){
-        perror("pipe");
+    if(pipe(fd_request) != 0 || pipe(fd_response) != 0){
+        perror("add_child_device: pipe");
         return -1;
     }
 
@@ -123,39 +123,29 @@ int add_child_device(const int id, const DeviceType d_type){
     sprintf(device_id_str, "%d", id);
     sprintf(signal_fd_str, "%d", g_signal_fd);
 
+    char xterm_title[100];
+    sprintf(xterm_title, "%s, id:%d", device_type_to_string(d_type), id);
+
     pid_t pid = fork();
     if(pid == -1){
         perror("fork");
         return -1;
     }
     else if(pid == 0){
-        dup2(fd_request[0], STDIN_FILENO);
-        dup2(fd_response[1], STDOUT_FILENO);
 
-        close(fd_request[0]);
         close(fd_request[1]);
+        dup2(fd_request[0], STDIN_FILENO);
+        close(fd_request[0]);
+
         close(fd_response[0]);
+        dup2(fd_response[1], STDOUT_FILENO);
         close(fd_response[1]);
 
-        #define XTERM
 
-#ifdef XTERM
-        //int fd_null = open("/dev/null", O_WRONLY, 0666);
-        char xterm_title[100];
-        sprintf(xterm_title, "%s, id:%d", device_type_to_string(d_type), id);
-
-        char *argv[] = {"/usr/bin/xterm",
-                        "-T", xterm_title,
-                        "-e", exec_path, device_id_str, signal_fd_str,
-                        0};
-
-        execv("/usr/bin/xterm", argv);
-#else
-
-        char *argv[] = {exec_path, device_id_str, signal_fd_str, 0};
+       // char *argv[] = {exec_path, device_id_str, signal_fd_str, 0};
+        char *argv[] = {exec_path, NULL};
         execv(exec_path, argv);
 
-#endif
         perror_and_exit("error add_child_device: execl\n");
     }
     else{
@@ -170,9 +160,57 @@ int add_child_device(const int id, const DeviceType d_type){
             return -1;
         }
 
+        setlinebuf(in);
         ChildDevice child_device = { in, out};
+        add_child(&children_devices, child_device);
     }
 
     return 0;
+}
+
+void send_command_to_child(int child, const char* command){
+
+    if(child < children_devices.size){
+        int n_write;
+        n_write = fprintf(children_devices.children[child].in, "%s", command);
+        if(command[strlen(command)-1] != '\n')
+            n_write = fprintf(children_devices.children[child].in,"\n");
+        if(n_write == -1){
+            //La pipe è stata chiusa dal device
+            if(errno == EPIPE){
+                //delete_device(id, true);
+                print_error("send_command_to_child: pipe chiusa\n");
+            }
+            else
+                print_error("error send_command_to_device\n");
+        }
+    }
+    else
+        print_error("invalid id send_command_to_child\n");
+}
+
+int read_child_response(int child, LineBuffer *buffer){
+
+    if(child >= children_devices.size){
+        print_error("invalid id read_child_response\n");
+        return -1;
+    }
+
+    fd_set rfds;
+    struct timeval tv  = {1, 0};
+    int child_response_fd = fileno(children_devices.children[child].out);
+    FD_ZERO(&rfds);
+    FD_SET(child_response_fd, &rfds);
+
+    int retval = select(child_response_fd+1, &rfds, NULL, NULL, &tv);
+    if(retval == -1){
+        perror("select");
+        return -1;
+    }
+    else if(retval) {
+        return read_line(children_devices.children[child].out, buffer);
+    }
+    else
+        return 0;
 }
 

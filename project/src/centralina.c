@@ -128,7 +128,7 @@ int add_device(DeviceType device){
 //#define XTERM
 
 #ifdef XTERM
-        //int fd_null = open("/dev/null", O_WRONLY, 0666);
+
         char xterm_title[100];
         sprintf(xterm_title, "%s, id:%d", device_type_to_string(device), id);
 

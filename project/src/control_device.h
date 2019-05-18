@@ -20,8 +20,12 @@ typedef struct{
 
 int add_child(ChildrenDevices* c, ChildDevice d);
 int delete_child(ChildrenDevices* c, int i);
+void send_command_to_child(int child, const char* command);
+int read_child_response(int child, LineBuffer *buffer);
 
 void init_control_device(char *args[], size_t n_args);
+
+ChildrenDevices children_devices;
 
 
 #endif // CONTROL_DEVICES_H
