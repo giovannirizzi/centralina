@@ -6,6 +6,8 @@
 
 void add_command(const char** args, size_t n_args);
 
+int add_child_device(int id, DeviceType d_type);
+
 typedef struct{
     FILE* in;
     FILE* out;

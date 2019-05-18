@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
-#include <libgen.h>
 #include <sys/signalfd.h>
 #include <linux/limits.h>
 #include <sys/wait.h>
@@ -41,13 +40,16 @@ int main(int argc, char *argv[]){
     printf("#>  ");
     fflush(stdout);
 
+
+
     while(g_running){
 
         FD_ZERO(&rfds);
         FD_SET(whois_request_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
 
-        if(select(whois_request_fd+1, &rfds, NULL, NULL, NULL) == -1)
+        if(/*select(whois_request_fd+1, &rfds, NULL, NULL, NULL)*/
+        pselect(whois_request_fd+1, &rfds, NULL, NULL, NULL, NULL)== -1)
             perror_and_exit("select");
         else{
 
@@ -462,17 +464,33 @@ void init_centralina(){
     }
     else if(pid == 0){
 
-        //freopen ("/dev/null", "r", stdin);
+        fclose(stdin);
+        fclose(stdout);
+        freopen("/dev/null", "w", stderr);
 
         char signal_fd_str[5];
         sprintf(signal_fd_str, "%d", g_signal_fd);
-        char* tmp[3] = {" ", "0", signal_fd_str};
 
+        DeviceData controller = {
+                CENTRALINA, //DEVICE TYPE
+                0, //ID
+                1, //STATE
+                NULL,
+                0, //NUM RECORDS
+                NULL,
+                0 //NUM SWITCHES
+        };
+
+        g_device = controller;
+
+        char* tmp[3] = {" ", "0", signal_fd_str};
         init_control_device(tmp, 3);
 
-        //Codice device centralina
+        stdin = g_fifo_in_stream;
 
-        //TODO
+        device_loop(NULL, 0, NULL, 0);
+
+        clean_base_device();
 
         exit(EXIT_SUCCESS);
     }
@@ -486,9 +504,6 @@ void init_centralina(){
         //Creo la FIFO per ricevere comandi dai devices
         int fd_response = open_fifo(FIFO_DEVICES_RESPONSE, O_RDONLY | O_CLOEXEC);
         g_devices_response_stream = fdopen(fd_response, "r");
-
-        printf("Rimuovo la centralina perché ha già finito\n");
-        delete_device(0, false);
     }
 }
 

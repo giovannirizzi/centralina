@@ -76,7 +76,7 @@ void tick_signal(int a){
     tm = *localtime(&t);
     sprintf(time_now,"%d:%d",tm.tm_hour, tm.tm_min);
     if(strcmp(time_now,str) == 0){
-        printf("Orari combaciano, chiudo finestra\n");
+        print_error("Orari combaciano, chiudo finestra\n");
         switch_close_action(1);
     }
     //FINE PROVA

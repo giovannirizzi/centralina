@@ -3,6 +3,7 @@
 #include <libgen.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include "control_device.h"
 #include "utils.h"
 
@@ -45,65 +46,7 @@ void getconf_command(const char** args, const size_t n_args){
 
 void add_command(const char** args, const size_t n_args){
 
-
-    /*
-    char path[50];
-
-    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(device));
-
-    printf("Adding %s...\n", device_type_to_string(device));
-    printf("PID padre: %d\n", getpid());
-
-    int fd_parent_to_child[2];
-    int fd_child_to_parent[2];
-    char *line_buffer = NULL;
-    size_t len = 0;
-    char buffer[20] = {0};
-
-    if(pipe(fd_parent_to_child) != 0){
-        perror("pipe");
-        return -1;
-    }
-    if(pipe(fd_child_to_parent) != 0){
-        perror("pipe");
-        return -1;
-    }
-    pid_t pid = fork();
-    if(pid == -1){
-        perror("fork");
-        return -1;
-    }
-    else if(pid == 0){
-        dup2(fd_parent_to_child[0], STDIN_FILENO);
-        dup2(fd_child_to_parent[1], STDOUT_FILENO);
-
-        close(fd_parent_to_child[0]);
-        close(fd_parent_to_child[1]);
-        close(fd_child_to_parent[0]);
-        close(fd_child_to_parent[1]);
-
-        execl(path, NULL);
-        perror_and_exit("[-] Error execl");
-    }
-    else{
-        close(fd_parent_to_child[0]);
-        close(fd_child_to_parent[1]);
-        close(fd_parent_to_child[1]);
-
-        FILE* file = fdopen(fd_child_to_parent[0],"r");
-        if(file == NULL){
-            perror("[-] Error fdopen");
-        }
-
-        printf("Ciao\n");
-
-        ssize_t byteread = read_line(file, &line_buffer, &len);
-        printf("Figlio: %s, num byte %d\n", line_buffer, (int) byteread);
-        free(line_buffer);
-        close(fd_child_to_parent[0]);
-    }
-
-     */
+    print_error("Returned: %d", add_child_device(23, BULB));
 }
 
 void switch_command(const char** args, const size_t n_args){
@@ -123,7 +66,7 @@ int add_child(ChildrenDevices* c, ChildDevice d){
         return -1;
     c->children[c->size] = d;
     c->size++;
-    printf("SIZE = %d\n",c->size);
+    print_error("SIZE = %d\n",c->size);
     return 0;
 }
 
@@ -148,3 +91,88 @@ void init_control_device(char *args[], size_t n_args){
     signal(SIGPIPE, SIG_IGN);
 
 }
+
+int add_child_device(const int id, const DeviceType d_type){
+
+    char path[50];
+
+    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(d_type));
+
+    print_error("Device: adding %s...\n", device_type_to_string(d_type));
+
+    int fd_request[2];
+    int fd_response[2];
+
+
+    if(pipe(fd_request) != 0){
+        perror("pipe");
+        return -1;
+    }
+    if(pipe(fd_response) != 0){
+        perror("pipe");
+        return -1;
+    }
+
+    char exec_path[PATH_MAX];
+    char device_id_str[10];
+    char signal_fd_str[5];
+
+    sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
+            ,device_type_to_string(d_type));
+
+    sprintf(device_id_str, "%d", id);
+    sprintf(signal_fd_str, "%d", g_signal_fd);
+
+    pid_t pid = fork();
+    if(pid == -1){
+        perror("fork");
+        return -1;
+    }
+    else if(pid == 0){
+        dup2(fd_request[0], STDIN_FILENO);
+        dup2(fd_response[1], STDOUT_FILENO);
+
+        close(fd_request[0]);
+        close(fd_request[1]);
+        close(fd_response[0]);
+        close(fd_response[1]);
+
+        #define XTERM
+
+#ifdef XTERM
+        //int fd_null = open("/dev/null", O_WRONLY, 0666);
+        char xterm_title[100];
+        sprintf(xterm_title, "%s, id:%d", device_type_to_string(d_type), id);
+
+        char *argv[] = {"/usr/bin/xterm",
+                        "-T", xterm_title,
+                        "-e", exec_path, device_id_str, signal_fd_str,
+                        0};
+
+        execv("/usr/bin/xterm", argv);
+#else
+
+        char *argv[] = {exec_path, device_id_str, signal_fd_str, 0};
+        execv(exec_path, argv);
+
+#endif
+        perror_and_exit("error add_child_device: execl\n");
+    }
+    else{
+        close(fd_request[0]);
+        close(fd_response[1]);
+
+        FILE *in = fdopen(fd_request[1], "w");
+        FILE *out = fdopen(fd_response[0], "r");
+
+        if(in == NULL || out == NULL){
+            perror("add_child_device: fopen");
+            return -1;
+        }
+
+        ChildDevice child_device = { in, out};
+    }
+
+    return 0;
+}
+

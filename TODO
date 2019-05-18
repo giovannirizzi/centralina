@@ -1,8 +1,11 @@
 TODO:
-- pensare a come finire la delete_device
-- sistemare messaggi di log manualcontrol, poi dovrebbe essere finito
-- implementare il tempo di accensione nella bulb con timer_create e timer_settime
-
+- Cambiare il comando list: deve restituirti la lista dei device con id type e un flag per dire se è attaccato a qualcosa oppure no, vedere il vettore is_linked in centralina.h
+- finire funzioni per i registri del frigo (percentuale e temperatura)
+- all'inizio il controller deve creare la cartelle /tmp/centralina e /tmp/centarlina/devices vedere funzione mkdir
+- comando base getrealtype: per gli iteration device restituisce il tipo in intero g_device.type per l'hub restituisce il tipo di device del filgio e se non ne ha 0 (invalid device), il timer uguale all'hub
+- i dispositivi di controllo hanno tutti un comando add però non possiamo farne uno unico per tutti e 3. Dobbiamo costruirci delle funzioni helper in control_device e poi implementare i singoli add in ogni device.
+    una funzione fondamentale è add_device(id, tipo) che fa la fork e aggiunge al array dei ChildDevices.
+- comando unlink della shell da fare dopo il comando link: rimuove un dispositivo che è linkato a qualcosa e lo ricea non collegato a niente come add_device della centralina. Quindi getconf dispositivo, del dispositivo, add_device e setconf
 
 Tutti i dispositivi anche la centralina hanno:
     un id

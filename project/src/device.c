@@ -66,12 +66,15 @@ void init_base_device(char *args[], size_t n_args){
         sprintf(fifo_path, "/tmp/centralina/devices/%d", id);
         int fifo_in_fd = open_fifo(fifo_path, O_RDONLY | O_CLOEXEC);
         g_fifo_in_stream = fdopen(fifo_in_fd, "r");
+        if(g_fifo_in_stream == NULL)
+            perror_and_exit("init_base_device: fdopen g_fifo_in_stream");
         g_device.id = id;
 
         int fifo_out_fd = open_fifo(FIFO_DEVICES_RESPONSE, O_WRONLY | O_CLOEXEC);
         g_fifo_out_stream = fdopen(fifo_out_fd, "w");
+        if(g_fifo_out_stream == NULL)
+            perror_and_exit("init_base_device: fdopen g_fifo_out_stream");
         setlinebuf(g_fifo_out_stream);
-
     }
     else{
         g_fifo_out_stream = NULL;
@@ -110,7 +113,7 @@ void gettype_command(const char** args, const size_t n_args){
 
 void del_command(const char** args, const size_t n_args){
 
-    fprintf(g_curr_out_stream, "del command\n");
+    print_error("Device %d: received del command\n", g_device.id);
     g_running = false;
 }
 
@@ -159,7 +162,6 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
                 g_curr_out_stream = NULL;
             }
             else{
-
                 if (FD_ISSET(stdin_fd, &rfds)) {
                     curr_in = stdin;
                     g_curr_out_stream = stdout;
@@ -172,7 +174,7 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
 
                 //Legge un comando (una linea)
                 if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
-                    g_running = false;
+                    break;
 
                 if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
                     send_response("UNKNOWN COMMAND");

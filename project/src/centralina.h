@@ -4,8 +4,8 @@
 #include "common.h"
 #include "control_device.h"
 
-
 FILE* g_devices_request_stream[MAX_DEVICES] = {NULL};
+_Bool is_linked[MAX_DEVICES] = {0};
 FILE* g_devices_response_stream;
 FILE* g_whois_request_stream;
 FILE* g_whois_response_stream;
