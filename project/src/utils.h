@@ -125,6 +125,10 @@ int time_to_string(int time, char* string_time);
 
 int seconds_to_string(int seconds, char* string);
 
+int temperature_to_string(int temperature, char* string);
+
+int percentage_to_string(int percentage, char* string);
+
 int string_to_time(const char* string_time, int *time);
 
 int create_timer(timer_t *timer);
