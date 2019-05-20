@@ -62,7 +62,7 @@ typedef struct{
 
 } DeviceData;
 
-const CommandBind BASE_COMMANDS[9];
+const CommandBind BASE_COMMANDS[10];
 
 /**
  * Global vars for all devices
@@ -75,7 +75,7 @@ FILE* g_curr_out_stream;
 _Bool g_running;
 
 
-/**
+/*
  * Function to implement
  */
 void getinfo_command(const char **args, size_t n_args);
@@ -87,6 +87,7 @@ void gettype_command(const char** args, size_t n_args);
 void iscontrolled_command(const char** args, size_t n_args);
 void switch_command(const char** args, size_t n_args);
 void set_command(const char** args, size_t n_args);
+void getrealtype_command(const char** args, size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);

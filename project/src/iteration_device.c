@@ -111,3 +111,8 @@ void set_command(const char** args, const size_t n_args){
 
     send_response(INV_REG);
 }
+
+void getrealtype_command(const char** args, const size_t n_args) {
+
+    send_response("%d", g_device.type);
+}

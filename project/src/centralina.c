@@ -11,8 +11,6 @@
 #include "utils.h"
 #include "control_device.h"
 
-
-
 CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
                                       {"list", &list_shell_command},
                                       {"help", &help_shell_command},
@@ -28,18 +26,18 @@ int main(int argc, char *argv[]){
 
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
-    g_running = 1;
 
     init_centralina();
 
     fd_set rfds;
+    sigset_t emptyset;
+    sigemptyset(&emptyset);
+
     int stdin_fd = fileno(stdin);
     int whois_request_fd = fileno(g_whois_request_stream);
 
     printf("#>  ");
     fflush(stdout);
-
-
 
     while(g_running){
 
@@ -47,24 +45,30 @@ int main(int argc, char *argv[]){
         FD_SET(whois_request_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
 
-        if(/*select(whois_request_fd+1, &rfds, NULL, NULL, NULL)*/
-        pselect(whois_request_fd+1, &rfds, NULL, NULL, NULL, NULL)== -1)
-            perror_and_exit("select");
-        else{
+        if(pselect(whois_request_fd+1, &rfds, NULL, NULL, NULL, &emptyset) == -1){
+
+            if(errno != EINTR)
+                perror("pselect");
+            else {
+                print_error("select interrupted by a signal\n");
+            }
+        }
+        else {
 
             //STDIN
             if (FD_ISSET(stdin_fd, &rfds)) {
 
+
                 //Legge un comando (una linea)
                 read_incoming_command(stdin, &input_command, &line_buffer);
 
-                if(input_command.name[0] != '\0'){
-                    if(handle_command(&input_command, shell_command_bindings, 8) == -1)
+                if (input_command.name[0] != '\0') {
+                    if (handle_command(&input_command, shell_command_bindings, 8) == -1)
                         fprintf(stdout, "unknown command %s\n",
                                 input_command.name);
                 }
 
-                if(g_running){
+                if (g_running) {
                     printf("#>  ");
                     fflush(stdout);
                 }
@@ -72,11 +76,11 @@ int main(int argc, char *argv[]){
 
             //WHOIS REQUEST
             if (FD_ISSET(whois_request_fd, &rfds)) {
-                
+
                 read_incoming_command(g_whois_request_stream, &input_command, &line_buffer);
 
                 handle_command(&input_command, whois_request_bindings,
-                        sizeof(whois_request_bindings)/sizeof(CommandBind));
+                               sizeof(whois_request_bindings) / sizeof(CommandBind));
             }
         }
     }
@@ -167,7 +171,7 @@ int add_device(DeviceType device){
     return id;
 }
 
-int delete_device(device_id device, _Bool non_block_wait){
+int delete_device(const device_id device){
 
     if(g_devices_request_stream[device] == NULL) return -1;
 
@@ -178,30 +182,9 @@ int delete_device(device_id device, _Bool non_block_wait){
 
     g_devices_request_stream[device] = NULL;
 
-    int child_exit_code, options = 0;
-
-    if(non_block_wait)
-        options = WNOHANG;
-
-    //La wait devo farla solo il device da rimuovere è figlio
-    pid_t child_pid = waitpid(-1, &child_exit_code, options);
-
-    if(child_pid == -1){
-        perror("delete_device: wait");
-        return -1;
-    }
-    else if(child_pid == 0) {
-        print_error("wait pid: nothing changed\n");
-        return -1;
-    }
-    else
-        print_error("Deleted PID: %d, exit code: %d\n", child_pid, WEXITSTATUS(child_exit_code));
+    print_error("Deleted device id: %d\n", device);
 
     return 0;
-    /*
-     * Devo leggere devices_response_stream per leggere gli
-     * id figli che devo rimuovere
-     */
 }
 
 int link_device(device_id device1, device_id device2){
@@ -263,7 +246,7 @@ void del_shell_command(const char** args, const size_t n_args){
         else{
             if(id == 0)
                 printf(RED "[-] centralina cant be deleted\n" RESET);
-            else if(delete_device(id, false) == -1)
+            else if(delete_device(id) == -1)
                 print_error(RED "[-] no device found with id %d\n" RESET, id);
             else
                 printf(GRN "[+] device %d deleted\n" RESET, id);
@@ -313,14 +296,16 @@ void list_shell_command(const char** args, const size_t n_args){
     LineBuffer line_buffer = {NULL, 0};
     for(i=0; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
-            send_command_to_device(i, "gettype\n");
-            retval = read_device_response(&line_buffer);
-            if(retval>0)
-                printf("    %-10d %-15s", i, line_buffer.buffer);
-            send_command_to_device(i, "iscontrolled\n");
-            retval = read_device_response(&line_buffer);
-            if(retval>0)
-                printf("    %s\n", line_buffer.buffer);    
+            if(send_command_to_device(i, "gettype\n") == 0){
+                retval = read_device_response(&line_buffer);
+                if(retval>0)
+                    printf("    %-10d %-15s", i, line_buffer.buffer);
+            }
+            if(send_command_to_device(i, "iscontrolled\n") == 0){
+                retval = read_device_response(&line_buffer);
+                if(retval>0)
+                    printf("    %s\n", line_buffer.buffer);
+            }
         }
     }
     if(line_buffer.buffer) free(line_buffer.buffer);
@@ -445,11 +430,12 @@ void init_centralina(){
      * su una read end di una pipe chiusa.
      */
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, sigchild_handler);
 
-    sigset_t mask;
-
-    mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
+    set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
             SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
+
+    g_running = true;
 
     //Apro la fifo per le richieste di whois
     int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -484,7 +470,7 @@ void init_centralina(){
 
         device_loop(NULL, 0, NULL, 0);
 
-        clean_base_device();
+        clean_control_device();
 
         exit(EXIT_SUCCESS);
     }
@@ -501,23 +487,25 @@ void init_centralina(){
     }
 }
 
-void send_command_to_device(device_id id, const char* command){
+int send_command_to_device(device_id id, const char* command){
 
-    if(g_devices_request_stream[id] != NULL){
-        int n_write;
-        n_write = fprintf(g_devices_request_stream[id], "%s", command);
-        if(command[strlen(command)-1] != '\n')
-            n_write = fprintf(g_devices_request_stream[id],"\n");
-        if(n_write == -1){
-            //La pipe è stata chiusa dal device
-            if(errno == EPIPE)
-                delete_device(id, true);
-            else
-                print_error("error send_command_to_device\n");
-        }
-    }
-    else
+    if(g_devices_request_stream[id] == NULL) {
         print_error("invalid id send_command_to_device\n");
+        return -1;
+    }
+    int n_write;
+    n_write = fprintf(g_devices_request_stream[id], "%s", command);
+    if(command[strlen(command)-1] != '\n')
+        n_write = fprintf(g_devices_request_stream[id],"\n");
+    if(n_write == -1){
+        //La pipe è stata chiusa dal device
+        if(errno == EPIPE)
+            delete_device(id);
+        else
+            print_error("error send_command_to_device\n");
+        return -1;
+    }
+    return 0;
 }
 
 int read_device_response(LineBuffer *buffer){
@@ -547,5 +535,5 @@ void clean_centralina(){
 
     int i;
     for(i=0; i<MAX_DEVICES; i++)
-        delete_device(i, false);
+        delete_device(i);
 }

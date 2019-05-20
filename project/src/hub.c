@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
     device_loop(signal_bindings, sizeof(signal_bindings)/ sizeof(SignalBind),
                 NULL, 0);
 
-    clean_base_device();
+    clean_control_device();
 
     exit(EXIT_SUCCESS);
 }

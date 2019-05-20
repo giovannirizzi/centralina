@@ -13,11 +13,11 @@ _Bool g_running;
 
 void init_centralina();
 void clean_centralina();
-void send_command_to_device(device_id id, const char* command);
+int send_command_to_device(device_id id, const char* command);
 int read_device_response(LineBuffer *buffer);
 
 int add_device(DeviceType device);
-int delete_device(device_id device, _Bool non_block_wait);
+int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
 int switch_device(device_id device, const char* label, const char* pos);
 int get_info(device_id device);

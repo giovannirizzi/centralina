@@ -7,6 +7,9 @@
 void add_command(const char** args, size_t n_args);
 
 int add_child_device(int id, DeviceType d_type);
+void delete_child_device(int child);
+void clean_control_device();
+void sigchild_handler(int signum);
 
 typedef struct{
     FILE* in;
@@ -20,7 +23,7 @@ typedef struct{
 
 int add_child(ChildrenDevices* c, ChildDevice d);
 int delete_child(ChildrenDevices* c, int i);
-void send_command_to_child(int child, const char* command);
+int send_command_to_child(int child, const char* command);
 int read_child_response(int child, LineBuffer *buffer);
 
 void init_control_device(char *args[], size_t n_args);

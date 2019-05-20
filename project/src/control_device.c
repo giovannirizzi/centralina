@@ -4,6 +4,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "control_device.h"
 #include "utils.h"
 
@@ -36,11 +37,6 @@ void getinfo_command(const char **args, size_t n_args){
 
 void getconf_command(const char** args, const size_t n_args){
 
-    /**
-     * Deve restituire la sua configurazione e quella di tutti
-     * i suoi figli
-     */
-
     print_error("Device %d: received getconf command\n", g_device.id);
 
     char conf_str[200], records[150];
@@ -54,21 +50,25 @@ void getconf_command(const char** args, const size_t n_args){
 
     int i;
     LineBuffer line_buffer = {NULL, 0};
+
     for(i=0; i<children_devices.size; i++){
-        send_command_to_child(i, "getconf");
-        read_child_response(i, &line_buffer);
-        fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
+        if(send_command_to_child(i, "getconf") == 0){
+            read_child_response(i, &line_buffer);
+            fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
+        }
+        else
+            i--;
     }
+
+    if(line_buffer.length > 0) free(line_buffer.buffer);
 
     if(i== 0) //non ci sono child devices
         fprintf(g_curr_out_stream, " #");
 
-    fprintf(g_curr_out_stream, "\n");
+    send_response("\n");
 }
 
 void add_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received add command\n", g_device.id);
 
     DeviceType type;
     device_id id;
@@ -76,12 +76,11 @@ void add_command(const char** args, const size_t n_args){
 
     int num_var = sscanf(args[0], "%d|%d|", &id, &type);
     device_str = device_type_to_string(type);
-    if(num_var != 2 || id < 0 || device_string_to_type(device_str) == INVALID_TYPE){
+    type = device_string_to_type(device_str);
+    if(num_var != 2 || id < 0 || type == INVALID_TYPE || type == CENTRALINA){
         send_response(INV_ARGS);
         return;
     }
-
-    print_error("add device: id: %d, type: %s\n", id, device_str);
 
     int pos_child = add_child_device(id, type);
 
@@ -89,8 +88,6 @@ void add_command(const char** args, const size_t n_args){
         send_response(ERR);
         return;
     }
-
-    //print_error("added device in pos: %d\n", pos_child);
 
     char* tmp[1];
     int num = divide_string((char*)args[0], tmp, 1, "|");
@@ -103,16 +100,14 @@ void add_command(const char** args, const size_t n_args){
     char setconf_str[200];
     sprintf(setconf_str, "setconf %s", tmp[0]+2);
 
-    //print_error("Sending command: %s\n", setconf_str);
-
-    /*send_command_to_child(pos_child, setconf_str);
+    send_command_to_child(pos_child, setconf_str);
 
     LineBuffer line_buffer = {NULL, 0};
 
     read_child_response(pos_child, &line_buffer);
-    send_response(line_buffer.buffer);
+    //send_response(line_buffer.buffer);
 
-    free(line_buffer.buffer);*/
+    if(line_buffer.length > 0) free(line_buffer.buffer);
     send_response(OK_DONE);
 }
 
@@ -124,10 +119,15 @@ void switch_command(const char** args, const size_t n_args){
 
 void set_command(const char** args, const size_t n_args){
 
-    send_command_to_child(0, "SWAGG\n");
+    /**
+     * TODO
+     */
+    /*send_command_to_child(0, "SWAGG\n");
     LineBuffer buffer = {NULL, 0};
     read_child_response(0, &buffer);
     print_error("Ho ricevuto da child: %s", buffer.buffer);
+    if(line_buffer.length > 0) free(line_buffer.buffer);
+    */
 }
 
 int add_child(ChildrenDevices* c, ChildDevice d){
@@ -139,6 +139,7 @@ int add_child(ChildrenDevices* c, ChildDevice d){
 }
 
 int delete_child(ChildrenDevices* c, int i){
+
     if(c->size == 0 || i<0 || i>=MAX_CHILDREN)
         return -1;
 
@@ -157,6 +158,7 @@ void init_control_device(char *args[], size_t n_args){
      * su una read end di una pipe chiusa.
      */
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, sigchild_handler);
     children_devices.size = 0;
 }
 
@@ -229,7 +231,7 @@ int add_child_device(const int id, const DeviceType d_type){
     }
 }
 
-void send_command_to_child(int child, const char* command){
+int send_command_to_child(int child, const char* command){
 
     if(child < children_devices.size){
         int n_write;
@@ -239,15 +241,19 @@ void send_command_to_child(int child, const char* command){
         if(n_write == -1){
             //La pipe è stata chiusa dal device
             if(errno == EPIPE){
-                //delete_device(id, true);
-                print_error("send_command_to_child: pipe chiusa\n");
+                delete_child_device(child);
+                return -1;
             }
-            else
-                print_error("error send_command_to_device\n");
+            else{
+                print_error("error send_command_to_child\n");
+                return -2;
+            }
         }
+        return 0;
     }
     else
         print_error("invalid id send_command_to_child\n");
+    return -2;
 }
 
 int read_child_response(int child, LineBuffer *buffer){
@@ -275,3 +281,51 @@ int read_child_response(int child, LineBuffer *buffer){
         return 0;
 }
 
+void getrealtype_command(const char** args, const size_t n_args) {
+
+    int child = 0;
+    _Bool done = false;
+    LineBuffer line_buffer = {NULL, 0};
+    while(child < children_devices.size && !done){
+
+        if(send_command_to_child(0, "getrealtype") == 0){
+
+            read_child_response(0, &line_buffer);
+            send_response("%s", line_buffer.buffer);
+
+            done = true;
+            return;
+        }
+        else
+            child++;
+    }
+    if(line_buffer.length > 0) free(line_buffer.buffer);
+
+    if(!done)
+        send_response("%d", INVALID_TYPE);
+}
+
+void delete_child_device(int child){
+
+    if(children_devices.children[child].out)
+        fclose(children_devices.children[child].out);
+
+    if(children_devices.children[child].in)
+        fclose(children_devices.children[child].in);
+
+    delete_child(&children_devices, child);
+}
+
+void clean_control_device(){
+    clean_base_device();
+
+    int i;
+    for(i=children_devices.size-1; i>= 0; i--){
+        delete_child_device(i);
+    }
+}
+
+void sigchild_handler(int signum){
+
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}

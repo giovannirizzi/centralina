@@ -17,7 +17,8 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"gettype", &gettype_command},
                                      {"iscontrolled", &iscontrolled_command},
                                      {"switch", &switch_command},
-                                     {"set", &set_command}};
+                                     {"set", &set_command},
+                                     {"getrealtype", &getrealtype_command}};
 
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
@@ -34,9 +35,11 @@ sigset_t set_signal_mask(RTSignalType signal1, ...){
 
     va_end(ap);
 
+    sigaddset(&mask, SIGCHLD);
+
     /* Blocca i segnali settati nella mask cosi da prevenire
      * la chiamata del handler di default */
-    if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
         perror_and_exit("sigprocmask");
 
     return mask;
@@ -141,6 +144,8 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
     RTSignal input_signal;
 
     fd_set rfds;
+    sigset_t emptyset;
+    sigemptyset(&emptyset);
     FILE *curr_in;
     int stdin_fd = fileno(stdin);
 
@@ -157,8 +162,14 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
         if(is_controlled())
             FD_SET(fifo_fd, &rfds);
 
-        if(select(max_fd+1, &rfds, NULL, NULL, NULL) == -1)
-            perror_and_exit("select");
+        if(pselect(max_fd+1, &rfds, NULL, NULL, NULL, &emptyset) == -1){
+
+            if(errno != EINTR)
+                perror("pselect");
+            else {
+                print_error("select interrupted by a signal\n");
+            }
+        }
         else{
 
             if (FD_ISSET(stdin_fd, &rfds)) {
@@ -197,7 +208,7 @@ int send_response(char* response, ...){
         va_list args;
         va_start(args,response);
         n_write = vfprintf(g_curr_out_stream, response, args);
-        if(response[strlen(response)-1] != '\n')
+        if(strlen(response) > 0 && response[strlen(response)-1] != '\n')
             n_write = fprintf(g_curr_out_stream,"\n");
         va_end(args);
     }

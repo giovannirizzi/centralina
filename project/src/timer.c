@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
             NULL, 0);
 
 
-    clean_base_device();
+    clean_control_device();
 
     exit(EXIT_SUCCESS);
 }
