@@ -10,6 +10,7 @@
 #define ERR_REG_UNSETTABLE "REGISTER NOT SETTABLE"
 #define OK_NO_CHANGES "SWITCH ALREADY_SET"
 #define OK_DONE "DONE"
+#define ERR "UNKNOWN ERROR"
 
 #include "common.h"
 
@@ -71,6 +72,7 @@ DeviceData g_device;
 
 FILE* g_fifo_in_stream;
 FILE* g_fifo_out_stream;
+FILE* g_curr_out_stream;
 _Bool g_running;
 int g_signal_fd;
 

@@ -34,14 +34,6 @@ void getinfo_command(const char **args, size_t n_args){
     send_response("%s", info_string);
 }
 
-void setconf_command(const char** args, const size_t n_args){
-
-    /**
-     *
-     */
-
-}
-
 void getconf_command(const char** args, const size_t n_args){
 
     /**
@@ -49,12 +41,79 @@ void getconf_command(const char** args, const size_t n_args){
      * i suoi figli
      */
 
+    print_error("Device %d: received getconf command\n", g_device.id);
+
+    char conf_str[200], records[150];
+    memset(records, 0, sizeof(records) / sizeof(char));
+
+    fprintf(g_curr_out_stream, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
+
+    int num = get_records_string(records);
+    if(num > 0)
+        fprintf(g_curr_out_stream, "%s", records);
+
+    int i;
+    LineBuffer line_buffer = {NULL, 0};
+    for(i=0; i<children_devices.size; i++){
+        send_command_to_child(i, "getconf");
+        read_child_response(i, &line_buffer);
+        fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
+    }
+
+    if(i== 0) //non ci sono child devices
+        fprintf(g_curr_out_stream, " #");
+
+    fprintf(g_curr_out_stream, "\n");
 }
 
 void add_command(const char** args, const size_t n_args){
 
-    add_child_device(99, BULB);
-    print_error("Child device aggiunto n.%d\n", children_devices.size);
+    print_error("Device %d: received add command\n", g_device.id);
+
+    DeviceType type;
+    device_id id;
+    const char* device_str;
+
+    int num_var = sscanf(args[0], "%d|%d|", &id, &type);
+    device_str = device_type_to_string(type);
+    if(num_var != 2 || id < 0 || device_string_to_type(device_str) == INVALID_TYPE){
+        send_response(INV_ARGS);
+        return;
+    }
+
+    print_error("add device: id: %d, type: %s\n", id, device_str);
+
+    int pos_child = add_child_device(id, type);
+
+    if(pos_child<0){
+        send_response(ERR);
+        return;
+    }
+
+    //print_error("added device in pos: %d\n", pos_child);
+
+    char* tmp[1];
+    int num = divide_string((char*)args[0], tmp, 1, "|");
+
+    if(num != 1){
+        send_response(INV_ARGS);
+        return;
+    }
+
+    char setconf_str[200];
+    sprintf(setconf_str, "setconf %s", tmp[0]+2);
+
+    //print_error("Sending command: %s\n", setconf_str);
+
+    /*send_command_to_child(pos_child, setconf_str);
+
+    LineBuffer line_buffer = {NULL, 0};
+
+    read_child_response(pos_child, &line_buffer);
+    send_response(line_buffer.buffer);
+
+    free(line_buffer.buffer);*/
+    send_response(OK_DONE);
 }
 
 void switch_command(const char** args, const size_t n_args){
@@ -76,15 +135,14 @@ int add_child(ChildrenDevices* c, ChildDevice d){
         return -1;
     c->children[c->size] = d;
     c->size++;
-    print_error("SIZE = %d\n",c->size);
-    return 0;
+    return c->size-1;
 }
 
 int delete_child(ChildrenDevices* c, int i){
-    if(c->size == 0)
+    if(c->size == 0 || i<0 || i>=MAX_CHILDREN)
         return -1;
-    //Penso ci sia un errore i <= c->size
-    for ( ; i <= c->size; i++)
+
+    for ( ; i < c->size && i<MAX_CHILDREN-1; i++)
         c->children[i] = c->children[i + 1];
     c->size--;
     return 0;
@@ -169,10 +227,8 @@ int add_child_device(const int id, const DeviceType d_type){
 
         setlinebuf(in);
         ChildDevice child_device = { in, out};
-        add_child(&children_devices, child_device);
+        return add_child(&children_devices, child_device);
     }
-
-    return 0;
 }
 
 void send_command_to_child(int child, const char* command){

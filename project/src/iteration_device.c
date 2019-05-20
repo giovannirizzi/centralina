@@ -41,27 +41,12 @@ void getinfo_command(const char **args, size_t n_args){
     send_response("%s", info_string);
 }
 
-void setconf_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received setconf command\n", g_device.id);
-
-    char *records[1];
-    int value;
-
-    int num = divide_string((char*)args[0], records, 1, "|");
-    if(num == 1){
-        string_to_int(args[0], &value);
-        g_device.state = value;
-        set_records_from_string(records[0]);
-    }
-}
-
 void getconf_command(const char** args, const size_t n_args){
 
     print_error("Device %d: received getconf command\n", g_device.id);
 
     char conf_str[200], records[180];
-    memset(records, 0, sizeof(conf_str) / sizeof(char));
+    memset(records, 0, sizeof(records) / sizeof(char));
 
     sprintf(conf_str, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
 
@@ -69,7 +54,7 @@ void getconf_command(const char** args, const size_t n_args){
     if(num > 0)
         strcat(conf_str, records);
 
-    send_response("%s", conf_str);
+    send_response("%s #", conf_str);
 }
 
 void switch_command(const char** args, const size_t n_args){

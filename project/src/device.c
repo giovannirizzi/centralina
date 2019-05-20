@@ -19,8 +19,6 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"switch", &switch_command},
                                      {"set", &set_command}};
 
-FILE* g_curr_out_stream;
-
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
     va_list ap;
@@ -115,6 +113,24 @@ void del_command(const char** args, const size_t n_args){
 
     print_error("Device %d: received del command\n", g_device.id);
     g_running = false;
+}
+
+void setconf_command(const char** args, const size_t n_args){
+
+    print_error("Device %d: received setconf command\n", g_device.id);
+
+    char *records[1];
+    int value;
+
+    int num = divide_string((char*)args[0], records, 1, "|");
+    if(num == 1){
+        string_to_int(args[0], &value);
+        g_device.state = value;
+        int n_records = set_records_from_string(records[0]);
+        send_response(OK_DONE);
+    }
+    else
+        send_response(INV_ARGS);
 }
 
 _Bool is_controlled(){
@@ -249,7 +265,6 @@ int set_records_from_string(char *records){
             break;
         }
 
-    print_error("num_registry: %d\n",num_registry);
     for (i = 0; i < num_registry; i++) {
 
         divide_string(registry[i], value_str, 1, "=");
