@@ -5,7 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/signalfd.h>
 #include <sys/types.h>
 #include "device.h"
 #include "utils.h"
@@ -46,14 +45,12 @@ sigset_t set_signal_mask(RTSignalType signal1, ...){
 void init_base_device(char *args[], size_t n_args){
 
     /*
-     * esempio ./bulb <id> <fd_signal>
+     * esempio ./bulb <id>
      * se l'id non è presente significa che il dispositivo non viene controllato
      * (usato per debuging) quindi il device accetta comandi solo da stdin
-     * se il fd_signal non è presente ne creo uno nuovo
      */
 
     device_id id;
-    int signal_fd;
     g_running = true;
     g_curr_out_stream = stdout;
     setlinebuf(stdout);
@@ -81,20 +78,7 @@ void init_base_device(char *args[], size_t n_args){
         g_device.id = -1;
     }
 
-    //se il signal_fd è nell'argomento lo salvo
-    if(n_args == 3 && string_to_int(args[2], &signal_fd) == 0)
-        g_signal_fd = signal_fd;
-    else{
-        //creo un nuova signal_fd
-        sigset_t mask;
-        mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
-                               SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
-        g_signal_fd = signalfd(-1, &mask, 0);
-        if (g_signal_fd == -1)
-            perror_and_exit("init_base_device: signalfd");
-
-        print_error("Debug mode, id: %d, signal_fd: %d\n", g_device.id, g_signal_fd);
-    }
+    print_error("Debug mode, id: %d\n", g_device.id);
 }
 
 void getpid_command(const char** args, const size_t n_args){
@@ -164,12 +148,11 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
     if(g_fifo_in_stream)
         fifo_fd = fileno(g_fifo_in_stream);
 
-    int max_fd = MAX(g_signal_fd, fifo_fd);
+    int max_fd = MAX(STDIN_FILENO, fifo_fd);
 
     while(g_running){
         FD_ZERO(&rfds);
 
-        FD_SET(g_signal_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
         if(is_controlled())
             FD_SET(fifo_fd, &rfds);
@@ -178,33 +161,22 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
             perror_and_exit("select");
         else{
 
-            //SIGNAL
-            if (FD_ISSET(g_signal_fd, &rfds)) {
-
-                read_incoming_signal(g_signal_fd, &input_signal);
-
-                handle_signal(&input_signal, signal_bindings, n_sb);
-
-                g_curr_out_stream = NULL;
+            if (FD_ISSET(stdin_fd, &rfds)) {
+                curr_in = stdin;
+                g_curr_out_stream = stdout;
             }
-            else{
-                if (FD_ISSET(stdin_fd, &rfds)) {
-                    curr_in = stdin;
-                    g_curr_out_stream = stdout;
-                }
 
-                if(FD_ISSET(fifo_fd, &rfds)){
-                    curr_in = g_fifo_in_stream;
-                    g_curr_out_stream = g_fifo_out_stream;
-                }
-
-                //Legge un comando (una linea)
-                if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
-                    break;
-
-                if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
-                    send_response(INV_COMMAND);
+            if(FD_ISSET(fifo_fd, &rfds)){
+                curr_in = g_fifo_in_stream;
+                g_curr_out_stream = g_fifo_out_stream;
             }
+
+            //Legge un comando (una linea)
+            if(read_incoming_command(curr_in, &input_command, &line_buffer) == -1)
+                break;
+
+            if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
+                send_response(INV_COMMAND);
         }
     }
     free(line_buffer.buffer);
@@ -214,9 +186,6 @@ void clean_base_device(){
 
     if(g_fifo_in_stream) fclose(g_fifo_in_stream);
     if(g_fifo_out_stream ) fclose(g_fifo_out_stream);
-
-    if(close(g_signal_fd) != 0);
-        perror("clean_base_device: close singal fd");
 
     print_error("Device %d: sto terminando\n", g_device.id);
 }

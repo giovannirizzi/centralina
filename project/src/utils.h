@@ -32,13 +32,6 @@ int open_fifo(const char* path, mode_t mode);
 
 /**
  * TODO
- * @param sfd
- * @param signal_res
- */
-void read_incoming_signal(int sfd, RTSignal *signal_res);
-
-/**
- * TODO
  * @param command
  */
 int read_incoming_command(FILE* in, Command *c, LineBuffer *buffer);

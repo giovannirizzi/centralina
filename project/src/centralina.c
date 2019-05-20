@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
-#include <sys/signalfd.h>
 #include <linux/limits.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -110,13 +109,11 @@ int add_device(DeviceType device){
 
     char exec_path[PATH_MAX];
     char device_id_str[10];
-    char signal_fd_str[5];
 
     sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
             ,device_type_to_string(device));
 
     sprintf(device_id_str, "%d", id);
-    sprintf(signal_fd_str, "%d", g_signal_fd);
 
     pid_t pid = fork();
     if(pid == -1){
@@ -134,15 +131,14 @@ int add_device(DeviceType device){
 
         char *argv[] = {"/usr/bin/xterm",
                         "-T", xterm_title,
-                        "-e", exec_path, device_id_str, signal_fd_str,
+                        "-e", exec_path, device_id_str,
                         0};
 
         freopen("/dev/null", "w", stderr);
         execv("/usr/bin/xterm", argv);
 #else
 
-        char *argv[] = {exec_path, device_id_str,
-                        signal_fd_str, 0};
+        char *argv[] = {exec_path, device_id_str, 0};
         //Cambio l'stdin
         //fclose(stdin);
         //fclose ("/tmp/centralina/null", "r", stdin);
@@ -449,14 +445,11 @@ void init_centralina(){
      * su una read end di una pipe chiusa.
      */
     signal(SIGPIPE, SIG_IGN);
-    //Maschero e creo il signal fd per i real time signal.
+
     sigset_t mask;
 
     mask = set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
             SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
-    g_signal_fd = signalfd(-1, &mask, 0);
-    if (g_signal_fd == -1)
-        perror_and_exit("init_base_device: signalfd");
 
     //Apro la fifo per le richieste di whois
     int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -472,9 +465,6 @@ void init_centralina(){
         fclose(stdout);
         freopen("/dev/null", "w", stderr);
 
-        char signal_fd_str[5];
-        sprintf(signal_fd_str, "%d", g_signal_fd);
-
         DeviceData controller = {
                 CENTRALINA, //DEVICE TYPE
                 0, //ID
@@ -487,8 +477,8 @@ void init_centralina(){
 
         g_device = controller;
 
-        char* tmp[3] = {" ", "0", signal_fd_str};
-        init_control_device(tmp, 3);
+        char* tmp[2] = {" ", "0"};
+        init_control_device(tmp, 2);
 
         stdin = g_fifo_in_stream;
 
