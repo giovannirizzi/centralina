@@ -180,13 +180,11 @@ int add_child_device(const int id, const DeviceType d_type){
 
     char exec_path[PATH_MAX];
     char device_id_str[10];
-    char signal_fd_str[5];
 
     sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
             ,device_type_to_string(d_type));
 
     sprintf(device_id_str, "%d", id);
-    sprintf(signal_fd_str, "%d", g_signal_fd);
 
     char xterm_title[100];
     sprintf(xterm_title, "%s, id:%d", device_type_to_string(d_type), id);
@@ -207,7 +205,7 @@ int add_child_device(const int id, const DeviceType d_type){
         close(fd_response[1]);
 
 
-       // char *argv[] = {exec_path, device_id_str, signal_fd_str, 0};
+       // char *argv[] = {exec_path, device_id_str, 0};
         char *argv[] = {exec_path, NULL};
         execv(exec_path, argv);
 

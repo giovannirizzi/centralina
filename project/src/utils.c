@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -170,7 +169,7 @@ int open_fifo(const char* path, mode_t access_mode){
 }
 
 
-void read_incoming_signal(int sfd, RTSignal *signal){
+/*void read_incoming_signal(int sfd, RTSignal *signal){
 
     static struct signalfd_siginfo fdsi;
     ssize_t s;
@@ -182,7 +181,7 @@ void read_incoming_signal(int sfd, RTSignal *signal){
     //Il cast non dovrebbe dare problemi...
     signal->type = (RTSignalType)fdsi.ssi_signo - SIGRTMIN;
     signal->value = fdsi.ssi_int;
-}
+}*/
 
 char* get_absolute_executable_dir(){
 
