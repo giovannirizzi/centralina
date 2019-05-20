@@ -16,6 +16,7 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"setconf", &setconf_command},
                                      {"getpid", &getpid_command},
                                      {"gettype", &gettype_command},
+                                     {"iscontrolled", &iscontrolled_command},
                                      {"switch", &switch_command},
                                      {"set", &set_command}};
 
@@ -109,6 +110,15 @@ void gettype_command(const char** args, const size_t n_args){
     print_error("Device %d: received gettype command\n", g_device.id);
 
     send_response("%s", device_type_to_string(g_device.type));
+}
+void iscontrolled_command(const char** args, const size_t n_args){
+
+    print_error("Device %d: received iscontrolled command\n", g_device.id);
+    
+    if(is_controlled())
+        send_response("YES");
+    else
+        send_response("NO");
 }
 
 void del_command(const char** args, const size_t n_args){

@@ -323,6 +323,14 @@ void list_shell_command(const char** args, const size_t n_args){
                 printf("    %d\t%s\n", i, line_buffer.buffer);
         }
     }
+    for(i=0; i<MAX_DEVICES; i++){
+        if(g_devices_request_stream[i] != NULL){
+            send_command_to_device(i, "isconttrolled\n");
+            int retval = read_device_response(&line_buffer);
+            if(retval>0)
+                printf("    %d\t%s\n", i, line_buffer.buffer);
+        }
+    }
     if(line_buffer.buffer) free(line_buffer.buffer);
 }
 void switch_shell_command(const char** args, const size_t n_args){
