@@ -116,9 +116,9 @@ void iscontrolled_command(const char** args, const size_t n_args){
     print_error("Device %d: received iscontrolled command\n", g_device.id);
     
     if(is_controlled())
-        send_response("YES");
+        send_response("yes");
     else
-        send_response("NO");
+        send_response("no");
 }
 
 void del_command(const char** args, const size_t n_args){

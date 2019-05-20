@@ -19,10 +19,7 @@ Lo stato e i registri di hub e switch dipendono dai filgi invece quelli della ce
 la add sarà comune a tutti e 3 i dipositivi di controllo pero hub e timer dovranno implementare un comando extra di canadd
 per dire se è possibile fare una add su quel dispositivo. La shell prima di fare una add manda un canadd...
 
-
-
 TODO:
-- Cambiare il comando list: deve restituirti la lista dei device con id type e un flag per dire se è attaccato a qualcosa oppure no, vedere il vettore is_linked in centralina.h
 - finire funzioni per i registri del frigo (percentuale e temperatura)
 - all'inizio il controller deve creare la cartelle /tmp/centralina e /tmp/centarlina/devices vedere funzione mkdir
 - comando base getrealtype: per gli iteration device restituisce il tipo in intero g_device.type per l'hub restituisce il tipo di device del filgio e se non ne ha 0 (invalid device), il timer uguale all'hub
