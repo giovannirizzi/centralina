@@ -236,7 +236,7 @@ int switch_device(device_id device, const char* label, const char* pos){
 void add_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
-        print_error("usage: add <device>\n");
+        print_error(YLW "usage: add <device>\n" RESET);
     else{
         DeviceType device = device_string_to_type(args[0]);
         if(device == INVALID_TYPE || device == CENTRALINA)
@@ -311,16 +311,20 @@ void list_shell_command(const char** args, const size_t n_args){
             set begin: indicates the activation time of the timer\n\
             set end: indicates when the timer will be deactivated\n\n\
     \033[1;37mactive devices:\033[0m \n\
-    id\ttype\
-    \n");
-    int i;
+    id%-9stype%-15scontrolled\
+    \n", "", "");
+    int i, retval;
     LineBuffer line_buffer = {NULL, 0};
     for(i=0; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
             send_command_to_device(i, "gettype\n");
-            int retval = read_device_response(&line_buffer);
+            retval = read_device_response(&line_buffer);
             if(retval>0)
-                printf("    %d\t%s\n", i, line_buffer.buffer);
+                printf("    %-10d %-15s", i, line_buffer.buffer);
+            send_command_to_device(i, "iscontrolled\n");
+            retval = read_device_response(&line_buffer);
+            if(retval>0)
+                printf("    %s\n", line_buffer.buffer);    
         }
     }
     if(line_buffer.buffer) free(line_buffer.buffer);
