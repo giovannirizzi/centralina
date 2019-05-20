@@ -53,12 +53,12 @@ DeviceType device_string_to_type(const char* device_string){
         return INVALID_TYPE;
 }
 
-int string_to_device_state(const char *string, int *state){
+int string_to_switch_state(const char *string, int *state){
 
     if(strcmp("on", string) == 0)
        *state = 1;
     else if(strcmp("off", string) == 0)
-        *state = 0;
+        *state= 0;
     else
         return -1;
 
@@ -77,10 +77,8 @@ const char* device_state_to_string(int device_state, DeviceType dt){
         else  
             return "on";
     }
-    else if(device_state == 2)
-        return "off with override";
     else
-        return "on with override";
+        return "invalid args";
 }
 
 int string_to_int(const char* string, int *id){

@@ -75,13 +75,13 @@ void getconf_command(const char** args, const size_t n_args){
 void switch_command(const char** args, const size_t n_args){
 
     if(n_args != 2){
-        send_response("INVALID ARGS");
+        send_response(INV_ARGS);
         return;
     }
 
     int device_state;
-    if(string_to_device_state(args[1], &device_state)==-1){
-        send_response("INVALID SWITCH STATE");
+    if(string_to_switch_state(args[1], &device_state)==-1){
+        send_response(INV_SWITCH_STATE);
         return;
     }
 
@@ -91,7 +91,7 @@ void switch_command(const char** args, const size_t n_args){
             g_device.switches[i].action(device_state);
             return;
         }
-    send_response("INVALID SWITCH NAME");
+    send_response(INV_SWITCH);
 }
 
 //switch power on
@@ -100,7 +100,7 @@ void switch_command(const char** args, const size_t n_args){
 
 void set_command(const char** args, const size_t n_args){
     if(n_args != 2){
-        send_response("INVALID ARGS");
+        send_response(INV_ARGS);
         return;
     }
 
@@ -111,18 +111,18 @@ void set_command(const char** args, const size_t n_args){
             if(g_device.records[i].is_settable){
                 if(g_device.records[i].convert_value(args[1], &device_value) == 0){
                     g_device.records[i].value = device_value;
-                    send_response("DONE");
+                    send_response(OK_DONE);
                     return;
                 } else {
-                    send_response("INVALID SET VALUE");
+                    send_response(INV_SET_VALUE);
                     return;
                 }
             } else {
-                send_response("REGISTER NOT SETTABLE");
+                send_response(ERR_REG_UNSETTABLE);
                 return;
             }
         }
     }
 
-    send_response("INVALID SET NAME");
+    send_response(INV_REG);
 }

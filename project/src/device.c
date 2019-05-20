@@ -177,7 +177,7 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
                     break;
 
                 if(handle_device_command(&input_command, extra_commands, n_dc) == -1)
-                    send_response("UNKNOWN COMMAND");
+                    send_response(INV_COMMAND);
             }
         }
     }

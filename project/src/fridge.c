@@ -71,23 +71,23 @@ void tick_signal(int a){
 void switch_open_action(int state){
 
     if((state == g_device.state) || (state == 0))
-        send_response("ALREADY SET");
+        send_response(OK_NO_CHANGES);
     else{
         set_timer_tick(timer, true);
         g_device.state = state;
-        send_response("DONE");
+        send_response(OK_DONE);
     }
 }
 
 void switch_close_action(int state){
 
     if((state == !g_device.state) || (state == 0))
-        send_response("ALREADY SET");
+        send_response(OK_NO_CHANGES);
     else{
         set_timer_tick(timer, false);
         g_device.records[0].value = 0;
         g_device.state = 0;
-        send_response("DONE");
+        send_response(OK_DONE);
     }
 }
 

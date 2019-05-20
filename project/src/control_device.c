@@ -36,11 +36,18 @@ void getinfo_command(const char **args, size_t n_args){
 
 void setconf_command(const char** args, const size_t n_args){
 
+    /**
+     *
+     */
 
 }
 
 void getconf_command(const char** args, const size_t n_args){
 
+    /**
+     * Deve restituire la sua configurazione e quella di tutti
+     * i suoi figli
+     */
 
 }
 

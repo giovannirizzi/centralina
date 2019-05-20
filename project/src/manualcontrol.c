@@ -36,7 +36,7 @@ SignalMapping registry_names_mappings[] = {{"begin", SIG_BEGIN, &string_to_time}
 
 // aggiungere a SignalMapping una puntatore a funzione int func(char*, *int) (come string_to_int) che converte il secondo argomento 
 // del comando set e switch ad un intero, il valore di ritorno serve per controllare se la conversione è andata a buon fine.
-// I switch label mappings avranno tutti la funzione &string_to_device_state
+// I switch label mappings avranno tutti la funzione &string_to_switch_state
 
 
 
@@ -120,7 +120,7 @@ void switch_command(const char** args, const size_t n_args){
         if (string_to_int(args[0], &id) != 0)
             print_error_and_exit(RED "[-] invalid id %s\n" RESET, args[0]);
 
-        if (string_to_device_state(args[2], &device_state) != 0)
+        if (string_to_switch_state(args[2], &device_state) != 0)
             print_error_and_exit(RED "[-] invalid state %s\n" RESET, args[2]);
 
         else{
