@@ -1,3 +1,26 @@
+Il comando switch del per hub e timer funzionano che switchano i filgi perché fanno il mirroning
+anche lo stato di hub e timer è il loro stato più quello dei figli perché fanno il mirroning
+
+il comando switch della centralina è diverso, perché deve accettare anche l'id. Quindi magari è meglio
+cambiare il nome tipo in switchdevice. Se l'id è quello della centralina il comando agisce sullo stato della centralina
+se la centralina è spenta il comamndo switchdevice non deve funzionare.
+La centralina dovrà avere anche un comando setdevice per settare i registri degli altri device (di fridge o timer). Il timer però
+non fa il mirroning dei registri, ha i suoi quindi una set su un timer setta i registri del timer anche se il timer ha come gli un
+frigo.
+
+Il comando set può essere comune a tutti i device, per i dispositivi di controllo sarà uguale a meno che non si voglia
+che una set su di un hub faccia la set del registro su tutti i gli di quell'hub. (solo fridge nel nostro caso)
+
+Per il timer bisonga aggiunge almeno un registro settabile per indicare che interruttore modificare al begin del timer, eveutualmente
+un altro registro per l'end.4
+
+Lo stato e i registri di hub e switch dipendono dai filgi invece quelli della centralina no, hanno conseguenzei comandi getinfo
+
+la add sarà comune a tutti e 3 i dipositivi di controllo pero hub e timer dovranno implementare un comando extra di canadd
+per dire se è possibile fare una add su quel dispositivo. La shell prima di fare una add manda un canadd...
+
+
+
 TODO:
 - Cambiare il comando list: deve restituirti la lista dei device con id type e un flag per dire se è attaccato a qualcosa oppure no, vedere il vettore is_linked in centralina.h
 - finire funzioni per i registri del frigo (percentuale e temperatura)

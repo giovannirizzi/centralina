@@ -87,12 +87,10 @@ int string_to_int(const char* string, int *id);
 
 
 /**
- * modifica la stringa passata come parametro in 0 o 1
- * @param state stato del device
- * @param string da convertire nello stato
- * @return 0 se la conversione è andata a buon fine altrimenti -1
+ * mappa la stringa on con 1 e off con 0
+ * @return 0 con stringhe "on" e "off", altrimenti -1
  */
-int string_to_device_state(const char *string, int *state);
+int string_to_switch_state(const char *string, int *state);
 
 
 /**
