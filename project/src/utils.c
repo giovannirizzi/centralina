@@ -274,3 +274,11 @@ int delete_timer(timer_t timer){
 int seconds_to_string(int seconds, char* string){
     sprintf(string, "%d sec", seconds);
 }
+
+int percentage_to_string(int percentage, char* string){
+    sprintf(string, "%d%%", percentage);
+}
+
+int temperature_to_string(int temperature, char* string){
+    sprintf(string, "%d°", temperature);
+}
