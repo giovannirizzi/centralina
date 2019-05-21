@@ -116,3 +116,8 @@ void getrealtype_command(const char** args, const size_t n_args) {
 
     send_response("%d", g_device.type);
 }
+
+void gettree_command(const char** args, size_t n_args){
+
+    send_response("%d|%d| #", g_device.id, g_device.type);
+}

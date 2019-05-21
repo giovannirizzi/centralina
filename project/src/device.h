@@ -12,7 +12,9 @@
 #define OK_DONE "DONE"
 #define ERR "UNKNOWN ERROR"
 
+#include <signal.h>
 #include "common.h"
+
 
 typedef int device_id;
 
@@ -62,7 +64,7 @@ typedef struct{
 
 } DeviceData;
 
-const CommandBind BASE_COMMANDS[10];
+const CommandBind BASE_COMMANDS[11];
 
 /**
  * Global vars for all devices
@@ -73,6 +75,7 @@ FILE* g_fifo_in_stream;
 FILE* g_fifo_out_stream;
 FILE* g_curr_out_stream;
 _Bool g_running;
+RTSignal g_curr_signal;
 
 
 /*
@@ -88,6 +91,7 @@ void iscontrolled_command(const char** args, size_t n_args);
 void switch_command(const char** args, size_t n_args);
 void set_command(const char** args, size_t n_args);
 void getrealtype_command(const char** args, size_t n_args);
+void gettree_command(const char** args, size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);
@@ -107,6 +111,8 @@ int set_records_from_string(char *records);
  * @return la mask dei segnali passati come argomento
  */
 sigset_t set_signal_mask(RTSignalType signal1, ...);
+
+void signal_handler(int sig, siginfo_t *info, void *context);
 
 
 

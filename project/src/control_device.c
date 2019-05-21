@@ -8,7 +8,8 @@
 #include "control_device.h"
 #include "utils.h"
 
-const const CommandBind CONTROL_DEVICE_COMMANDS[] = {"add", &add_command};
+const const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command},
+                                                     {"canadd", &canadd_command}};
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
 
@@ -325,7 +326,39 @@ void clean_control_device(){
     }
 }
 
-void sigchild_handler(int signum){
+void sigchild_handler(int signum) {
 
     while (waitpid(-1, NULL, WNOHANG) > 0);
+}
+
+void gettree_command(const char** args, size_t n_args){
+
+    print_error("Device %d: received gettree command\n", g_device.id);
+
+    fprintf(g_curr_out_stream, "%d|%d|", g_device.id, g_device.type);
+
+    int i;
+    LineBuffer line_buffer = {NULL, 0};
+
+    for(i=0; i<children_devices.size; i++){
+        if(send_command_to_child(i, "gettree") == 0){
+            read_child_response(i, &line_buffer);
+            fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
+        }
+        else
+            i--;
+    }
+
+    if(line_buffer.length > 0) free(line_buffer.buffer);
+
+    if(i== 0) //non ci sono child devices
+        fprintf(g_curr_out_stream, " #");
+
+    send_response("\n");
+}
+
+void canadd_command(const char** args, size_t n_args){
+
+
+
 }
