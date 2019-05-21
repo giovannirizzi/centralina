@@ -5,6 +5,7 @@
 #include "device.h"
 
 void add_command(const char** args, size_t n_args);
+void canadd_command(const char** args, size_t n_args);
 
 int add_child_device(int id, DeviceType d_type);
 void delete_child_device(int child);

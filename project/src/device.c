@@ -18,7 +18,8 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"iscontrolled", &iscontrolled_command},
                                      {"switch", &switch_command},
                                      {"set", &set_command},
-                                     {"getrealtype", &getrealtype_command}};
+                                     {"getrealtype", &getrealtype_command},
+                                     {"gettree", &gettree_command}};
 
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
@@ -28,18 +29,29 @@ sigset_t set_signal_mask(RTSignalType signal1, ...){
 
     sigemptyset(&mask);
 
-    va_start(ap, signal1);
-
-    for (i = signal1; i >= 0; i = va_arg(ap, int))
-        sigaddset(&mask, SIGRTMIN + i);
-
-    va_end(ap);
+    struct sigaction sig_action;
+    sigset_t emptyset;
+    sigemptyset(&emptyset);
+    sig_action.sa_sigaction = signal_handler;
+    sig_action.sa_mask = mask;
+    sig_action.sa_flags = SA_SIGINFO;
+    sig_action.sa_restorer = NULL;
 
     sigaddset(&mask, SIGCHLD);
 
+    va_start(ap, signal1);
+
+    for (i = signal1; i >= 0; i = va_arg(ap, int)){
+        sigaddset(&mask, SIGRTMIN + i);
+        sig_action.sa_mask = mask;
+        sigaction(SIGRTMIN + i, &sig_action, NULL);
+    }
+
+    va_end(ap);
+
     /* Blocca i segnali settati nella mask cosi da prevenire
      * la chiamata del handler di default */
-    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
+    if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1)
         perror_and_exit("sigprocmask");
 
     return mask;
@@ -52,6 +64,9 @@ void init_base_device(char *args[], size_t n_args){
      * se l'id non è presente significa che il dispositivo non viene controllato
      * (usato per debuging) quindi il device accetta comandi solo da stdin
      */
+
+    set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
+                    SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
 
     device_id id;
     g_running = true;
@@ -167,7 +182,13 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
             if(errno != EINTR)
                 perror("pselect");
             else {
-                print_error("select interrupted by a signal\n");
+
+                if(g_curr_signal.type >= 0){
+
+                    handle_signal(&g_curr_signal, signal_bindings, n_sb);
+                }
+
+                g_curr_signal.type = -1;
             }
         }
         else{
@@ -269,5 +290,13 @@ int set_records_from_string(char *records){
         return num_registry+1;
     else
         return num_registry;
+}
+
+void signal_handler(int sig, siginfo_t *info, void *context){
+
+    g_curr_signal.type = sig - SIGRTMIN;
+
+    if(info != NULL)
+        g_curr_signal.value = info->si_value.sival_int;
 }
 
