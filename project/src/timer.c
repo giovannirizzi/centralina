@@ -19,8 +19,7 @@ int main(int argc, char *argv[]){
 
     Registry records[] = {
             {"begin", "starting time", 0, &string_to_time, &seconds_to_string, true},
-            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true},
-            {"switch_controller", "switch controller", 0, &string_to_action, NULL, true}
+            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true}
     };
 
     Switch switches[] = {"power", &switch_power_action};
@@ -44,12 +43,12 @@ int main(int argc, char *argv[]){
 
     //INIZIO PROVA end time
     int tempo;
-    int retval = string_to_time("10:09",&tempo);
+    int retval = string_to_time("15:09",&tempo);
     retval = time_to_string(tempo,str);
     g_device.records[0].value = tempo;
-    //FINE PROVA
-
     create_timer(&tim);
+    set_timer_tick(tim, true);
+    //FINE PROVA
 
     init_base_device(argv, argc);
     
@@ -64,15 +63,16 @@ int main(int argc, char *argv[]){
 
 void tick_signal(int a){
     //INIZIO PROVA end time
+    LineBuffer line_buffer = {NULL, 0};
     t = time(NULL);
     tm = *localtime(&t);
-    sprintf(time_now,"%d:%d",tm.tm_hour, tm.tm_min);
-    printf("Sto tickando! %s\n",time_now);
-
+    int retval = strftime(time_now,80,"%H:%M", &tm);
     if(strcmp(time_now,str) == 0){
-        print_error("Orari combaciano, chiudo finestra\n");
         send_command_to_child(0,"switch open on");
+        read_child_response(0, &line_buffer);
+        send_response("%s", line_buffer.buffer);
     }
+    if(line_buffer.length > 0) free(line_buffer.buffer);
     //FINE PROVA
 }
 
@@ -86,8 +86,4 @@ void set_begin_action(int state){
 
 void set_end_action(int state){
     g_device.records[1].value = state;
-}
-
-int string_to_action(const char* string, int *id){
-    
 }
