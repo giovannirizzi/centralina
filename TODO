@@ -212,5 +212,3 @@ Frigo:
 Timer:
     
     funzioni per gestire il time: strptime e strftime
-        
-        

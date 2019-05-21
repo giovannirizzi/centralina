@@ -292,7 +292,11 @@ void list_shell_command(const char** args, const size_t n_args){
     \033[1;37mactive devices:\033[0m \n\
     id%-9stype%-15scontrolled\
     \n", "", "");
-    int i, retval;
+    LineBuffer buffer = {NULL, 0};
+    char bo[200];
+    strcpy(bo, "0|-1| 1|-2| 2|2| # 3|1| # # 4|2 5|1| #");
+
+    /*int i, retval;
     LineBuffer line_buffer = {NULL, 0};
     for(i=0; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
@@ -307,8 +311,9 @@ void list_shell_command(const char** args, const size_t n_args){
                     printf("    %s\n", line_buffer.buffer);
             }
         }
-    }
-    if(line_buffer.buffer) free(line_buffer.buffer);
+    }*/
+    printTree(bo);
+    //if(line_buffer.buffer) free(line_buffer.buffer);
 }
 void switch_shell_command(const char** args, const size_t n_args){
 
@@ -320,6 +325,76 @@ void switch_shell_command(const char** args, const size_t n_args){
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else
             switch_device(id, args[1], args[2]);
+    }
+}
+
+void printTreeRec(char* node[], int indent, int last[10][10], int a, int index){
+    a++;
+           if(node[a][0]!='#'){
+               index++;
+               indent++;
+               printTreeRec(node, indent, last, a, index);
+           }
+           else{
+               printf("ciao: %i", index);
+               int i;
+               for(i=0; i<index; i++){
+                last[i][indent]=1;
+               }
+               indent--;
+           }
+}
+
+void printTree(char* string){
+    //mi arriva: 0|-1|  1|-2|  2|2| #
+    char* node[MAX_DEVICES];
+    int i, j, last[10][10];
+    int num_nodes = divide_string(string, node+1, 100, " ");
+    node[0] = string;
+
+    for(i=0; i<10; i++){
+        for(j=0; j<10; j++){
+            last[i][j]=0;
+        }
+    }
+    for(i=0; i<10; i++){
+        for(j=0; j<10; j++){
+            printf(" %i", last[i][j]);
+        }
+        printf("\n");
+    }
+    
+
+    printTreeRec(node, 0, last, -1, -1);
+
+    for(i=0; i<10; i++){
+        for(j=0; j<10; j++){
+            printf(" %i", last[i][j]);
+        }
+                printf("\n");
+
+    }
+    printf("num %d\n", num_nodes);
+    int indent=0;
+    for(i=0;  i<num_nodes; i++){
+
+        if(node[i][0]!='#'){
+            for(j=0; j<indent; j++){
+                printf("\t\t");
+                if(last[j][indent]){
+                    printf("|");
+                }
+
+            }
+            indent++;
+            printf("+-nodo %d: %s\n", i, node[i]);
+            printf("\n");
+
+        }
+        else{
+            indent--;
+        }
+
     }
 }
 
