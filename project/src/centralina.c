@@ -329,20 +329,32 @@ void switch_shell_command(const char** args, const size_t n_args){
 }
 
 void printTreeRec(char* node[], int indent, int last[10][10], int a, int index){
-    a++;
-           if(node[a][0]!='#'){
-               index++;
-               indent++;
-               printTreeRec(node, indent, last, a, index);
-           }
-           else{
-               printf("ciao: %i", index);
-               int i;
-               for(i=0; i<index; i++){
-                last[i][indent]=1;
-               }
-               indent--;
-           }
+    if(node[a][0]!='#'){
+        a++;
+        last[index][indent]=1;
+
+int i, j;
+        for(j=index; j>0; j--){
+            if(last[j][indent]==1){
+                break;
+            }
+            
+        }
+        if(i!=0){
+        for(i=index; i>j; i--){
+            last[i][indent]=1;
+            
+        }
+        }
+
+        index++;
+        indent++;
+        printTreeRec(node, indent, last, a, index);
+    }else{
+        a++;
+
+        indent--;
+    }
 }
 
 void printTree(char* string){
@@ -363,38 +375,34 @@ void printTree(char* string){
         }
         printf("\n");
     }
-    
 
-    printTreeRec(node, 0, last, -1, -1);
+    printf("\n");
+
+    printTreeRec(node, 0, last, 0, 0);
 
     for(i=0; i<10; i++){
         for(j=0; j<10; j++){
             printf(" %i", last[i][j]);
         }
-                printf("\n");
-
+        printf("\n");
     }
     printf("num %d\n", num_nodes);
     int indent=0;
     for(i=0;  i<num_nodes; i++){
-
         if(node[i][0]!='#'){
             for(j=0; j<indent; j++){
                 printf("\t\t");
-                if(last[j][indent]){
+                if(last[i-1][indent-1]){
                     printf("|");
                 }
-
             }
             indent++;
             printf("+-nodo %d: %s\n", i, node[i]);
             printf("\n");
 
-        }
-        else{
+        }else{
             indent--;
         }
-
     }
 }
 
