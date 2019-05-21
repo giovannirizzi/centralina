@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
             NULL, 0);
 
 
-    delete_timer(&timer);
+    delete_timer(timer);
     clean_base_device();
 
     exit(EXIT_SUCCESS);

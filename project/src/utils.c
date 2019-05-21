@@ -254,7 +254,7 @@ int set_timer_tick(timer_t timer, _Bool tick){
     }
 
     if (timer_settime(timer, 0, &value, NULL) != 0) {
-        perror("time_settime error!");
+        perror("set_timer_tick: time_settime error!");
         return -1;
     }
 
@@ -264,7 +264,7 @@ int set_timer_tick(timer_t timer, _Bool tick){
 int delete_timer(timer_t timer){
 
     if(timer_delete(timer) != 0){
-        perror("time_settime error!");
+        perror("delete_timer: time_settime error!");
         return -1;
     }
     return 0;

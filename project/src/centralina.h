@@ -16,6 +16,9 @@ void clean_centralina();
 int send_command_to_device(device_id id, const char* command);
 int read_device_response(LineBuffer *buffer);
 
+void print_tree(char* tree);
+_Bool is_last_sibling(char* node[], int n);
+
 int add_device(DeviceType device);
 int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);

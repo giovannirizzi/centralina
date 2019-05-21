@@ -148,7 +148,7 @@ int add_device(DeviceType device){
         //fclose ("/tmp/centralina/null", "r", stdin);
         fclose(stdin);
         fclose(stdout);
-        freopen("/dev/null", "w", stderr);
+        //freopen("/dev/null", "w", stderr);
 
         execv(exec_path, argv);
 #endif
@@ -191,6 +191,61 @@ int link_device(device_id device1, device_id device2){
 
     printf("Link %d to %d\n",device1,device2);
 
+    LineBuffer line_buffer = {NULL, 0};
+    LineBuffer line_buffer2 = {NULL, 0};
+
+    send_command_to_device(device2, "gettype");
+    read_device_response(&line_buffer);
+    DeviceType type = device_string_to_type(line_buffer.buffer);
+    print_error("gettype result %s\n", line_buffer.buffer);
+
+    if(type >= 0){
+        print_error("error, can't link to an iteraction device\n");
+        return -1;
+    }
+
+    send_command_to_device(device1, "getrealtype");
+    read_device_response(&line_buffer);
+    print_error("getrealtype: %s\n", line_buffer.buffer);
+
+    char command[40];
+    sprintf(command, "canadd %s", line_buffer.buffer);
+    print_error("send command: %s\n", command);
+
+    send_command_to_device(device2, line_buffer.buffer);
+    read_device_response(&line_buffer);
+
+    if(strcmp(line_buffer.buffer, "yes") != 0 &&
+            strcmp(line_buffer.buffer, INV_COMMAND) != 0){
+
+        print_error("error, %s\n", line_buffer.buffer);
+        return -1;
+    }
+    else{
+
+        char *devices[50];
+        char command[100];
+
+        send_command_to_device(device1, "getconf");
+        read_device_response(&line_buffer);
+
+        send_command_to_device(device1, "del");
+
+        int num_devices = divide_string(line_buffer.buffer, devices, 50, " ");
+
+        sprintf(command, "add %s", line_buffer.buffer);
+        print_error("sending: %s", command);
+        send_command_to_device(device2, command);
+        read_device_response(&line_buffer2);
+
+        print_error("Received: %s", line_buffer2.buffer);
+
+
+
+
+    }
+
+
     /*
      * Mando un info <device1>
      * Mando un del <device1>
@@ -200,6 +255,7 @@ int link_device(device_id device1, device_id device2){
      * alla centralina e fa un set
      * Magari attendo una risposta
      */
+    if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
 int switch_device(device_id device, const char* label, const char* pos){
@@ -259,9 +315,11 @@ void link_shell_command(const char** args, const size_t n_args){
         print_error(YLW "usage: link <id> to <id>\n" RESET);
     else{
         device_id id1, id2;
-        if(string_to_int(args[0], &id1) != 0)
+        if(string_to_int(args[0], &id1) != 0 || id1 == 0 ||
+                g_devices_request_stream[id1] == NULL)
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else if(string_to_int(args[2], &id2) != 0)
+        else if(string_to_int(args[2], &id2) != 0 ||
+                g_devices_request_stream[id2] == NULL)
             print_error(RED "[-] invalid id %s\n" RESET, args[2]);
         else
             link_device(id1, id2);
@@ -536,4 +594,51 @@ void clean_centralina(){
     int i;
     for(i=0; i<MAX_DEVICES; i++)
         delete_device(i);
+}
+
+void print_tree(char *tree){
+
+    char* nodes[200];
+    char delimiter[200];
+    strcpy(delimiter, "");
+    int i=0, id, type;
+    int num = divide_string(tree, nodes+1, sizeof(nodes)/ sizeof(char) -1, " ");
+    nodes[0] = tree;
+    char* delim1 = "|    ";
+    char* delim2 = "     ";
+
+    for(i=0; i<=num; i++){
+
+        if(*nodes[i] == '#'){
+            int length = strlen(delimiter);
+            delimiter[length-strlen(delim1)] = '\0';
+
+        }else{
+            sscanf(nodes[i], "%d|%d|", &id, &type);
+            printf("%s+-(%d)-%s\n", delimiter, id, device_type_to_string(type));
+
+            if(is_last_sibling(nodes + i, num -i))
+                strcat(delimiter, delim1);
+            else
+                strcat(delimiter, delim2);
+        }
+    }
+}
+
+_Bool is_last_sibling(char* node[], int n){
+
+    int i=0;
+    int counter = 0;
+    while (i<n && counter >= -1){
+        i++;
+        if(*node[i] == '#')
+            counter--;
+        else{
+
+            counter++;
+            if(counter == 0)
+                return true;
+        }
+    }
+    return false;
 }

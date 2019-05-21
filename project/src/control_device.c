@@ -8,17 +8,18 @@
 #include "control_device.h"
 #include "utils.h"
 
-const const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command},
-                                                     {"canadd", &canadd_command}};
+const const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command}};
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
 
-    if(handle_command(c, BASE_COMMANDS,
-            sizeof(BASE_COMMANDS)/ sizeof(CommandBind)) == 0)
+    if(handle_command(c, extra_commands, n) == 0)
         return 0;
+
     if(handle_command(c, CONTROL_DEVICE_COMMANDS, 1) == 0)
         return 0;
-    return handle_command(c, extra_commands, n);
+
+    return handle_command(c, BASE_COMMANDS,
+            sizeof(BASE_COMMANDS)/ sizeof(CommandBind));
 }
 
 void getinfo_command(const char **args, size_t n_args){
@@ -187,10 +188,7 @@ int add_child_device(const int id, const DeviceType d_type){
     sprintf(exec_path, "%s/%s", get_absolute_executable_dir()
             ,device_type_to_string(d_type));
 
-    sprintf(device_id_str, "%d", id);
-
-    char xterm_title[100];
-    sprintf(xterm_title, "%s, id:%d", device_type_to_string(d_type), id);
+    sprintf(device_id_str, "%d", id);;
 
     pid_t pid = fork();
     if(pid == -1){
@@ -208,8 +206,8 @@ int add_child_device(const int id, const DeviceType d_type){
         close(fd_response[1]);
 
 
-       // char *argv[] = {exec_path, device_id_str, 0};
-        char *argv[] = {exec_path, NULL};
+        char *argv[] = {exec_path, device_id_str, 0};
+        //char *argv[] = {exec_path, NULL};
         execv(exec_path, argv);
 
         perror_and_exit("error add_child_device: execl\n");
@@ -357,8 +355,9 @@ void gettree_command(const char** args, size_t n_args){
     send_response("\n");
 }
 
+/*
 void canadd_command(const char** args, size_t n_args){
 
-
-
+    send_response("yes");
 }
+*/
