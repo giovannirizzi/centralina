@@ -24,6 +24,7 @@ int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
 int switch_device(device_id device, const char* label, const char* pos);
 int get_info(device_id device);
+void printTree(char* string);
 
 /**
  * Funzioni che validano ed eseguono i comandi della shell

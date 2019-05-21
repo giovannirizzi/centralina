@@ -184,7 +184,7 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
             else {
 
                 if(g_curr_signal.type >= 0){
-
+                    g_curr_out_stream = NULL;
                     handle_signal(&g_curr_signal, signal_bindings, n_sb);
                 }
 

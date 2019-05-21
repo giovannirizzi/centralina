@@ -9,15 +9,16 @@ void tick_signal(int a);
 void set_delay_action();
 void set_percentage_action(int state);
 void set_temperature_action(int state);
+int string_to_temperature();
 
 timer_t timer;
 
 int main(int argc, char *argv[]){
 
     Registry records[] = {
-            {"temperature", "temperature", 0, &string_to_int, &temperature_to_string, true},
+            {"temperature", "temperature", 0, &string_to_temperature, &temperature_to_string, true},
             {"percentage", "filling percentage", 0, &string_to_int, &percentage_to_string, false},
-            {"delay", "delay time", 0, &string_to_int, &seconds_to_string, true},
+            {"delay", "delay time", 10, &string_to_int, &seconds_to_string, true},
             {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
     };
     Switch switches[] = {
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]){
 
 void tick_signal(int a){
     g_device.records[3].value++;
-    if(g_device.records[3].value == g_device.records[2].value)
+    if(g_device.records[3].value == g_device.records[2].value || g_device.records[2].value == 0)
         switch_close_action(1);
 }
 
@@ -96,11 +97,18 @@ void set_delay_action(int state){
 }
 
 void set_percentage_action(int state){
-    g_device.records[1].value = state;
+    if(state > 0 && state < 100)
+        g_device.records[1].value = state;
 }
 
 void set_temperature_action(int state){
-    if(state >= 20 || state <= -20)
-        g_device.records[0].value = 0;
-    g_device.records[0].value = state;
+    if(state > -20 && state < 20)
+        g_device.records[0].value = state;
+}
+
+int string_to_temperature(const char* string, int *id){
+    int retval = string_to_int(string,id);
+    if(retval == -1 || *id>20 || *id<-20)
+        return -1;
+    return 0;
 }
