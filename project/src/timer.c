@@ -6,11 +6,13 @@
 
 void switch_power_action(int state);
 void tick_signal(int a);
+int string_to_action(const char* string, int *id);
+int action_to_string(int action, char* string);
 
 //INIZIO PROVA end time
 timer_t tim;
 time_t t;
-struct tm tn;
+struct tm tm;
 char time_now[80];
 char str[80];
 //FINE PROVA
@@ -23,8 +25,8 @@ int main(int argc, char *argv[]){
 
     Registry records[] = {
             {"begin", "starting time", 0, &string_to_time, &seconds_to_string, true},
-            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true}
-            //{"switch_controller", "switch controller", 0, &string_to_action, &int_to_string, true}
+            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true},
+            {"switch_controller", "switch controller", 2, &string_to_action, &action_to_string, true}
     };
 
     Switch switches[] = {"power", &switch_power_action};
@@ -48,11 +50,11 @@ int main(int argc, char *argv[]){
 
     //INIZIO PROVA end time
     int tempo;
-    int retval = string_to_time("11:24",&tempo);
-    retval = time_to_string(tempo,str);
+    string_to_time("14:58",&tempo);
+    //time_to_string(tempo,str);
     g_device.records[0].value = tempo;
-    retval = string_to_time("16:40",&tempo);
-    retval = time_to_string(tempo,str);
+    string_to_time("15:03",&tempo);
+    //time_to_string(tempo,str);
     g_device.records[1].value = tempo;
     create_timer(&tim);
     set_timer_tick(tim, true);
@@ -74,46 +76,50 @@ void tick_signal(int a){
     char temp[80];
     LineBuffer line_buffer = {NULL, 0};
     t = time(NULL);
-    tn = *localtime(&t);
-    strftime(temp,80,"%H:%M", &tn);
-    //printf("Time now: %s\n",temp);
-    strptime(temp, "%H:%M", &t_now);
+    tm = *localtime(&t);
+    strftime(temp,80,"%H:%M", &tm);
+    strptime(temp, "%H:%M", &tm);
+    t_now = mktime(&tm);
     time_to_string(g_device.records[0].value,temp);
-    //printf("Time begin: %s\n",temp);
-    strptime(temp, "%H:%M", &t_begin);
+    strptime(temp, "%H:%M", &tm);
+    t_begin = mktime(&tm);
     time_to_string(g_device.records[1].value,temp);
-    //printf("Time end: %s\n",temp);
-    strptime(temp, "%H:%M", &t_end);
+    strptime(temp, "%H:%M", &tm);
+    t_end = mktime(&tm);
 
     double diff_begin = difftime(t_now,t_begin);
     double diff_end = difftime(t_now,t_end);
 
-    /*if(diff_begin>=0 && diff_end<=0){
-        switch(g_device.records[2].value){
-            case 0:
-                send_command_to_child(0,"switch power on");
-                read_child_response(0, &line_buffer);
-                send_response("%s", line_buffer.buffer);
-                break;
-            case 1:
-                send_command_to_child(0,"switch power off");
-                read_child_response(0, &line_buffer);
-                send_response("%s", line_buffer.buffer);
-                break;
-            case 2:
-                send_command_to_child(0,"switch open on");
-                read_child_response(0, &line_buffer);
-                send_response("%s", line_buffer.buffer);
-                break;
-            case 3:
-                send_command_to_child(0,"switch close on");
-                read_child_response(0, &line_buffer);
-                send_response("%s", line_buffer.buffer);
-                break;
-            default:
-                printf("Non so\n");
+    if(diff_begin>=0 && diff_end<=0){
+        if(children_devices.size != 0){
+            switch(g_device.records[2].value){
+                case 0:
+                    send_command_to_child(0,"switch power on");
+                    if(diff_end == 0.0)
+                        send_command_to_child(0,"switch power off");
+                    break;
+                case 1:
+                    send_command_to_child(0,"switch power off");
+                    if(diff_end == 0.0)
+                        send_command_to_child(0,"switch power on");
+                    break;
+                case 2:
+                    send_command_to_child(0,"switch open on");
+                    if(diff_end == 0.0)
+                        send_command_to_child(0,"switch close on");
+                    break;
+                case 3:
+                    send_command_to_child(0,"switch close on");
+                    if(diff_end == 0.0)
+                        send_command_to_child(0,"switch opem on");
+                    break;
+                default:
+                    printf("Non so\n");
+            }
+            read_child_response(0, &line_buffer);
+            print_error("%s\n",line_buffer.buffer);
         }
-    }*/
+    }
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
     //FINE PROVA
@@ -153,4 +159,37 @@ void set_begin_action(int state){
 
 void set_end_action(int state){
     g_device.records[1].value = state;
+}
+
+int string_to_action(const char* string, int *id){
+    if(strcmp(string,"power-on") == 0)
+        *id = 0;
+    else if(strcmp(string,"power-off") == 0)
+        *id = 1;
+    else if(strcmp(string,"open-on") == 0)
+        *id = 2;
+    else if(strcmp(string,"close-on") == 0)
+        *id = 3;
+    else 
+        return -1;
+    return 0;
+}
+
+int action_to_string(int action, char* string){
+    switch(action){
+        case 0:
+            sprintf(string,"power-on");
+            break;
+        case 1:
+            sprintf(string,"power-off");
+            break;
+        case 2:
+            sprintf(string,"open-on");
+            break;
+        case 3:
+            sprintf(string,"close-on");
+            break;
+        default:
+            return -1;
+    }
 }

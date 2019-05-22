@@ -57,4 +57,5 @@ void switch_power_action(int state){
     } else
         set_timer_tick(timer, true);
     g_device.state = state;
+    send_response(OK_DONE);
 }
