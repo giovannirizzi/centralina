@@ -26,6 +26,8 @@ int switch_device(device_id device, const char* label, const char* pos);
 int get_info(device_id device);
 void printTree(char* string);
 
+void add_child_devices_recursive(int parent, char **start, char **end, LineBuffer *buffer);
+
 /**
  * Funzioni che validano ed eseguono i comandi della shell
  */

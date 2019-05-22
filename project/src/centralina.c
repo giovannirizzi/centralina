@@ -57,7 +57,6 @@ int main(int argc, char *argv[]){
             //STDIN
             if (FD_ISSET(stdin_fd, &rfds)) {
 
-
                 //Legge un comando (una linea)
                 read_incoming_command(stdin, &input_command, &line_buffer);
 
@@ -181,38 +180,40 @@ int delete_device(const device_id device){
 
     g_devices_request_stream[device] = NULL;
 
-    print_error("Deleted device id: %d\n", device);
+    //print_error("Deleted device id: %d\n", device);
 
     return 0;
 }
 
 int link_device(device_id device1, device_id device2){
 
-    printf("Link %d to %d\n",device1,device2);
-
     LineBuffer line_buffer = {NULL, 0};
     LineBuffer line_buffer2 = {NULL, 0};
 
-    send_command_to_device(device2, "gettype");
-    read_device_response(&line_buffer);
+    if(send_command_to_device(device2, "gettype")==0){
+        read_device_response(&line_buffer);
+    } else
+        return -1;
+
     DeviceType type = device_string_to_type(line_buffer.buffer);
-    print_error("gettype result %s\n", line_buffer.buffer);
 
     if(type >= 0){
         print_error("error, can't link to an iteraction device\n");
         return -1;
     }
 
-    send_command_to_device(device1, "getrealtype");
-    read_device_response(&line_buffer);
-    print_error("getrealtype: %s\n", line_buffer.buffer);
+    if(send_command_to_device(device1, "getrealtype") == 0){
+        read_device_response(&line_buffer);
+    } else
+        return -1;
 
     char command[40];
     sprintf(command, "canadd %s", line_buffer.buffer);
-    print_error("send command: %s\n", command);
 
-    send_command_to_device(device2, command);
-    read_device_response(&line_buffer);
+    if(send_command_to_device(device2, command) == 0)
+        read_device_response(&line_buffer);
+    else
+        return -1;
 
     if(strcmp(line_buffer.buffer, "yes") != 0 &&
             strcmp(line_buffer.buffer, INV_COMMAND) != 0){
@@ -222,38 +223,36 @@ int link_device(device_id device1, device_id device2){
     }
     else{
 
-        char *devices[50];
+        char *devices[100];
         char command[100];
+        int i;
 
-        send_command_to_device(device1, "getconf");
-        read_device_response(&line_buffer);
+        if(send_command_to_device(device1, "getconf")==0)
+            read_device_response(&line_buffer);
+        else
+            return -1;
 
         send_command_to_device(device1, "del");
 
-        int num_devices = divide_string(line_buffer.buffer, devices, 50, " ");
+        int num_devices = divide_string(line_buffer.buffer, devices+1, 100-1, " ");
+        devices[0] = line_buffer.buffer;
 
-        sprintf(command, "add %s", line_buffer.buffer);
-        print_error("sending: %s", command);
-        send_command_to_device(device2, command);
-        read_device_response(&line_buffer2);
+        sprintf(command, "add %s", devices[0]);
+        if(send_command_to_device(device2, command)==0)
+            read_device_response(&line_buffer2);
+        else
+            return -1;
 
-        print_error("Received: %s", line_buffer2.buffer);
+        int parent_id;
+        sscanf(devices[0], "%d|", &parent_id);
 
+        LineBuffer buffer = {NULL, 0};
 
+        add_child_devices_recursive(parent_id, devices + 1, devices + num_devices-1, &buffer);
 
-
+        if(buffer.length > 0) free(buffer.buffer);
     }
 
-
-    /*
-     * Mando un info <device1>
-     * Mando un del <device1>
-     * Mando un add <device2> <info>
-     * Se device2 è la centralina non mando niente,
-     * eseguirò un metodo che aggiunge il dispositivo
-     * alla centralina e fa un set
-     * Magari attendo una risposta
-     */
     if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
@@ -642,4 +641,44 @@ _Bool is_last_sibling(char* node[], int n){
         }
     }
     return true;
+}
+
+void add_child_devices_recursive(int parent, char **start, char **end, LineBuffer *buffer){
+
+    char command[100];
+    if(start >= end){
+        return;
+    }
+
+    char** curr = start;
+    int parent_id;
+
+    do{
+        sprintf(command, "add %s", *curr);
+        send_command_to_device(parent, command);
+        read_device_response(buffer);
+        sscanf(*curr, "%d|", &parent_id);
+
+        char** tmp_start = ++curr;
+        int counter = 1;
+
+        do{
+            if(*curr[0] == '#')
+                counter--;
+            else
+                counter++;
+
+            if(counter==0)
+                break;
+
+            curr++;
+
+        }while(curr < end);
+
+        add_child_devices_recursive(parent_id, tmp_start, curr, buffer);
+
+        if(curr < end)
+            curr++;
+
+    }while (curr < end || *curr[0] != '#');
 }
