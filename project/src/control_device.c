@@ -206,9 +206,12 @@ int add_child_device(const int id, const DeviceType d_type){
         close(fd_response[1]);
 
 
-        char *argv[] = {exec_path, device_id_str, 0};
-        //char *argv[] = {exec_path, NULL};
-        execv(exec_path, argv);
+        char *argv1[] = {exec_path, device_id_str, 0};
+        char *argv2[] = {exec_path, NULL};
+        if(g_device.id < 0)
+            execv(exec_path, argv2);
+        else
+            execv(exec_path, argv1);
 
         perror_and_exit("error add_child_device: execl\n");
     }
@@ -287,9 +290,9 @@ void getrealtype_command(const char** args, const size_t n_args) {
     LineBuffer line_buffer = {NULL, 0};
     while(child < children_devices.size && !done){
 
-        if(send_command_to_child(0, "getrealtype") == 0){
+        if(send_command_to_child(child, "getrealtype") == 0){
 
-            read_child_response(0, &line_buffer);
+            read_child_response(child, &line_buffer);
             send_response("%s", line_buffer.buffer);
 
             done = true;
@@ -349,8 +352,7 @@ void gettree_command(const char** args, size_t n_args){
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
 
-    if(i== 0) //non ci sono child devices
-        fprintf(g_curr_out_stream, " #");
+    fprintf(g_curr_out_stream, " #");
 
     send_response("\n");
 }

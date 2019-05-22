@@ -50,7 +50,6 @@ int main(int argc, char *argv[]){
             if(errno != EINTR)
                 perror("pselect");
             else {
-                print_error("select interrupted by a signal\n");
             }
         }
         else {
@@ -148,7 +147,7 @@ int add_device(DeviceType device){
         //fclose ("/tmp/centralina/null", "r", stdin);
         fclose(stdin);
         fclose(stdout);
-        //freopen("/dev/null", "w", stderr);
+        freopen("/dev/null", "w", stderr);
 
         execv(exec_path, argv);
 #endif
@@ -212,7 +211,7 @@ int link_device(device_id device1, device_id device2){
     sprintf(command, "canadd %s", line_buffer.buffer);
     print_error("send command: %s\n", command);
 
-    send_command_to_device(device2, line_buffer.buffer);
+    send_command_to_device(device2, command);
     read_device_response(&line_buffer);
 
     if(strcmp(line_buffer.buffer, "yes") != 0 &&
@@ -348,30 +347,29 @@ void list_shell_command(const char** args, const size_t n_args){
             set begin: indicates the activation time of the timer\n\
             set end: indicates when the timer will be deactivated\n\n\
     \033[1;37mactive devices:\033[0m \n\
-    id%-9stype%-15scontrolled\
-    \n", "", "");
-    LineBuffer buffer = {NULL, 0};
-    char bo[200];
-    strcpy(bo, "0|-1| 1|-2| 2|2| # 3|1| # # 4|2 5|1| #");
-
-    /*int i, retval;
-    LineBuffer line_buffer = {NULL, 0};
-    for(i=0; i<MAX_DEVICES; i++){
+    \n");
+    LineBuffer tree = {NULL, 0};
+    int i, retval;
+    if(send_command_to_device(0, "gettree\n") == 0){
+        retval = read_device_response(&tree);
+        if(retval>0)
+            print_tree(tree.buffer);
+    }
+    for(i=1; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
-            if(send_command_to_device(i, "gettype\n") == 0){
-                retval = read_device_response(&line_buffer);
-                if(retval>0)
-                    printf("    %-10d %-15s", i, line_buffer.buffer);
-            }
-            if(send_command_to_device(i, "iscontrolled\n") == 0){
-                retval = read_device_response(&line_buffer);
-                if(retval>0)
-                    printf("    %s\n", line_buffer.buffer);
+            if(send_command_to_device(i, "iscontrolled\n")==0){
+                retval = read_device_response(&tree);
+                    if(retval>0 && (strcmp(tree.buffer, "no") == 0)){
+                        if(send_command_to_device(i, "gettree\n") == 0){
+                            retval = read_device_response(&tree);
+                            if(retval>0)
+                                print_tree(tree.buffer);
+                        }
+                    }
             }
         }
-    }*/
-    printTree(bo);
-    //if(line_buffer.buffer) free(line_buffer.buffer);
+    }
+    if(tree.buffer) free(tree.buffer);
 }
 void switch_shell_command(const char** args, const size_t n_args){
 
@@ -383,84 +381,6 @@ void switch_shell_command(const char** args, const size_t n_args){
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else
             switch_device(id, args[1], args[2]);
-    }
-}
-
-void printTreeRec(char* node[], int indent, int last[10][10], int a, int index){
-    if(node[a][0]!='#'){
-        a++;
-        last[index][indent]=1;
-
-int i, j;
-        for(j=index; j>0; j--){
-            if(last[j][indent]==1){
-                break;
-            }
-            
-        }
-        if(i!=0){
-        for(i=index; i>j; i--){
-            last[i][indent]=1;
-            
-        }
-        }
-
-        index++;
-        indent++;
-        printTreeRec(node, indent, last, a, index);
-    }else{
-        a++;
-
-        indent--;
-    }
-}
-
-void printTree(char* string){
-    //mi arriva: 0|-1|  1|-2|  2|2| #
-    char* node[MAX_DEVICES];
-    int i, j, last[10][10];
-    int num_nodes = divide_string(string, node+1, 100, " ");
-    node[0] = string;
-
-    for(i=0; i<10; i++){
-        for(j=0; j<10; j++){
-            last[i][j]=0;
-        }
-    }
-    for(i=0; i<10; i++){
-        for(j=0; j<10; j++){
-            printf(" %i", last[i][j]);
-        }
-        printf("\n");
-    }
-
-    printf("\n");
-
-    printTreeRec(node, 0, last, 0, 0);
-
-    for(i=0; i<10; i++){
-        for(j=0; j<10; j++){
-            printf(" %i", last[i][j]);
-        }
-        printf("\n");
-    }
-    printf("num %d\n", num_nodes);
-    int indent=0;
-    for(i=0;  i<num_nodes; i++){
-        if(node[i][0]!='#'){
-            for(j=0; j<indent; j++){
-                printf("\t\t");
-                if(last[i-1][indent-1]){
-                    printf("|");
-                }
-            }
-            indent++;
-            printf("+-nodo %d: %s\n", i, node[i]);
-            printf("\n");
-
-        }else{
-            indent--;
-        }
     }
 }
 
@@ -683,13 +603,12 @@ void print_tree(char *tree){
 
     char* nodes[200];
     char delimiter[200];
-    strcpy(delimiter, "");
+    strcpy(delimiter, "    ");
     int i=0, id, type;
     int num = divide_string(tree, nodes+1, sizeof(nodes)/ sizeof(char) -1, " ");
     nodes[0] = tree;
     char* delim1 = "|    ";
     char* delim2 = "     ";
-
     for(i=0; i<=num; i++){
 
         if(*nodes[i] == '#'){
@@ -701,9 +620,9 @@ void print_tree(char *tree){
             printf("%s+-(%d)-%s\n", delimiter, id, device_type_to_string(type));
 
             if(is_last_sibling(nodes + i, num -i))
-                strcat(delimiter, delim1);
-            else
                 strcat(delimiter, delim2);
+            else
+                strcat(delimiter, delim1);
         }
     }
 }
@@ -717,11 +636,10 @@ _Bool is_last_sibling(char* node[], int n){
         if(*node[i] == '#')
             counter--;
         else{
-
             counter++;
             if(counter == 0)
-                return true;
+                return false;
         }
     }
-    return false;
+    return true;
 }

@@ -20,10 +20,8 @@ la add sarà comune a tutti e 3 i dipositivi di controllo pero hub e timer dovra
 per dire se è possibile fare una add su quel dispositivo. La shell prima di fare una add manda un canadd...
 
 TODO:
-- finire funzioni per i registri del frigo (percentuale e temperatura)
 - finire i registri del timer
 - all'inizio il controller deve creare la cartelle /tmp/centralina e /tmp/centarlina/devices vedere funzione mkdir
-- implementare il comando canadd <type> per timer e hub che restituiscono yes se è possibile aggiungere un figlio con quel tipo, altrimenti restituiscono il perché non è possibile.
 - comando unlink della shell da fare dopo il comando link: rimuove un dispositivo che è linkato a qualcosa e lo ricea non collegato a niente come add_device della centralina. Quindi getconf dispositivo, del dispositivo, add_device e setconf
 - comando set della shell
 - comandi getinfo, switch e set dei control devices

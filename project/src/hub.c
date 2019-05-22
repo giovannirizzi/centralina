@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <libltdl/lt_error.h>
 #include "utils.h"
 #include "control_device.h"
 
@@ -46,6 +45,7 @@ void canadd_command(const char** args, size_t n_args){
     }
 
     DeviceType new_device_type = device_string_to_type(device_type_to_string(tmp));
+    print_error("New device type: %d\n", new_device_type);
 
     if(new_device_type == INVALID_TYPE) {
         send_response("can't link a control device that does not control devices");
@@ -58,18 +58,25 @@ void canadd_command(const char** args, size_t n_args){
 
         _Bool done = false;
         LineBuffer line_buffer = {NULL, 0};
+        int child = 0;
+        while(child < children_devices.size && !done){
 
-        if(send_command_to_child(0, "getrealtype") == 0){
+            if(send_command_to_child(child, "getrealtype") == 0){
 
-            read_child_response(0, &line_buffer);
-            string_to_int(line_buffer.buffer, &my_type);
+                read_child_response(child, &line_buffer);
+                string_to_int(line_buffer.buffer, &my_type);
+                my_type = device_string_to_type(device_type_to_string(my_type));
 
-            my_type = device_string_to_type(device_type_to_string(my_type));
+                print_error("My_tipe: %d\n",my_type);
+                done = true;
+            }
+            else
+                child++;
         }
 
         if(line_buffer.length > 0) free(line_buffer.buffer);
 
-        if(my_type == new_device_type)
+        if(!done || my_type == new_device_type)
             send_response("yes");
         else
             send_response("you can add only %s devices", device_type_to_string(my_type));
