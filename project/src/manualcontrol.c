@@ -99,7 +99,7 @@ void set_command(const char** args, const size_t n_args){
                     string_to_signal_value(args[2], &value);
 
             if(code != 0)
-                print_error_and_exit(RED "[-] %s not a valid value for the registry %s" RESET, args[2], args[1]);
+                print_error_and_exit(RED "[-] %s not a valid value for the registry %s\n" RESET, args[2], args[1]);
 
             pid_t pid = whois(id);
             if(pid > 0)

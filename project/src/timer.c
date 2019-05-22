@@ -6,6 +6,8 @@
 
 void switch_power_action(int state);
 void tick_signal(int a);
+void set_begin_action(int state);
+void set_end_action(int state);
 int string_to_action(const char* string, int *id);
 int action_to_string(int action, char* string);
 
@@ -14,7 +16,6 @@ timer_t tim;
 time_t t;
 struct tm tm;
 char time_now[80];
-char str[80];
 //FINE PROVA
 
 int main(int argc, char *argv[]){
@@ -33,7 +34,9 @@ int main(int argc, char *argv[]){
 
     SignalBind signal_bindings[] = {
             {SIG_POWER, &switch_power_action},
-            {SIG_TICK, &tick_signal}
+            {SIG_TICK, &tick_signal},
+            {SIG_BEGIN, &set_begin_action},
+            {SIG_END, &set_end_action}
     };
 
     DeviceData timer = {
@@ -51,10 +54,8 @@ int main(int argc, char *argv[]){
     //INIZIO PROVA end time
     int tempo;
     string_to_time("14:58",&tempo);
-    //time_to_string(tempo,str);
     g_device.records[0].value = tempo;
-    string_to_time("15:03",&tempo);
-    //time_to_string(tempo,str);
+    string_to_time("16:36",&tempo);
     g_device.records[1].value = tempo;
     create_timer(&tim);
     set_timer_tick(tim, true);
@@ -111,7 +112,7 @@ void tick_signal(int a){
                 case 3:
                     send_command_to_child(0,"switch close on");
                     if(diff_end == 0.0)
-                        send_command_to_child(0,"switch opem on");
+                        send_command_to_child(0,"switch open on");
                     break;
                 default:
                     printf("Non so\n");
