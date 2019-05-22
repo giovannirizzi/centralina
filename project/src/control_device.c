@@ -352,8 +352,7 @@ void gettree_command(const char** args, size_t n_args){
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
 
-    if(i== 0) //non ci sono child devices
-        fprintf(g_curr_out_stream, " #");
+    fprintf(g_curr_out_stream, " #");
 
     send_response("\n");
 }

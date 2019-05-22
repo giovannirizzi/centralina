@@ -50,7 +50,6 @@ int main(int argc, char *argv[]){
             if(errno != EINTR)
                 perror("pselect");
             else {
-                print_error("select interrupted by a signal\n");
             }
         }
         else {
@@ -212,7 +211,7 @@ int link_device(device_id device1, device_id device2){
     sprintf(command, "canadd %s", line_buffer.buffer);
     print_error("send command: %s\n", command);
 
-    send_command_to_device(device2, line_buffer.buffer);
+    send_command_to_device(device2, command);
     read_device_response(&line_buffer);
 
     if(strcmp(line_buffer.buffer, "yes") != 0 &&
@@ -621,9 +620,9 @@ void print_tree(char *tree){
             printf("%s+-(%d)-%s\n", delimiter, id, device_type_to_string(type));
 
             if(is_last_sibling(nodes + i, num -i))
-                strcat(delimiter, delim1);
-            else
                 strcat(delimiter, delim2);
+            else
+                strcat(delimiter, delim1);
         }
     }
 }
@@ -637,11 +636,10 @@ _Bool is_last_sibling(char* node[], int n){
         if(*node[i] == '#')
             counter--;
         else{
-
             counter++;
             if(counter == 0)
-                return true;
+                return false;
         }
     }
-    return false;
+    return true;
 }
