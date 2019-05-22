@@ -23,9 +23,9 @@
             do { fprintf(stderr, ##args); exit(EXIT_FAILURE); } while (0)
 
 /**
- * TODO
- * @param path
- * @param mode
+ * Funzione che apre la fifo
+ * @param percorso dove verrà creato la fifo
+ * @param modalità di utilizzo
  * @return
  */
 int open_fifo(const char* path, mode_t mode);
