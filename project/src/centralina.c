@@ -402,12 +402,10 @@ void info_shell_command(const char** args, const size_t n_args){
             send_command_to_device(id, "getinfo");
             int retval = read_device_response(&line_buffer);
             if(retval>0){
-                //id=1|type=bulb|state=on|time since bulb on=10|temperature of gays=20
                 char* pipe_str[10], *substrings[1];
                 int i, num_pipe, num_sub;
                 num_pipe=divide_string(line_buffer.buffer, pipe_str, 10, "|");
                 num_sub=divide_string(line_buffer.buffer, substrings, 1, "=");
-                printf("    %-20s: %s\n", line_buffer.buffer, substrings[0]);
                 for(i=0; i<num_pipe; i++){
                     divide_string(pipe_str[i], substrings, 1, "=");
                     printf("    %-20s: %s\n", pipe_str[i], substrings[0]);

@@ -87,4 +87,10 @@ clean:
 	rm -f -r $(ODIR)/* $(BIN)/* /tmp/centralina /tmp/centralina/devices
 
 help:
-	@echo Help
+	@echo "    available commands:"
+	@echo "    - build: builds all the project"
+	@echo "    - <binary file> : builds only the identified binary file: "
+	@echo "          centralina, hub, bulb, fridge, window, timer, manualcontrol"
+	@echo "    - clean: deletes all the executables file"
+	@echo "    - help: shows info and commands available"
+
