@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <libltdl/lt_error.h>
 #include "utils.h"
 #include "control_device.h"
 
