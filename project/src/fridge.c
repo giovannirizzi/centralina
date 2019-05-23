@@ -3,8 +3,7 @@
 #include "utils.h"
 #include "iteration_device.h"
 
-void switch_open_action(int state);
-void switch_close_action(int state);
+void switch_power_action(int state);
 void tick_signal(int a);
 void set_delay_action();
 void set_percentage_action(int state);
@@ -18,17 +17,15 @@ int main(int argc, char *argv[]){
     Registry records[] = {
             {"temperature", "temperature", 0, &string_to_temperature, &temperature_to_string, true},
             {"percentage", "filling percentage", 0, &string_to_int, &percentage_to_string, false},
-            {"delay", "delay time", 10, &string_to_int, &seconds_to_string, true},
+            {"delay", "delay time", 30, &string_to_int, &seconds_to_string, true},
             {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
     };
     Switch switches[] = {
-            {"open", &switch_open_action},
-            {"close", &switch_close_action}
+            {"power", &switch_power_action}
     };
 
     SignalBind signal_bindings[] = {
-            {SIG_OPEN, &switch_open_action},
-            {SIG_CLOSE, &switch_close_action},
+            {SIG_OPEN, &switch_power_action},
             {SIG_TICK, &tick_signal},
             {SIG_DELAY, &set_delay_action},
             {SIG_PERC, &set_percentage_action},
@@ -66,30 +63,24 @@ int main(int argc, char *argv[]){
 void tick_signal(int a){
     g_device.records[3].value++;
     if(g_device.records[3].value == g_device.records[2].value || g_device.records[2].value == 0)
-        switch_close_action(1);
+        switch_power_action(0);
 }
 
-void switch_open_action(int state){
+void switch_power_action(int state){
 
-    if((state == g_device.state) || (state == 0))
+    if(state == g_device.state){
         send_response(OK_NO_CHANGES);
-    else{
-        set_timer_tick(timer, true);
-        g_device.state = state;
-        send_response(OK_DONE);
+        return;
     }
-}
 
-void switch_close_action(int state){
-
-    if((state == !g_device.state) || (state == 0))
-        send_response(OK_NO_CHANGES);
-    else{
+    if(state == 0){
         set_timer_tick(timer, false);
         g_device.records[3].value = 0;
-        g_device.state = 0;
-        send_response(OK_DONE);
-    }
+    } else
+        set_timer_tick(timer, true);
+
+    g_device.state = state;
+    send_response(OK_DONE);
 }
 
 void set_delay_action(int state){

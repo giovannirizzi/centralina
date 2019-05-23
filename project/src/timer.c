@@ -11,12 +11,10 @@ void set_end_action(int state);
 int string_to_action(const char* string, int *id);
 int action_to_string(int action, char* string);
 
-//INIZIO PROVA end time
 timer_t tim;
 time_t t;
 struct tm tm;
-char time_now[80];
-//FINE PROVA
+LineBuffer line_buffer = {NULL, 0};
 
 int main(int argc, char *argv[]){
 
@@ -24,10 +22,14 @@ int main(int argc, char *argv[]){
             {"canadd", &canadd_command}
     };
 
+    int default_begin, default_end;
+    string_to_time("8:00",&default_begin);
+    string_to_time("18:00",&default_end);
+
     Registry records[] = {
-            {"begin", "starting time", 0, &string_to_time, &seconds_to_string, true},
-            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true},
-            {"switch_controller", "switch controller", 2, &string_to_action, &action_to_string, true}
+            {"begin", "starting time", default_begin, &string_to_time, &time_to_string, true},
+            {"end", "ending time", default_end, &string_to_time, &time_to_string, true},
+            {"action", "timer action", 2, &string_to_action, &action_to_string, true}
     };
 
     Switch switches[] = {"power", &switch_power_action};
@@ -51,15 +53,8 @@ int main(int argc, char *argv[]){
 
     g_device = timer;
 
-    //INIZIO PROVA end time
-    int tempo;
-    string_to_time("14:58",&tempo);
-    g_device.records[0].value = tempo;
-    string_to_time("16:36",&tempo);
-    g_device.records[1].value = tempo;
     create_timer(&tim);
     set_timer_tick(tim, true);
-    //FINE PROVA
 
     init_base_device(argv, argc);
     
@@ -68,14 +63,15 @@ int main(int argc, char *argv[]){
 
     clean_control_device();
 
+    if(line_buffer.length > 0) free(line_buffer.buffer);
+
     exit(EXIT_SUCCESS);
 }
 
 void tick_signal(int a){
-    //INIZIO PROVA end time
+
     time_t t_now,t_begin,t_end;
     char temp[80];
-    LineBuffer line_buffer = {NULL, 0};
     t = time(NULL);
     tm = *localtime(&t);
     strftime(temp,80,"%H:%M", &tm);
@@ -121,9 +117,6 @@ void tick_signal(int a){
             print_error("%s\n",line_buffer.buffer);
         }
     }
-
-    if(line_buffer.length > 0) free(line_buffer.buffer);
-    //FINE PROVA
 }
 
 void switch_power_action(int state){

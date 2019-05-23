@@ -12,6 +12,7 @@
 #define OK_NO_CHANGES "SWITCH ALREADY_SET"
 #define OK_DONE "DONE"
 #define ERR "UNKNOWN ERROR"
+#define ERR_CONTROLLER_OFF "CONTROLLER OFF"
 
 #include <signal.h>
 #include "common.h"

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <libgen.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
@@ -26,11 +25,19 @@ void getinfo_command(const char **args, size_t n_args){
 
     print_error("Device %d: received getinfo command\n", g_device.id);
 
-    char info_string[200], tmp[50];
-    sprintf(info_string, "%d|%d|%d", g_device.id, g_device.type, g_device.state);
+    char info_string[200], tmp[100], value_str[50];
+    const char* state_str = device_state_to_string(g_device.state, g_device.type);
+
+    sprintf(info_string, "id=%d|type=%s|state=%s|", g_device.id,
+            device_type_to_string(g_device.type), state_str);
     int i;
     for(i=0; i<g_device.num_records; i++){
-        sprintf(tmp, "|%s=%d", g_device.records[i].label, g_device.records[i].value);
+        g_device.records[i].format_value(g_device.records[i].value, value_str);
+        if(i==0)
+            sprintf(tmp, "%s=%s", g_device.records[i].description, value_str);
+        else
+            sprintf(tmp, "|%s=%s", g_device.records[i].description, value_str);
+
         strcat(info_string, tmp);
     }
 
