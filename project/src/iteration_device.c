@@ -18,9 +18,7 @@ void getinfo_command(const char **args, size_t n_args){
 
     print_error("Device %d: received getinfo command\n", g_device.id);
 
-    char info_string[300];
-    char tmp[200];
-    char value_str[50];
+    char info_string[300], tmp[200], value_str[50];
     int i;
 
     const char* state_str = device_state_to_string(g_device.state, g_device.type);

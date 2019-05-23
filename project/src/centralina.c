@@ -24,7 +24,8 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
-CommandBind controller_command_bindings[] = {{"devicecommand", &devicecommand_command}};
+CommandBind controller_command_bindings[] = {{"devicecommand", &devicecommand_command},
+                                             {"getinfo", &getinfo_controller_command}};
 
 int main(int argc, char *argv[]){
 
@@ -464,7 +465,6 @@ void info_shell_command(const char** args, const size_t n_args){
                 char* pipe_str[10], *substrings[1];
                 int i, num_pipe, num_sub;
                 num_pipe=divide_string(line_buffer.buffer, pipe_str, 10, "|");
-                num_sub=divide_string(line_buffer.buffer, substrings, 1, "=");
                 for(i=0; i<num_pipe; i++){
                     divide_string(pipe_str[i], substrings, 1, "=");
                     printf("    %-20s: %s\n", pipe_str[i], substrings[0]);
@@ -572,14 +572,20 @@ void init_centralina(){
         fclose(stdout);
         freopen("/dev/null", "w", stderr);
 
+        Switch switches[] = {"power", &switch_state_controller};
+
+        SignalBind signal_bindings[] = {
+                {SIG_POWER, &switch_state_controller},
+        };
+
         DeviceData controller = {
                 CENTRALINA, //DEVICE TYPE
                 0, //ID
                 1, //STATE
                 NULL,
                 0, //NUM RECORDS
-                NULL,
-                0 //NUM SWITCHES
+                switches,
+                1 //NUM SWITCHES
         };
 
         g_device = controller;
@@ -589,7 +595,7 @@ void init_centralina(){
 
         stdin = g_fifo_in_stream;
 
-        device_loop(NULL, 0, controller_command_bindings, 2);
+        device_loop(signal_bindings, 1, controller_command_bindings, 2);
 
         clean_control_device();
 
@@ -746,6 +752,11 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
 
 void devicecommand_command(const char** args, size_t n_args){
 
+    if(g_device.state == 0){
+        send_response(ERR_CONTROLLER_OFF);
+        return;
+    }
+
     _Bool found = false;
     int i;
     char command[100];
@@ -776,4 +787,19 @@ void devicecommand_command(const char** args, size_t n_args){
         send_response(buffer.buffer);
 
     if(buffer.length > 0) free(buffer.buffer);
+}
+
+void getinfo_controller_command(const char** args, size_t n_args) {
+
+    char info_string[200];
+    const char* state_str = device_state_to_string(g_device.state, g_device.type);
+
+    sprintf(info_string, "id=%d|type=%s|state=%s|%s=%d", g_device.id,
+            device_type_to_string(g_device.type), state_str,
+            "connected devices", children_devices.size);
+    send_response(info_string);
+}
+
+void switch_state_controller(int state){
+    g_device.state = state;
 }

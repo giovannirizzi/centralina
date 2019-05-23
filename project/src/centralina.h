@@ -22,6 +22,7 @@ _Bool is_last_sibling(char* node[], int n);
 int add_device(DeviceType device);
 int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
+void switch_state_controller(int state);
 
 void add_child_devices_recursive(int parent, char **start, char **end, LineBuffer *buffer);
 
@@ -40,6 +41,7 @@ void help_shell_command(const char** args, size_t n_args);
 void exit_shell_command(const char** args, size_t n_args);
 
 void devicecommand_command(const char** args, size_t n_args);
+void getinfo_controller_command(const char** args, size_t n_args);
 
 /**
  * Funzione che implementa il comando per risolvere i PID dei devices

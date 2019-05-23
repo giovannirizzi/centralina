@@ -25,8 +25,8 @@ int main(int argc, char *argv[]){
     };
 
     Registry records[] = {
-            {"begin", "starting time", 0, &string_to_time, &seconds_to_string, true},
-            {"end", "ending time", 0, &string_to_time, &seconds_to_string, true},
+            {"begin", "starting time", 0, &string_to_time, &time_to_string, true},
+            {"end", "ending time", 0, &string_to_time, &time_to_string, true},
             {"switch_controller", "switch controller", 2, &string_to_action, &action_to_string, true}
     };
 
