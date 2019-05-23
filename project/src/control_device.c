@@ -64,8 +64,7 @@ void getconf_command(const char** args, const size_t n_args){
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
 
-    if(i== 0) //non ci sono child devices
-        fprintf(g_curr_out_stream, " #");
+    fprintf(g_curr_out_stream, " #");
 
     send_response("\n");
 }
@@ -114,13 +113,6 @@ void add_command(const char** args, const size_t n_args){
 }
 
 void switch_command(const char** args, const size_t n_args){
-
-
-
-}
-
-void set_command(const char** args, const size_t n_args){
-
     /**
      * TODO
      */
@@ -130,6 +122,38 @@ void set_command(const char** args, const size_t n_args){
     print_error("Ho ricevuto da child: %s", buffer.buffer);
     if(line_buffer.length > 0) free(line_buffer.buffer);
     */
+
+
+}
+
+void set_command(const char** args, const size_t n_args){
+
+    if(n_args != 2){
+        send_response(INV_ARGS);
+        return;
+    }
+
+    int device_value;
+    int i;
+    for(i=0; i<g_device.num_records; i++){
+        if(strcmp(g_device.records[i].label, args[0]) == 0){
+            if(g_device.records[i].is_settable){
+                if(g_device.records[i].convert_value(args[1], &device_value) == 0){
+                    g_device.records[i].value = device_value;
+                    send_response(OK_DONE);
+                    return;
+                } else {
+                    send_response(INV_SET_VALUE);
+                    return;
+                }
+            } else {
+                send_response(ERR_REG_UNSETTABLE);
+                return;
+            }
+        }
+    }
+
+    send_response(INV_REG);
 }
 
 int add_child(ChildrenDevices* c, ChildDevice d){
