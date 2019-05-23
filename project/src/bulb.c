@@ -51,6 +51,11 @@ void tick_signal(const int a){
 
 void switch_power_action(int state){
 
+    if(state == g_device.state){
+        send_response(OK_NO_CHANGES);
+        return;
+    }
+
     if(state==0){
         set_timer_tick(timer, false);
         g_device.records[0].value = 0;

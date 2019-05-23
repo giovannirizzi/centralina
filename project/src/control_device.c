@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <libgen.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
@@ -26,7 +25,7 @@ void getinfo_command(const char **args, size_t n_args){
 
     print_error("Device %d: received getinfo command\n", g_device.id);
 
-    char info_string[200], tmp[50], value_str[50];
+    char info_string[200], tmp[100], value_str[50];
     const char* state_str = device_state_to_string(g_device.state, g_device.type);
 
     sprintf(info_string, "id=%d|type=%s|state=%s|", g_device.id,
