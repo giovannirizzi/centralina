@@ -7,10 +7,13 @@
 #include "control_device.h"
 #include "utils.h"
 
+//I control devices implementano tutti un comando add per aggiungere un figlio
 const const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command}};
+
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
 
+    //Un extra command può mascherare un comando base se ha lo stesso nome
     if(handle_command(c, extra_commands, n) == 0)
         return 0;
 
@@ -23,14 +26,37 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 
 void getinfo_command(const char **args, size_t n_args){
 
-    print_error("Device %d: received getinfo command\n", g_device.id);
+    char info_string[200], tmp[100], value_str[50], state_str[50];
+    _Bool override = false;
+    LineBuffer line_buffer = {NULL, 0};
 
-    char info_string[200], tmp[100], value_str[50];
-    const char* state_str = device_state_to_string(g_device.state, g_device.type);
+    const char *state = device_state_to_string(g_device.state, g_device.type);
+
+    //Controllo se c'è un incongurenza con lo stato dei figli (override)
+    int i, child_state;
+    for(i=0; i<g_children_devices.size; i++){
+        if(send_command_to_child(i, "getstate") == 0){
+            read_child_response(i, &line_buffer);
+            if(string_to_int(line_buffer.buffer, &child_state) == 0){
+                if(child_state != g_device.state){
+                    override = true;
+                    break;
+                }
+            }
+        }
+        else
+            i--;
+    }
+
+    if(override)
+        sprintf(state_str, "%s with override", state);
+    else
+        sprintf(state_str, "%s", state);
 
     sprintf(info_string, "id=%d|type=%s|state=%s|", g_device.id,
             device_type_to_string(g_device.type), state_str);
-    int i;
+
+    //Aggiungo i registri del dispositivo
     for(i=0; i<g_device.num_records; i++){
         g_device.records[i].format_value(g_device.records[i].value, value_str);
         if(i==0)
@@ -42,17 +68,17 @@ void getinfo_command(const char **args, size_t n_args){
     }
 
     send_response("%s", info_string);
+    if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
 void getconf_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received getconf command\n", g_device.id);
 
     char conf_str[200], records[150];
     memset(records, 0, sizeof(records) / sizeof(char));
 
     fprintf(g_curr_out_stream, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
 
+    //Invio anche i registri settabili del dispositivo
     int num = get_records_string(records);
     if(num > 0)
         fprintf(g_curr_out_stream, "%s", records);
@@ -60,7 +86,8 @@ void getconf_command(const char** args, const size_t n_args){
     int i;
     LineBuffer line_buffer = {NULL, 0};
 
-    for(i=0; i<children_devices.size; i++){
+    //Aggiungo anche la configurazione dei figli
+    for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, "getconf") == 0){
             read_child_response(i, &line_buffer);
             fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
@@ -81,6 +108,7 @@ void add_command(const char** args, const size_t n_args){
     DeviceType type;
     device_id id;
     const char* device_str;
+    LineBuffer line_buffer = {NULL, 0};
 
     int num_var = sscanf(args[0], "%d|%d|", &id, &type);
     device_str = device_type_to_string(type);
@@ -91,7 +119,6 @@ void add_command(const char** args, const size_t n_args){
     }
 
     int pos_child = add_child_device(id, type);
-
     if(pos_child<0){
         send_response(ERR);
         return;
@@ -105,15 +132,11 @@ void add_command(const char** args, const size_t n_args){
         return;
     }
 
+    //Setto il nuovo figlio con la configurazione passata come parametro
     char setconf_str[200];
     sprintf(setconf_str, "setconf %s", tmp[0]+2);
-
     send_command_to_child(pos_child, setconf_str);
-
-    LineBuffer line_buffer = {NULL, 0};
-
     read_child_response(pos_child, &line_buffer);
-    //send_response(line_buffer.buffer);
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
     send_response(OK_DONE);
@@ -121,7 +144,7 @@ void add_command(const char** args, const size_t n_args){
 
 void switch_command(const char** args, const size_t n_args){
 
-    if(children_devices.size == 0){
+    if(g_children_devices.size == 0){
         send_response(ERR_NO_DEVICES);
         return;
     }
@@ -131,8 +154,8 @@ void switch_command(const char** args, const size_t n_args){
     sprintf(command, "switch %s %s", args[0], args[1]);
 
     LineBuffer buffer = {NULL, 0};
-
-    for(i=0; i<children_devices.size; i++){
+    //Invio a tutti i figli il comando
+    for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, command) == 0){
             read_child_response(i, &buffer);
         }
@@ -140,11 +163,12 @@ void switch_command(const char** args, const size_t n_args){
             i--;
     }
 
+    //Aggiorno lo stato in base a quello dei figli
     LineBuffer buffer2 = {NULL, 0};
-    send_command_to_child(0, "getstate");
-    read_child_response(0, &buffer2);
-
-    string_to_int(buffer2.buffer, &g_device.state);
+    if(send_command_to_child(0, "getstate")==0)
+        if(read_child_response(0, &buffer2)>0)
+            if(string_to_int(buffer2.buffer, &g_device.state)!=0)
+                g_device.state = 0;
 
     send_response(buffer.buffer);
 
@@ -161,6 +185,9 @@ void set_command(const char** args, const size_t n_args){
 
     int device_value;
     int i;
+
+    /*Cerco se il dispositivo ha il registro passato come parametro
+     * se lo trovo cerco di settarne il valore*/
     for(i=0; i<g_device.num_records; i++){
         if(strcmp(g_device.records[i].label, args[0]) == 0){
             if(g_device.records[i].is_settable){
@@ -182,25 +209,6 @@ void set_command(const char** args, const size_t n_args){
     send_response(INV_REG);
 }
 
-int add_child(ChildrenDevices* c, ChildDevice d){
-    if(c->size == MAX_CHILDREN)
-        return -1;
-    c->children[c->size] = d;
-    c->size++;
-    return c->size-1;
-}
-
-int delete_child(ChildrenDevices* c, int i){
-
-    if(c->size == 0 || i<0 || i>=MAX_CHILDREN)
-        return -1;
-
-    for ( ; i < c->size && i<MAX_CHILDREN-1; i++)
-        c->children[i] = c->children[i + 1];
-    c->size--;
-    return 0;
-}
-
 void init_control_device(char *args[], size_t n_args){
 
 	init_base_device(args, n_args);
@@ -211,15 +219,12 @@ void init_control_device(char *args[], size_t n_args){
      */
     signal(SIGPIPE, SIG_IGN);
     signal(SIGCHLD, sigchild_handler);
-    children_devices.size = 0;
+    g_children_devices.size = 0;
 }
 
 int add_child_device(const int id, const DeviceType d_type){
 
-    char path[50];
-    sprintf(path, "/usr/bin/xterm ./%s", device_type_to_string(d_type));
-
-    if(children_devices.size >= MAX_CHILDREN)
+    if(g_children_devices.size >= MAX_CHILDREN)
         return -1;
 
     print_error("Device %d: adding %s\n", g_device.id, device_type_to_string(d_type));
@@ -247,6 +252,9 @@ int add_child_device(const int id, const DeviceType d_type){
     }
     else if(pid == 0){
 
+        /*Collego la read end di una pipe all' stdin e la write end
+         * dell'altra pipe al stdout del figlio
+        */
         close(fd_request[1]);
         dup2(fd_request[0], STDIN_FILENO);
         close(fd_request[0]);
@@ -279,17 +287,17 @@ int add_child_device(const int id, const DeviceType d_type){
 
         setlinebuf(in);
         ChildDevice child_device = { in, out};
-        return add_child(&children_devices, child_device);
+        return add_child(&g_children_devices, child_device);
     }
 }
 
 int send_command_to_child(int child, const char* command){
 
-    if(child < children_devices.size){
+    if(child < g_children_devices.size){
         int n_write;
-        n_write = fprintf(children_devices.children[child].in, "%s", command);
+        n_write = fprintf(g_children_devices.children[child].in, "%s", command);
         if(command[strlen(command)-1] != '\n')
-            n_write = fprintf(children_devices.children[child].in,"\n");
+            n_write = fprintf(g_children_devices.children[child].in,"\n");
         if(n_write == -1){
             //La pipe è stata chiusa dal device
             if(errno == EPIPE){
@@ -310,14 +318,14 @@ int send_command_to_child(int child, const char* command){
 
 int read_child_response(int child, LineBuffer *buffer){
 
-    if(child >= children_devices.size){
+    if(child >= g_children_devices.size){
         print_error("invalid id read_child_response\n");
         return -1;
     }
 
     fd_set rfds;
     struct timeval tv  = {1, 0};
-    int child_response_fd = fileno(children_devices.children[child].out);
+    int child_response_fd = fileno(g_children_devices.children[child].out);
     FD_ZERO(&rfds);
     FD_SET(child_response_fd, &rfds);
 
@@ -327,7 +335,7 @@ int read_child_response(int child, LineBuffer *buffer){
         return -1;
     }
     else if(retval) {
-        return read_line(children_devices.children[child].out, buffer);
+        return read_line(g_children_devices.children[child].out, buffer);
     }
     else
         return 0;
@@ -338,7 +346,7 @@ void getrealtype_command(const char** args, const size_t n_args) {
     int child = 0;
     _Bool done = false;
     LineBuffer line_buffer = {NULL, 0};
-    while(child < children_devices.size && !done){
+    while(child < g_children_devices.size && !done){
 
         if(send_command_to_child(child, "getrealtype") == 0){
 
@@ -359,20 +367,20 @@ void getrealtype_command(const char** args, const size_t n_args) {
 
 void delete_child_device(int child){
 
-    if(children_devices.children[child].out)
-        fclose(children_devices.children[child].out);
+    if(g_children_devices.children[child].out)
+        fclose(g_children_devices.children[child].out);
 
-    if(children_devices.children[child].in)
-        fclose(children_devices.children[child].in);
+    if(g_children_devices.children[child].in)
+        fclose(g_children_devices.children[child].in);
 
-    delete_child(&children_devices, child);
+    delete_child(&g_children_devices, child);
 }
 
 void clean_control_device(){
     clean_base_device();
 
     int i;
-    for(i=children_devices.size-1; i>= 0; i--){
+    for(i=g_children_devices.size-1; i>= 0; i--){
         delete_child_device(i);
     }
 }
@@ -384,14 +392,13 @@ void sigchild_handler(int signum) {
 
 void gettree_command(const char** args, size_t n_args){
 
-    print_error("Device %d: received gettree command\n", g_device.id);
-
     fprintf(g_curr_out_stream, "%d|%d|", g_device.id, g_device.type);
 
     int i;
     LineBuffer line_buffer = {NULL, 0};
 
-    for(i=0; i<children_devices.size; i++){
+    //Aggiungo l'albero dei figli
+    for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, "gettree") == 0){
             read_child_response(i, &line_buffer);
             fprintf(g_curr_out_stream, " %s", line_buffer.buffer);
@@ -405,4 +412,26 @@ void gettree_command(const char** args, size_t n_args){
     fprintf(g_curr_out_stream, " #");
 
     send_response("\n");
+}
+
+/*
+ * Funzioni per gestire l'array di dispositivi figli
+ */
+int add_child(ChildrenDevices* c, ChildDevice d){
+    if(c->size == MAX_CHILDREN)
+        return -1;
+    c->children[c->size] = d;
+    c->size++;
+    return c->size-1;
+}
+
+int delete_child(ChildrenDevices* c, int i){
+
+    if(c->size == 0 || i<0 || i>=MAX_CHILDREN)
+        return -1;
+
+    for ( ; i < c->size && i<MAX_CHILDREN-1; i++)
+        c->children[i] = c->children[i + 1];
+    c->size--;
+    return 0;
 }

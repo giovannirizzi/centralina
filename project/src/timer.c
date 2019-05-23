@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <time.h>//serve solo per prova
+#include <time.h>
 #include "utils.h"
 #include "control_device.h"
 
@@ -15,6 +15,9 @@ timer_t tim;
 time_t t;
 struct tm tm;
 LineBuffer line_buffer = {NULL, 0};
+
+void update_state();
+void canadd_command(const char** args, size_t n_args);
 
 int main(int argc, char *argv[]){
 
@@ -88,30 +91,32 @@ void tick_signal(int a){
     double diff_end = difftime(t_now,t_end);
 
     if(diff_begin>=0 && diff_end<=0){
-        if(children_devices.size != 0){
+        if(g_children_devices.size != 0){
             switch(g_device.records[2].value){
                 case 0:
                     send_command_to_child(0,"switch power on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch power off");
+                    update_state();
                     break;
                 case 1:
                     send_command_to_child(0,"switch power off");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch power on");
+                    update_state();
                     break;
                 case 2:
                     send_command_to_child(0,"switch open on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch close on");
+                    update_state();
                     break;
                 case 3:
                     send_command_to_child(0,"switch close on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch open on");
+                    update_state();
                     break;
-                default:
-                    printf("Non so\n");
             }
             read_child_response(0, &line_buffer);
         }
@@ -139,7 +144,7 @@ void canadd_command(const char** args, size_t n_args) {
 
     if(new_device_type == INVALID_TYPE)
         send_response("can't link a control device that does not control devices");
-    else if(children_devices.size == 0)
+    else if(g_children_devices.size == 0)
         send_response("yes");
     else
         send_response("timer can control only one device");
@@ -185,4 +190,14 @@ int action_to_string(int action, char* string){
         default:
             return -1;
     }
+}
+
+void update_state(){
+
+    //Aggiorno lo stato in base a quello dei figli
+    if(send_command_to_child(0, "getstate")==0)
+        if(read_child_response(0, &line_buffer)>0)
+            if(string_to_int(line_buffer.buffer, &g_device.state)!=0)
+                g_device.state = 0;
+
 }

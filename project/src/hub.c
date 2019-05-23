@@ -1,13 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "utils.h"
 #include "control_device.h"
 
+void getinfo_hub_command(const char** args, size_t n_args);
+void canadd_command(const char** args, size_t n_args);
 
 int main(int argc, char *argv[]){
 
     CommandBind hub_commands[] = {
-            {"canadd", &canadd_command}
+            {"canadd", &canadd_command},
+            {"getinfo", &getinfo_hub_command}
     };
 
     DeviceData hub = {
@@ -24,7 +28,7 @@ int main(int argc, char *argv[]){
 
     init_control_device(argv, argc);
 
-    device_loop(NULL, 0, hub_commands, 1);
+    device_loop(NULL, 0, hub_commands, 2);
 
     clean_control_device();
 
@@ -50,7 +54,7 @@ void canadd_command(const char** args, size_t n_args){
     if(new_device_type == INVALID_TYPE) {
         send_response("can't link a control device that does not control devices");
     }
-    else if(children_devices.size <= 0){
+    else if(g_children_devices.size <= 0){
         send_response("yes");
     }
     else{
@@ -59,7 +63,7 @@ void canadd_command(const char** args, size_t n_args){
         _Bool done = false;
         LineBuffer line_buffer = {NULL, 0};
         int child = 0;
-        while(child < children_devices.size && !done){
+        while(child < g_children_devices.size && !done){
 
             if(send_command_to_child(child, "getrealtype") == 0){
 
@@ -79,6 +83,53 @@ void canadd_command(const char** args, size_t n_args){
         if(!done || my_type == new_device_type)
             send_response("yes");
         else
-            send_response("you can add only %s devices", device_type_to_string(my_type));
+            send_response("you can link only %s devices", device_type_to_string(my_type));
     }
+}
+
+void getinfo_hub_command(const char** args, size_t n_args){
+
+    char info_string[400], tmp[400], value_str[50], state_str[50];
+    _Bool override = false;
+    LineBuffer line_buffer = {NULL, 0};
+
+    const char *state = device_state_to_string(g_device.state, g_device.type);
+
+    //Controllo se c'è un incongurenza con lo stato dei figli (override)
+    int i, child_state;
+    for(i=0; i<g_children_devices.size; i++){
+        if(send_command_to_child(i, "getstate") == 0){
+            read_child_response(i, &line_buffer);
+            if(string_to_int(line_buffer.buffer, &child_state) == 0){
+                if(child_state != g_device.state){
+                    override = true;
+                    break;
+                }
+            }
+        }
+        else
+            i--;
+    }
+
+    if(override)
+        sprintf(state_str, "%s with override", state);
+    else
+        sprintf(state_str, "%s", state);
+
+    sprintf(info_string, "id=%d|type=%s|state=%s|connected devices=%d", g_device.id,
+            device_type_to_string(g_device.type), state_str, g_children_devices.size);
+
+    if(g_children_devices.size > 0)
+        if(send_command_to_child(0, "getinfo") == 0){
+            read_child_response(0, &line_buffer);
+            char* substrings[3];
+            divide_string(line_buffer.buffer, substrings, 3, "|");
+            sprintf(tmp, "|%s", substrings[2]);
+            strcat(info_string, tmp);
+        }
+
+    send_response("%s", info_string);
+
+    if(line_buffer.length > 0) free(line_buffer.buffer);
+
 }

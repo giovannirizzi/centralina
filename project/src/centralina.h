@@ -34,7 +34,6 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
 void add_shell_command(const char** args, size_t n_args);
 void del_shell_command(const char** args, size_t n_args);
 void link_shell_command(const char** args, size_t n_args);
-void unlink_shell_command(const char** args, size_t n_args);
 void list_shell_command(const char** args, size_t n_args);
 void switch_shell_command(const char** args, size_t n_args);
 void set_shell_command(const char** args, size_t n_args);

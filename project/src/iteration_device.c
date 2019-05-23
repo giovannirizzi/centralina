@@ -16,8 +16,6 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 
 void getinfo_command(const char **args, size_t n_args){
 
-    print_error("Device %d: received getinfo command\n", g_device.id);
-
     char info_string[300], tmp[200], value_str[50];
     int i;
 
@@ -26,6 +24,7 @@ void getinfo_command(const char **args, size_t n_args){
     sprintf(info_string, "id=%d|type=%s|state=%s|", g_device.id,
             device_type_to_string(g_device.type), state_str);
 
+    //Aggiungo i registri
     for(i=0; i<g_device.num_records; i++){
         g_device.records[i].format_value(g_device.records[i].value, value_str);
         if(i==0)
@@ -40,8 +39,6 @@ void getinfo_command(const char **args, size_t n_args){
 }
 
 void getconf_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received getconf command\n", g_device.id);
 
     char conf_str[200], records[180];
     memset(records, 0, sizeof(records) / sizeof(char));
@@ -68,6 +65,7 @@ void switch_command(const char** args, const size_t n_args){
         return;
     }
 
+    //Invoco la giusta funzione in base al nome dello switch
     int i;
     for(i=0; i<g_device.num_switches; i++)
         if(strcmp(g_device.switches[i].label, args[0]) == 0) {
@@ -88,6 +86,8 @@ void set_command(const char** args, const size_t n_args){
     for(i=0; i<g_device.num_records; i++){
         if(strcmp(g_device.records[i].label, args[0]) == 0){
             if(g_device.records[i].is_settable){
+                /*Provo a convertire il valore di registro da stringa ad un intero valido
+                 con la funzione corretta*/
                 if(g_device.records[i].convert_value(args[1], &device_value) == 0){
                     g_device.records[i].value = device_value;
                     send_response(OK_DONE);

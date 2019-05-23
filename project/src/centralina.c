@@ -19,7 +19,6 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
                                       {"set", &set_shell_command},
                                       {"switch", &switch_shell_command},
                                       {"link", &link_shell_command},
-                                      {"unlink", &unlink_shell_command},
                                       {"info", &info_shell_command}};
 
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
@@ -322,23 +321,6 @@ void link_shell_command(const char** args, const size_t n_args){
     }
 }
 
-void unlink_shell_command(const char** args, const size_t n_args){
-
-    if(n_args != 1)
-        print_error(YLW "usage: unlink <id>\n" RESET);
-    else{
-        device_id id1;
-        if(string_to_int(args[0], &id1) != 0 || id1 == 0 ||
-                g_devices_request_stream[id1] == NULL)
-            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else{
-
-
-        }
-
-    }
-}
-
 void list_shell_command(const char** args, const size_t n_args){
     printf("\
     \033[1;37mavailable devices:\033[0m \n\
@@ -501,8 +483,6 @@ void help_shell_command(const char** args, const size_t n_args){
             usage: <del> <id>\n\
     - link: connect the first device to the second\n\
             usage: <link> <id> <id>\n\
-    - unlink: disconnect the device from his controller device\n\
-            usage: <unlink> <id>\n\
     - switch: turn on/off the related switch of the device \n\
             usage: <switch> <id> <switch name> <on/off>\n\
     - set: set the register of the identified device \n\
@@ -774,11 +754,13 @@ void pretty_print(const char* feedback){
     else if (strcmp(feedback, INV_REG)==0)
         print_error(RED "[-] invalid register\n" RESET);
     else if (strcmp(feedback, INV_ID)==0)
-        print_error(RED "[-] invalid id\n" RESET);
+        print_error(RED "[-] the controller does not control the specified device\n" RESET);
     else if (strcmp(feedback, ERR_REG_UNSETTABLE)==0)
         print_error(RED "[-]  register not settable\n" RESET);
     else if (strcmp(feedback, ERR_CONTROLLER_OFF)==0)
         print_error(RED "[-]  controller offline\n" RESET);
+    else if (strcmp(feedback, ERR_NO_DEVICES) == 0)
+        print_error(RED "[-]  the device does not control any device\n" RESET);
     else if (strcmp(feedback, ERR)==0)
         print_error(RED "[-] unknown error\n" RESET);
     else
@@ -800,7 +782,7 @@ void devicecommand_command(const char** args, size_t n_args){
 
     sprintf(command, "%s %s %s", args[0], args[2], args[3]);
 
-    for(i=0; i<children_devices.size; i++){
+    for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, "getid") == 0){
             if(read_child_response(i, &buffer) > 0){
                 if(strcmp(buffer.buffer, args[1]) == 0){
@@ -832,7 +814,7 @@ void getinfo_controller_command(const char** args, size_t n_args) {
 
     sprintf(info_string, "id=%d|type=%s|state=%s|%s=%d", g_device.id,
             device_type_to_string(g_device.type), state_str,
-            "connected devices", children_devices.size);
+            "connected devices", g_children_devices.size);
     send_response(info_string);
 }
 

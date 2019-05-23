@@ -4,6 +4,4 @@
 #include "device.h"
 
 
-
-
 #endif // ITERATION_DEVICES_H
