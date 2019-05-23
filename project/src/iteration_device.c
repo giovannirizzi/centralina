@@ -77,10 +77,6 @@ void switch_command(const char** args, const size_t n_args){
     send_response(INV_SWITCH);
 }
 
-//switch power on
-//set temperature 40 oppure set timer hh:mm
-
-
 void set_command(const char** args, const size_t n_args){
     if(n_args != 2){
         send_response(INV_ARGS);

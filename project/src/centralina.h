@@ -24,6 +24,7 @@ int add_device(DeviceType device);
 int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
 void switch_state_controller(int state);
+void switch_controller_command(const char** args, const size_t n_args);
 
 void add_child_devices_recursive(int parent, char **start, char **end, LineBuffer *buffer);
 

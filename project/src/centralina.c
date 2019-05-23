@@ -25,6 +25,7 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 CommandBind controller_command_bindings[] = {{"devicecommand", &devicecommand_command},
+                                             {"switch", &switch_controller_command},
                                              {"getinfo", &getinfo_controller_command}};
 
 int main(int argc, char *argv[]){
@@ -401,13 +402,16 @@ void switch_shell_command(const char** args, const size_t n_args){
             char command[100];
             _Bool success = false;
 
-            /*sprintf(command, "switch %s %s", args[1], args[2]);
-
-
             if(id == 0){
-                if(send_command_to_device(0, command))
+                LineBuffer line_buffer = {NULL, 0};
+                sprintf(command, "switch %s %s", args[1], args[2]);
+                if(send_command_to_device(0, command)==0){
+                    read_device_response(&line_buffer);
+                    pretty_print(line_buffer.buffer);
+                }
+                return;
             }
-            */
+
             sprintf(command, "devicecommand switch %d %s %s", id, args[1], args[2]);
             if(send_command_to_device(0, command)==0){
                 LineBuffer buffer = {NULL, 0};
@@ -592,7 +596,7 @@ void init_centralina(){
 
         stdin = g_fifo_in_stream;
 
-        device_loop(signal_bindings, 1, controller_command_bindings, 2);
+        device_loop(signal_bindings, 1, controller_command_bindings, 3);
 
         clean_control_device();
 
@@ -762,6 +766,8 @@ void pretty_print(const char* feedback){
         print_error(RED "[-] invalid id\n" RESET);
     else if (strcmp(feedback, ERR_REG_UNSETTABLE)==0)
         print_error(RED "[-]  register not settable\n" RESET);
+    else if (strcmp(feedback, ERR_CONTROLLER_OFF)==0)
+        print_error(RED "[-]  controller offline\n" RESET);
     else if (strcmp(feedback, ERR)==0)
         print_error(RED "[-] unknown error\n" RESET);
     else
@@ -820,5 +826,27 @@ void getinfo_controller_command(const char** args, size_t n_args) {
 }
 
 void switch_state_controller(int state){
+    if(state == g_device.state){
+        send_response(OK_NO_CHANGES);
+        return;
+    }
     g_device.state = state;
+    send_response(OK_DONE);
+}
+
+void switch_controller_command(const char** args, const size_t n_args){
+
+    int device_state;
+    if(string_to_switch_state(args[1], &device_state)==-1){
+        send_response(INV_SWITCH_STATE);
+        return;
+    }
+
+    int i;
+    for(i=0; i<g_device.num_switches; i++)
+        if(strcmp(g_device.switches[i].label, args[0]) == 0) {
+            g_device.switches[i].action(device_state);
+            return;
+        }
+    send_response(INV_SWITCH);
 }
