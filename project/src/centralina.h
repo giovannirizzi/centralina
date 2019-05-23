@@ -39,8 +39,7 @@ void info_shell_command(const char** args, size_t n_args);
 void help_shell_command(const char** args, size_t n_args);
 void exit_shell_command(const char** args, size_t n_args);
 
-void switchdevice_command(const char** args, size_t n_args);
-void setdevice_command(const char** args, size_t n_args);
+void devicecommand_command(const char** args, size_t n_args);
 
 /**
  * Funzione che implementa il comando per risolvere i PID dei devices

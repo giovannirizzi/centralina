@@ -24,8 +24,7 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
-CommandBind controller_command_bindings[] = {{"switchdevice", &switchdevice_command},
-                                             {"setdevice", &setdevice_command}};
+CommandBind controller_command_bindings[] = {{"devicecommand", &devicecommand_command}};
 
 int main(int argc, char *argv[]){
 
@@ -66,7 +65,7 @@ int main(int argc, char *argv[]){
                 read_incoming_command(stdin, &input_command, &line_buffer);
 
                 if (input_command.name[0] != '\0') {
-                    if (handle_command(&input_command, shell_command_bindings, 8) == -1)
+                    if (handle_command(&input_command, shell_command_bindings, 10) == -1)
                         fprintf(stdout, "unknown command %s\n",
                                 input_command.name);
                 }
@@ -408,7 +407,7 @@ void switch_shell_command(const char** args, const size_t n_args){
                 if(send_command_to_device(0, command))
             }
             */
-            sprintf(command, "switchdevice %d %s %s", id, args[1], args[2]);
+            sprintf(command, "devicecommand switch %d %s %s", id, args[1], args[2]);
             if(send_command_to_device(0, command)==0){
                 LineBuffer buffer = {NULL, 0};
                 read_device_response(&buffer);
@@ -430,7 +429,14 @@ void set_shell_command(const char** args, const size_t n_args){
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else{
 
+            char command[100];
+            sprintf(command, "devicecommand set %d %s %s", id, args[1], args[2]);
+            if(send_command_to_device(0, command)==0){
+                LineBuffer buffer = {NULL, 0};
+                read_device_response(&buffer);
 
+                printf("Ho ricevuto %s\n", buffer.buffer);
+            }
         }
 
     }
@@ -738,19 +744,19 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
     }while (curr < end || *curr[0] != '#');
 }
 
-void switchdevice_command(const char** args, size_t n_args){
+void devicecommand_command(const char** args, size_t n_args){
 
     _Bool found = false;
     int i;
     char command[100];
     LineBuffer buffer = {NULL, 0};
 
-    sprintf(command, "switch %s %s", args[1], args[2]);
+    sprintf(command, "%s %s %s", args[0], args[2], args[3]);
 
     for(i=0; i<children_devices.size; i++){
         if(send_command_to_child(i, "getid") == 0){
             if(read_child_response(i, &buffer) > 0){
-                if(strcmp(buffer.buffer, args[0]) == 0){
+                if(strcmp(buffer.buffer, args[1]) == 0){
                     if(send_command_to_child(i, command) == 0){
                         read_child_response(i, &buffer);
                         found = true;
@@ -769,39 +775,5 @@ void switchdevice_command(const char** args, size_t n_args){
     else
         send_response(buffer.buffer);
 
-    if(buffer.length > 9) free(buffer.buffer);
-}
-
-void setdevice_command(const char** args, size_t n_args){
-
-    _Bool found = false;
-    int i;
-    char command[100];
-    LineBuffer buffer = {NULL, 0};
-
-    sprintf(command, "set %s %s", args[1], args[2]);
-
-    for(i=0; i<children_devices.size; i++){
-        if(send_command_to_child(i, "getid") == 0){
-            if(read_child_response(i, &buffer) > 0){
-                if(strcmp(buffer.buffer, args[0]) == 0){
-                    if(send_command_to_child(i, command) == 0){
-                        read_child_response(i, &buffer);
-                        found = true;
-                        break;
-                    } else
-                        break;
-                }
-            }
-        }
-        else
-            i--;
-    }
-
-    if(!found)
-        send_response(INV_ID);
-    else
-        send_response(buffer.buffer);
-
-    if(buffer.length > 9) free(buffer.buffer);
+    if(buffer.length > 0) free(buffer.buffer);
 }
