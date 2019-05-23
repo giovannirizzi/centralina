@@ -13,6 +13,7 @@
 #define OK_DONE "DONE"
 #define ERR "UNKNOWN ERROR"
 #define ERR_CONTROLLER_OFF "CONTROLLER OFF"
+#define ERR_NO_DEVICES "NO DEVICES"
 
 #include <signal.h>
 #include "common.h"
@@ -66,7 +67,7 @@ typedef struct{
 
 } DeviceData;
 
-const CommandBind BASE_COMMANDS[12];
+const CommandBind BASE_COMMANDS[13];
 
 /**
  * Global vars for all devices
@@ -95,6 +96,7 @@ void set_command(const char** args, size_t n_args);
 void getrealtype_command(const char** args, size_t n_args);
 void gettree_command(const char** args, size_t n_args);
 void getid_command(const char **args, size_t n_args);
+void getstate_command(const char **args, size_t n_args);
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], size_t n);
 void init_base_device(char *args[], size_t n_args);

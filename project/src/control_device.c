@@ -120,17 +120,36 @@ void add_command(const char** args, const size_t n_args){
 }
 
 void switch_command(const char** args, const size_t n_args){
-    /**
-     * TODO
-     */
-    /*send_command_to_child(0, "SWAGG\n");
+
+    if(children_devices.size == 0){
+        send_response(ERR_NO_DEVICES);
+        return;
+    }
+
+    int i;
+    char command[100];
+    sprintf(command, "switch %s %s", args[0], args[1]);
+
     LineBuffer buffer = {NULL, 0};
-    read_child_response(0, &buffer);
-    print_error("Ho ricevuto da child: %s", buffer.buffer);
-    if(line_buffer.length > 0) free(line_buffer.buffer);
-    */
 
+    for(i=0; i<children_devices.size; i++){
+        if(send_command_to_child(i, command) == 0){
+            read_child_response(i, &buffer);
+        }
+        else
+            i--;
+    }
 
+    LineBuffer buffer2 = {NULL, 0};
+    send_command_to_child(0, "getstate");
+    read_child_response(0, &buffer2);
+
+    string_to_int(buffer2.buffer, &g_device.state);
+
+    send_response(buffer.buffer);
+
+    if(buffer.length > 0) free(buffer.buffer);
+    if(buffer2.length > 0) free(buffer2.buffer);
 }
 
 void set_command(const char** args, const size_t n_args){
@@ -387,10 +406,3 @@ void gettree_command(const char** args, size_t n_args){
 
     send_response("\n");
 }
-
-/*
-void canadd_command(const char** args, size_t n_args){
-
-    send_response("yes");
-}
-*/

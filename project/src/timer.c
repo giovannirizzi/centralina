@@ -114,7 +114,6 @@ void tick_signal(int a){
                     printf("Non so\n");
             }
             read_child_response(0, &line_buffer);
-            print_error("%s\n",line_buffer.buffer);
         }
     }
 }
