@@ -16,8 +16,10 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
                                       {"help", &help_shell_command},
                                       {"exit", &exit_shell_command},
                                       {"del", &del_shell_command},
+                                      {"set", &set_shell_command},
                                       {"switch", &switch_shell_command},
                                       {"link", &link_shell_command},
+                                      {"unlink", &unlink_shell_command},
                                       {"info", &info_shell_command}};
 
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
@@ -257,12 +259,29 @@ int link_device(device_id device1, device_id device2){
     if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
+int unlink_device(device_id device1){
+
+    //TODO 
+    printf("TODO\n");
+
+}
+
 int switch_device(device_id device, const char* label, const char* pos){
 
     printf("Switch device %d, label: %s, pos: %s\n", device, label, pos);
 
     /*
      * Mando uno switch <device> <label> <pos>
+     * Magari attendo una risposta
+     */
+}
+
+int set_device(device_id device, const char* record, const char* value){
+
+    printf("Set device %d, register: %s, value: %s\n", device, record, value);
+
+    /*
+     * Mando un set <device> <register> <value>
      * Magari attendo una risposta
      */
 }
@@ -308,6 +327,7 @@ void del_shell_command(const char** args, const size_t n_args){
         }
     }
 }
+
 void link_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3 || strcmp(args[1], "to") != 0)
@@ -324,6 +344,21 @@ void link_shell_command(const char** args, const size_t n_args){
             link_device(id1, id2);
     }
 }
+
+void unlink_shell_command(const char** args, const size_t n_args){
+
+    if(n_args != 1)
+        print_error(YLW "usage: unlink <id>\n" RESET);
+    else{
+        device_id id1;
+        if(string_to_int(args[0], &id1) != 0 || id1 == 0 ||
+                g_devices_request_stream[id1] == NULL)
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
+        else
+            unlink_device(id1);
+    }
+}
+
 void list_shell_command(const char** args, const size_t n_args){
     printf("\
     \033[1;37mavailable devices:\033[0m \n\
@@ -371,6 +406,7 @@ void list_shell_command(const char** args, const size_t n_args){
     }
     if(tree.buffer) free(tree.buffer);
 }
+
 void switch_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3)
@@ -381,6 +417,19 @@ void switch_shell_command(const char** args, const size_t n_args){
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
         else
             switch_device(id, args[1], args[2]);
+    }
+}
+
+void set_shell_command(const char** args, const size_t n_args){
+
+    if(n_args != 3)
+        print_error(YLW "usage: set <id> <register> <value>\n" RESET);
+    else{
+        device_id id;
+        if(string_to_int(args[0], &id) != 0)
+            print_error(RED "[-] invalid id %s\n" RESET, args[0]);
+        else
+            set_device(id, args[1], args[2]);
     }
 }
 
@@ -431,8 +480,12 @@ void help_shell_command(const char** args, const size_t n_args){
             usage: <del> <id>\n\
     - link: connect the first device to the second\n\
             usage: <link> <id> <id>\n\
+    - unlink: disconnect the device from his controller device\n\
+            usage: <unlink> <id>\n\
     - switch: turn on/off the identified device \n\
             usage: <switch> <id> <label> <on/off>\n\
+    - set: set the register of the identified device \n\
+            usage: <set> <id> <register> <value>\n\
     - info: show details of the identified device \n\
             usage: <info> <id>\n\
     - exit: close the controller\n\
