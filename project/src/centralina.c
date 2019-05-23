@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 
                 if (input_command.name[0] != '\0') {
                     if (handle_command(&input_command, shell_command_bindings, 10) == -1)
-                        fprintf(stdout, "unknown command %s\n",
+                        fprintf(stdout, RED "[-] unknown command %s\n" RESET,
                                 input_command.name);
                 }
 
@@ -412,9 +412,7 @@ void switch_shell_command(const char** args, const size_t n_args){
             if(send_command_to_device(0, command)==0){
                 LineBuffer buffer = {NULL, 0};
                 read_device_response(&buffer);
-
-
-                printf("Ho ricevuto %s\n", buffer.buffer);
+                pretty_print(buffer.buffer);
             }
         }
     }
@@ -435,8 +433,7 @@ void set_shell_command(const char** args, const size_t n_args){
             if(send_command_to_device(0, command)==0){
                 LineBuffer buffer = {NULL, 0};
                 read_device_response(&buffer);
-
-                printf("Ho ricevuto %s\n", buffer.buffer);
+                pretty_print(buffer.buffer);
             }
         }
 
@@ -748,6 +745,28 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
             curr++;
 
     }while (curr < end || *curr[0] != '#');
+}
+
+void pretty_print(const char* feedback){
+    if(strcmp(feedback, OK_DONE)==0)
+        print_error(GRN "[+] completed succesfully\n" RESET);
+    else if (strcmp(feedback, OK_NO_CHANGES)==0)
+        print_error(GRN "[+] nothing changed\n" RESET);
+    else if (strcmp(feedback, INV_SWITCH)==0)
+        print_error(RED "[-] switch not found\n" RESET);
+    else if (strcmp(feedback, INV_SET_VALUE)==0)
+        print_error(RED "[-] invalid value\n" RESET);
+    else if (strcmp(feedback, INV_REG)==0)
+        print_error(RED "[-] invalid register\n" RESET);
+    else if (strcmp(feedback, INV_ID)==0)
+        print_error(RED "[-] invalid id\n" RESET);
+    else if (strcmp(feedback, ERR_REG_UNSETTABLE)==0)
+        print_error(RED "[-]  register not settable\n" RESET);
+    else if (strcmp(feedback, ERR)==0)
+        print_error(RED "[-] unknown error\n" RESET);
+    else
+        print_error(RED "[-] unknown error\n" RESET);
+    
 }
 
 void devicecommand_command(const char** args, size_t n_args){

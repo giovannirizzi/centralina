@@ -13,6 +13,7 @@ _Bool g_running;
 
 void init_centralina();
 void clean_centralina();
+void pretty_print(const char* feedback);
 int send_command_to_device(device_id id, const char* command);
 int read_device_response(LineBuffer *buffer);
 
