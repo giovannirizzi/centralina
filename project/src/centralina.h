@@ -22,8 +22,6 @@ _Bool is_last_sibling(char* node[], int n);
 int add_device(DeviceType device);
 int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
-int get_info(device_id device);
-void printTree(char* string);
 
 void add_child_devices_recursive(int parent, char **start, char **end, LineBuffer *buffer);
 

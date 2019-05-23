@@ -261,36 +261,6 @@ int link_device(device_id device1, device_id device2){
     if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
-<<<<<<< HEAD
-int unlink_device(device_id device1){
-
-    //TODO 
-    printf("TODO\n");
-
-}
-
-int switch_device(device_id device, const char* label, const char* pos){
-
-    printf("Switch device %d, label: %s, pos: %s\n", device, label, pos);
-
-    /*
-     * Mando uno switch <device> <label> <pos>
-     * Magari attendo una risposta
-     */
-}
-
-int set_device(device_id device, const char* record, const char* value){
-
-    printf("Set device %d, register: %s, value: %s\n", device, record, value);
-
-    /*
-     * Mando un set <device> <register> <value>
-     * Magari attendo una risposta
-     */
-}
-
-=======
->>>>>>> 4b146db8a1a3216caa26013209bdc6bebc201b77
 void add_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
@@ -359,8 +329,11 @@ void unlink_shell_command(const char** args, const size_t n_args){
         if(string_to_int(args[0], &id1) != 0 || id1 == 0 ||
                 g_devices_request_stream[id1] == NULL)
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else
-            unlink_device(id1);
+        else{
+
+
+        }
+
     }
 }
 
@@ -455,8 +428,11 @@ void set_shell_command(const char** args, const size_t n_args){
         device_id id;
         if(string_to_int(args[0], &id) != 0)
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else
-            set_device(id, args[1], args[2]);
+        else{
+
+
+        }
+
     }
 }
 
@@ -798,5 +774,34 @@ void switchdevice_command(const char** args, size_t n_args){
 
 void setdevice_command(const char** args, size_t n_args){
 
+    _Bool found = false;
+    int i;
+    char command[100];
+    LineBuffer buffer = {NULL, 0};
 
+    sprintf(command, "set %s %s", args[1], args[2]);
+
+    for(i=0; i<children_devices.size; i++){
+        if(send_command_to_child(i, "getid") == 0){
+            if(read_child_response(i, &buffer) > 0){
+                if(strcmp(buffer.buffer, args[0]) == 0){
+                    if(send_command_to_child(i, command) == 0){
+                        read_child_response(i, &buffer);
+                        found = true;
+                        break;
+                    } else
+                        break;
+                }
+            }
+        }
+        else
+            i--;
+    }
+
+    if(!found)
+        send_response(INV_ID);
+    else
+        send_response(buffer.buffer);
+
+    if(buffer.length > 9) free(buffer.buffer);
 }
