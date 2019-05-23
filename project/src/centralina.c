@@ -25,6 +25,7 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
 CommandBind controller_command_bindings[] = {{"devicecommand", &devicecommand_command},
+                                             {"switch", &switch_controller_command},
                                              {"getinfo", &getinfo_controller_command}};
 
 int main(int argc, char *argv[]){
@@ -203,7 +204,7 @@ int link_device(device_id device1, device_id device2){
     DeviceType type = device_string_to_type(line_buffer.buffer);
 
     if(type >= 0){
-        print_error("error, can't link to an iteraction device\n");
+        print_error(RED "[-] can't link to an iteraction device\n" RESET);
         return -1;
     }
 
@@ -223,7 +224,7 @@ int link_device(device_id device1, device_id device2){
     if(strcmp(line_buffer.buffer, "yes") != 0 &&
             strcmp(line_buffer.buffer, INV_COMMAND) != 0){
 
-        print_error("error, %s\n", line_buffer.buffer);
+        print_error(RED "[-] %s\n" RESET, line_buffer.buffer);
         return -1;
     }
     else{
@@ -276,7 +277,7 @@ void add_shell_command(const char** args, const size_t n_args){
                     printf(RED "[-] maximum number of devices reached\n" RESET);
                     break;
                 case -1:
-                    printf(RED "[-] error, device was not added\n" RESET);
+                    printf(RED "[-] device was not added\n" RESET);
                     break;
                 default:
                     printf(GRN "[+] %s successfully added with id: %d\n" RESET, args[0], retval);
@@ -316,7 +317,8 @@ void link_shell_command(const char** args, const size_t n_args){
                 g_devices_request_stream[id2] == NULL)
             print_error(RED "[-] invalid id %s\n" RESET, args[2]);
         else
-            link_device(id1, id2);
+            if(link_device(id1, id2)==0)
+                print_error(GRN "[+] Link succesfully\n" RESET);
     }
 }
 
@@ -344,21 +346,31 @@ void list_shell_command(const char** args, const size_t n_args){
     - bulb:\n\
             switch power : turns on/off the bulb\n\
     - window:\n\
-            switch open/close: open/close the window\n\
+            switch open: opens the window\n\
+            switch close: closes the window\n\
     - fridge:\n\
-            switch power: turns on/off the fridge\n\
-            set delay: closes automatically the fridge after the time set\n\
-            set percentage: (only manually) add/remove content from the fridge\n\
-            set temperature: allows to manage and set the internal temperature\n\
+            switch power: opens/closes the fridge\n\
+            register delay: closes automatically the fridge after the time set\n\
+                accepted value: <seconds> e.g. <20>\n\
+            register percentage: (only manually) add/remove content from the fridge\n\
+                accepted value: <percentage> min=0, max=100 e.g. <80>\n\
+            register temperature: allows to set the internal temperature\n\
+                accepted value: <grades> min=-20, max=20 e.g. <5>\n\
     control devices: \n\
     - hub:\n\
-            allows multiple devices of the same type to be connected in parallel\n\
-            switch power: turns on/off the hub\n\
+            allows multiple devices of the same type to be connected in parallel,\n\
+            it's also possible to connect an hub to another,\n\
+            but the connected hub must have the same type of parent's children\n\
+            state and switches of the hub are a mirroring of its children\n\
     - timer:\n\
             allows to define a schedule to control a connected device\n\
-            switch power: turns on/off the timer\n\
-            set begin: indicates the activation time of the timer\n\
-            set end: indicates when the timer will be deactivated\n\n\
+            state and switches of the timer are a mirroring of its child\n\
+            register action: action sent to the controlled device\n\
+                accepted value: <switch name>-<on/off> e.g. power-on\n\
+            register begin: indicates the activation time of the timer\n\
+                accepted value: <HH:MM> e.g. 06:15 (24H)\n\
+            register end: indicates when the timer will be deactivated\n\
+                accepted value: <HH:MM> e.g. 23:15 (24H)\n\n\
     \033[1;37mactive devices:\033[0m \n\
     \n");
     LineBuffer tree = {NULL, 0};
@@ -388,7 +400,7 @@ void list_shell_command(const char** args, const size_t n_args){
 void switch_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3)
-        print_error(YLW "usage: switch <id> <label> <on/off>\n" RESET);
+        print_error(YLW "usage: switch <id> <switch name> <on/off>\n" RESET);
     else{
         device_id id;
         int state;
@@ -401,13 +413,16 @@ void switch_shell_command(const char** args, const size_t n_args){
             char command[100];
             _Bool success = false;
 
-            /*sprintf(command, "switch %s %s", args[1], args[2]);
-
-
             if(id == 0){
-                if(send_command_to_device(0, command))
+                LineBuffer line_buffer = {NULL, 0};
+                sprintf(command, "switch %s %s", args[1], args[2]);
+                if(send_command_to_device(0, command)==0){
+                    read_device_response(&line_buffer);
+                    pretty_print(line_buffer.buffer);
+                }
+                return;
             }
-            */
+
             sprintf(command, "devicecommand switch %d %s %s", id, args[1], args[2]);
             if(send_command_to_device(0, command)==0){
                 LineBuffer buffer = {NULL, 0};
@@ -488,14 +503,14 @@ void help_shell_command(const char** args, const size_t n_args){
             usage: <link> <id> <id>\n\
     - unlink: disconnect the device from his controller device\n\
             usage: <unlink> <id>\n\
-    - switch: turn on/off the identified device \n\
-            usage: <switch> <id> <label> <on/off>\n\
+    - switch: turn on/off the related switch of the device \n\
+            usage: <switch> <id> <switch name> <on/off>\n\
     - set: set the register of the identified device \n\
             usage: <set> <id> <register> <value>\n\
     - info: show details of the identified device \n\
             usage: <info> <id>\n\
     - exit: close the controller\n\
-            usage: <exit> <id>\
+            usage: <exit>\
     \n");
 }
 
@@ -561,7 +576,7 @@ void init_centralina(){
 
     pid_t pid = fork();
     if(pid == -1){
-        perror_and_exit(RED "[-] error, init_centralina: fork" RESET);
+        perror_and_exit("error, init_centralina: fork\n");
     }
     else if(pid == 0){
 
@@ -592,7 +607,7 @@ void init_centralina(){
 
         stdin = g_fifo_in_stream;
 
-        device_loop(signal_bindings, 1, controller_command_bindings, 2);
+        device_loop(signal_bindings, 1, controller_command_bindings, 3);
 
         clean_control_device();
 
@@ -762,6 +777,8 @@ void pretty_print(const char* feedback){
         print_error(RED "[-] invalid id\n" RESET);
     else if (strcmp(feedback, ERR_REG_UNSETTABLE)==0)
         print_error(RED "[-]  register not settable\n" RESET);
+    else if (strcmp(feedback, ERR_CONTROLLER_OFF)==0)
+        print_error(RED "[-]  controller offline\n" RESET);
     else if (strcmp(feedback, ERR)==0)
         print_error(RED "[-] unknown error\n" RESET);
     else
@@ -820,5 +837,27 @@ void getinfo_controller_command(const char** args, size_t n_args) {
 }
 
 void switch_state_controller(int state){
+    if(state == g_device.state){
+        send_response(OK_NO_CHANGES);
+        return;
+    }
     g_device.state = state;
+    send_response(OK_DONE);
+}
+
+void switch_controller_command(const char** args, const size_t n_args){
+
+    int device_state;
+    if(string_to_switch_state(args[1], &device_state)==-1){
+        send_response(INV_SWITCH_STATE);
+        return;
+    }
+
+    int i;
+    for(i=0; i<g_device.num_switches; i++)
+        if(strcmp(g_device.switches[i].label, args[0]) == 0) {
+            g_device.switches[i].action(device_state);
+            return;
+        }
+    send_response(INV_SWITCH);
 }
