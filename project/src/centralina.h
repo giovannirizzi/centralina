@@ -22,7 +22,6 @@ _Bool is_last_sibling(char* node[], int n);
 int add_device(DeviceType device);
 int delete_device(device_id device);
 int link_device(device_id device1, device_id device2);
-int switch_device(device_id device, const char* label, const char* pos);
 int get_info(device_id device);
 void printTree(char* string);
 
@@ -39,6 +38,9 @@ void switch_shell_command(const char** args, size_t n_args);
 void info_shell_command(const char** args, size_t n_args);
 void help_shell_command(const char** args, size_t n_args);
 void exit_shell_command(const char** args, size_t n_args);
+
+void switchdevice_command(const char** args, size_t n_args);
+void setdevice_command(const char** args, size_t n_args);
 
 /**
  * Funzione che implementa il comando per risolvere i PID dei devices

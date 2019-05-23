@@ -22,6 +22,9 @@ CommandBind shell_command_bindings[] = {{"add", &add_shell_command},
 
 CommandBind whois_request_bindings[] = {{"whois", &whois_command}};
 
+CommandBind controller_command_bindings[] = {{"switchdevice", &switchdevice_command},
+                                             {"setdevice", &setdevice_command}};
+
 int main(int argc, char *argv[]){
 
     LineBuffer line_buffer = {NULL, 0};
@@ -256,16 +259,6 @@ int link_device(device_id device1, device_id device2){
     if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
-int switch_device(device_id device, const char* label, const char* pos){
-
-    printf("Switch device %d, label: %s, pos: %s\n", device, label, pos);
-
-    /*
-     * Mando uno switch <device> <label> <pos>
-     * Magari attendo una risposta
-     */
-}
-
 void add_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 1)
@@ -373,13 +366,35 @@ void list_shell_command(const char** args, const size_t n_args){
 void switch_shell_command(const char** args, const size_t n_args){
 
     if(n_args != 3)
-        print_error(YLW "usage: switch <id> <label> <pos>\n" RESET);
+        print_error(YLW "usage: switch <id> <label> <on/off>\n" RESET);
     else{
         device_id id;
+        int state;
         if(string_to_int(args[0], &id) != 0)
             print_error(RED "[-] invalid id %s\n" RESET, args[0]);
-        else
-            switch_device(id, args[1], args[2]);
+        else if(string_to_switch_state(args[2], &state) != 0)
+            print_error(RED "[-] invalid switch state %s\n" RESET, args[2]);
+        else{
+
+            char command[100];
+            _Bool success = false;
+
+            /*sprintf(command, "switch %s %s", args[1], args[2]);
+
+
+            if(id == 0){
+                if(send_command_to_device(0, command))
+            }
+            */
+            sprintf(command, "switchdevice %d %s %s", id, args[1], args[2]);
+            if(send_command_to_device(0, command)==0){
+                LineBuffer buffer = {NULL, 0};
+                read_device_response(&buffer);
+
+
+                printf("Ho ricevuto %s\n", buffer.buffer);
+            }
+        }
     }
 }
 
@@ -448,7 +463,7 @@ void whois_command(const char** args, const size_t n_args){
 
     int whois_response_fd = open_fifo(FIFO_WHOIS_RESPONSE, O_NONBLOCK | O_WRONLY);
     if(whois_response_fd == -1){
-        print_error("whois_command: open_fifo: no readers\n");
+        print_error("whois_command: open_fifo: int switch_device(device_id device, const char* label, const char* pos);no readers\n");
         return;
     }
 
@@ -526,7 +541,7 @@ void init_centralina(){
 
         stdin = g_fifo_in_stream;
 
-        device_loop(NULL, 0, NULL, 0);
+        device_loop(NULL, 0, controller_command_bindings, 2);
 
         clean_control_device();
 
@@ -679,4 +694,43 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
             curr++;
 
     }while (curr < end || *curr[0] != '#');
+}
+
+void switchdevice_command(const char** args, size_t n_args){
+
+    _Bool found = false;
+    int i;
+    char command[100];
+    LineBuffer buffer = {NULL, 0};
+
+    sprintf(command, "switch %s %s", args[1], args[2]);
+
+    for(i=0; i<children_devices.size; i++){
+        if(send_command_to_child(i, "getid") == 0){
+            if(read_child_response(i, &buffer) > 0){
+                if(strcmp(buffer.buffer, args[0]) == 0){
+                    if(send_command_to_child(i, command) == 0){
+                        read_child_response(i, &buffer);
+                        found = true;
+                        break;
+                    } else
+                        break;
+                }
+            }
+        }
+        else
+            i--;
+    }
+
+    if(!found)
+        send_response(INV_ID);
+    else
+        send_response(buffer.buffer);
+
+    if(buffer.length > 9) free(buffer.buffer);
+}
+
+void setdevice_command(const char** args, size_t n_args){
+
+
 }

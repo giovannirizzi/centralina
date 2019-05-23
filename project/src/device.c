@@ -19,7 +19,8 @@ const CommandBind BASE_COMMANDS[] = {{"getinfo", &getinfo_command},
                                      {"switch", &switch_command},
                                      {"set", &set_command},
                                      {"getrealtype", &getrealtype_command},
-                                     {"gettree", &gettree_command}};
+                                     {"gettree", &gettree_command},
+                                     {"getid", &getid_command}};
 
 sigset_t set_signal_mask(RTSignalType signal1, ...){
 
@@ -297,5 +298,10 @@ void signal_handler(int sig, siginfo_t *info, void *context){
 
     if(info != NULL)
         g_curr_signal.value = info->si_value.sival_int;
+}
+
+void getid_command(const char **args, size_t n_args){
+
+    send_response("%d", g_device.id);
 }
 
