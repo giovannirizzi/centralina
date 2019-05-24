@@ -18,7 +18,7 @@ void getinfo_hub_command(const char** args, size_t n_args);
  */
 void canadd_command(const char** args, size_t n_args);
 
-//Metodo per prendere i registri dei figli
+/* funzione per prendere i registri dei figli */
 void getrecords(char *buffer);
 
 LineBuffer line_buffer = {NULL, 0};

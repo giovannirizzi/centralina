@@ -64,7 +64,8 @@ void init_base_device(char *args[], size_t n_args){
     /*
      * esempio ./bulb <id>
      * se l'id non è presente significa che il dispositivo non viene controllato
-     * (usato per debuging) quindi il device accetta comandi solo da stdin
+     * (usato per debuging) quindi il device accetta comandi solo da stdin e
+     * non anche dalla named pipe
      */
 
     set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
@@ -103,20 +104,14 @@ void init_base_device(char *args[], size_t n_args){
 
 void getpid_command(const char** args, const size_t n_args){
 
-    print_error("Device %d: received getpid command\n", g_device.id);
-
     send_response("%d", getpid());
 }
 void gettype_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received gettype command\n", g_device.id);
 
     send_response("%s", device_type_to_string(g_device.type));
 }
 void iscontrolled_command(const char** args, const size_t n_args){
 
-    print_error("Device %d: received iscontrolled command\n", g_device.id);
-    
     if(is_controlled())
         send_response("yes");
     else
@@ -125,13 +120,10 @@ void iscontrolled_command(const char** args, const size_t n_args){
 
 void del_command(const char** args, const size_t n_args){
 
-    print_error("Device %d: received del command\n", g_device.id);
     g_running = false;
 }
 
 void setconf_command(const char** args, const size_t n_args){
-
-    print_error("Device %d: received setconf command\n", g_device.id);
 
     char *records[1];
     int value;
@@ -219,8 +211,6 @@ void clean_base_device(){
 
     if(g_fifo_in_stream) fclose(g_fifo_in_stream);
     if(g_fifo_out_stream ) fclose(g_fifo_out_stream);
-
-    print_error("Device %d: sto terminando\n", g_device.id);
 }
 
 int send_response(char* response, ...){

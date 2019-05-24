@@ -25,7 +25,7 @@ typedef int device_id;
 typedef enum {
     TIMER = -3,
     HUB = -2,
-    CENTRALINA = -1,
+    CONTROLLER = -1,
     INVALID_TYPE = 0,
     BULB = 1,
     WINDOW = 2,

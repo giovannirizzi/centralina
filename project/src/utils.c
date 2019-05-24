@@ -4,21 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <linux/limits.h>
-#include <fcntl.h>
+#include <linux/limits.h> //per PATH MAX
 #include "utils.h"
-#include <time.h>
 
 const char* device_type_to_string(DeviceType device_type){
 
     switch(device_type){
-        case CENTRALINA:
-            return "centralina";
+        case CONTROLLER:
+            return "controller";
         case HUB:
             return "hub";
         case TIMER:
@@ -36,8 +32,8 @@ const char* device_type_to_string(DeviceType device_type){
 
 DeviceType device_string_to_type(const char* device_string){
 
-    if(strcmp("centralina", device_string) == 0)
-        return CENTRALINA;
+    if(strcmp("controller", device_string) == 0)
+        return CONTROLLER;
     else if(strcmp("hub", device_string) == 0)
         return HUB;
     else if(strcmp("timer", device_string) == 0)
@@ -168,21 +164,6 @@ int open_fifo(const char* path, mode_t access_mode){
     return fd;
 }
 
-
-/*void read_incoming_signal(int sfd, RTSignal *signal){
-
-    static struct signalfd_siginfo fdsi;
-    ssize_t s;
-
-    s = read(sfd, &fdsi, sizeof(struct signalfd_siginfo));
-    if (s != sizeof(struct signalfd_siginfo))
-        perror_and_exit("read signalfd");
-
-    //Il cast non dovrebbe dare problemi...
-    signal->type = (RTSignalType)fdsi.ssi_signo - SIGRTMIN;
-    signal->value = fdsi.ssi_int;
-}*/
-
 char* get_absolute_executable_dir(){
 
     static char path[PATH_MAX] = {0};
@@ -201,8 +182,8 @@ char* get_absolute_executable_dir(){
 }
 
 int time_to_string(int time, char* string_time){
-    struct tm info;
 
+    struct tm info;
     int hour = time & 0xffff;
     int min = (time >> 16) & 0xffff;
 
@@ -215,8 +196,8 @@ int time_to_string(int time, char* string_time){
 }
 
 int string_to_time(const char* string_time, int* time){
-    struct tm info;
 
+    struct tm info;
     char* retval = strptime(string_time, "%H:%M", &info);
 
     if(retval == NULL || *retval != '\0')
@@ -274,10 +255,47 @@ int seconds_to_string(int seconds, char* string){
     sprintf(string, "%d sec", seconds);
 }
 
-int percentage_to_string(int percentage, char* string){
-    sprintf(string, "%d%%", percentage);
+void print_tree(char *tree){
+
+    char* nodes[200];
+    char delimiter[200];
+    strcpy(delimiter, "    ");
+    int i=0, id, type;
+    int num = divide_string(tree, nodes+1, sizeof(nodes)/ sizeof(char) -1, " ");
+    nodes[0] = tree;
+    char* delim1 = "|    ";
+    char* delim2 = "     ";
+    for(i=0; i<=num; i++){
+
+        if(*nodes[i] == '#'){
+            int length = strlen(delimiter);
+            delimiter[length-strlen(delim1)] = '\0';
+
+        }else{
+            sscanf(nodes[i], "%d|%d|", &id, &type);
+            printf("%s+-(%d)-%s\n", delimiter, id, device_type_to_string(type));
+
+            if(is_last_sibling(nodes + i, num -i))
+                strcat(delimiter, delim2);
+            else
+                strcat(delimiter, delim1);
+        }
+    }
 }
 
-int temperature_to_string(int temperature, char* string){
-    sprintf(string, "%d°", temperature);
+_Bool is_last_sibling(char* node[], int n){
+
+    int i=0;
+    int counter = 0;
+    while (i<n && counter >= -1){
+        i++;
+        if(*node[i] == '#')
+            counter--;
+        else{
+            counter++;
+            if(counter == 0)
+                return false;
+        }
+    }
+    return true;
 }

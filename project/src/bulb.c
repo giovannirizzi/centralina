@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "iteration_device.h"
 
-//Viene chiamata quando si agisce sull' interruttore power
+// Viene chiamata quando si agisce sull' interruttore power
 void switch_power_action(int state);
 
 /* Viene chiamata quando si riceve il segnale SIG_TICK inviato
@@ -17,6 +17,7 @@ int main(int argc, char *argv[]){
     Registry records[] = {
             {"time", "usage time", 0, &string_to_int, &seconds_to_string, false}
     };
+
     Switch switches[] = {"power", &switch_power_action};
 
     SignalBind signal_bindings[] = {
@@ -35,6 +36,7 @@ int main(int argc, char *argv[]){
     };
 
     g_device = bulb;
+
     create_timer(&timer);
 
     init_base_device(argv, argc);
