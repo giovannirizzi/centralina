@@ -153,11 +153,14 @@ void switch_command(const char** args, const size_t n_args){
     char command[100];
     sprintf(command, "switch %s %s", args[0], args[1]);
 
+    _Bool done = false;
     LineBuffer buffer = {NULL, 0};
     //Invio a tutti i figli il comando
     for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, command) == 0){
             read_child_response(i, &buffer);
+            if(strcmp(buffer.buffer, OK_DONE) == 0)
+                done = true;
         }
         else
             i--;
@@ -170,7 +173,10 @@ void switch_command(const char** args, const size_t n_args){
             if(string_to_int(buffer2.buffer, &g_device.state)!=0)
                 g_device.state = 0;
 
-    send_response(buffer.buffer);
+    if(strcmp(buffer.buffer, OK_NO_CHANGES) == 0 && done)
+        send_response(OK_DONE);
+    else
+        send_response(buffer.buffer);
 
     if(buffer.length > 0) free(buffer.buffer);
     if(buffer2.length > 0) free(buffer2.buffer);
@@ -352,9 +358,7 @@ void getrealtype_command(const char** args, const size_t n_args) {
 
             read_child_response(child, &line_buffer);
             send_response("%s", line_buffer.buffer);
-
             done = true;
-            return;
         }
         else
             child++;

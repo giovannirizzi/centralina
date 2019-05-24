@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "iteration_device.h"
 
+//Viene chiamata quando si agisce sull' interruttore open
 void switch_open_action(int state);
 void switch_close_action(int state);
 void tick_signal(int a);
@@ -41,13 +42,10 @@ int main(int argc, char *argv[]){
 
     create_timer(&timer);
 
-    //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
 
     device_loop(signal_bindings, sizeof(signal_bindings)/ sizeof(SignalBind),
                 NULL, 0);
-
-    print_error("Device %d: sto terminando\n", g_device.id);
 
     delete_timer(timer);
     clean_base_device();

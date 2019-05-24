@@ -750,13 +750,13 @@ void pretty_print(const char* feedback){
     else if (strcmp(feedback, INV_SWITCH)==0)
         print_error(RED "[-] switch not found\n" RESET);
     else if (strcmp(feedback, INV_SET_VALUE)==0)
-        print_error(RED "[-] invalid value\n" RESET);
+        print_error(RED "[-] invalid registry value \n" RESET);
     else if (strcmp(feedback, INV_REG)==0)
-        print_error(RED "[-] invalid register\n" RESET);
+        print_error(RED "[-] invalid registry name\n" RESET);
     else if (strcmp(feedback, INV_ID)==0)
         print_error(RED "[-] the controller does not control the specified device\n" RESET);
     else if (strcmp(feedback, ERR_REG_UNSETTABLE)==0)
-        print_error(RED "[-]  register not settable\n" RESET);
+        print_error(RED "[-]  registry not settable\n" RESET);
     else if (strcmp(feedback, ERR_CONTROLLER_OFF)==0)
         print_error(RED "[-]  controller offline\n" RESET);
     else if (strcmp(feedback, ERR_NO_DEVICES) == 0)

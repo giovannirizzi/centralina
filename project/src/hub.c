@@ -4,8 +4,24 @@
 #include "utils.h"
 #include "control_device.h"
 
+/*
+ * Implementa il comando getinfo dell' hub, esso maschera quello di default
+ * perché l'hub oltre a stampare le sue caratteristica deve fare anche il
+ * mirroring dei registri figli
+ */
 void getinfo_hub_command(const char** args, size_t n_args);
+
+/*
+ * Il comando canadd ha come unico argomento il realtype del device che
+ * voglio aggiungere come figlio, da in risposta "yes" se è possibile aggiungere tale
+ * dispositivo, altrimenti risponde con un errore.
+ */
 void canadd_command(const char** args, size_t n_args);
+
+//Metodo per prendere i registri dei figli
+void getrecords(char *buffer);
+
+LineBuffer line_buffer = {NULL, 0};
 
 int main(int argc, char *argv[]){
 
@@ -31,6 +47,8 @@ int main(int argc, char *argv[]){
     device_loop(NULL, 0, hub_commands, 2);
 
     clean_control_device();
+
+    if(line_buffer.length > 0) free(line_buffer.buffer);
 
     exit(EXIT_SUCCESS);
 }
@@ -61,7 +79,7 @@ void canadd_command(const char** args, size_t n_args){
         DeviceType my_type;
 
         _Bool done = false;
-        LineBuffer line_buffer = {NULL, 0};
+
         int child = 0;
         while(child < g_children_devices.size && !done){
 
@@ -70,15 +88,11 @@ void canadd_command(const char** args, size_t n_args){
                 read_child_response(child, &line_buffer);
                 string_to_int(line_buffer.buffer, &my_type);
                 my_type = device_string_to_type(device_type_to_string(my_type));
-
-                print_error("My_tipe: %d\n",my_type);
                 done = true;
             }
             else
                 child++;
         }
-
-        if(line_buffer.length > 0) free(line_buffer.buffer);
 
         if(!done || my_type == new_device_type)
             send_response("yes");
@@ -89,9 +103,8 @@ void canadd_command(const char** args, size_t n_args){
 
 void getinfo_hub_command(const char** args, size_t n_args){
 
-    char info_string[400], tmp[400], value_str[50], state_str[50];
+    char info_string[400], tmp[400], state_str[50];
     _Bool override = false;
-    LineBuffer line_buffer = {NULL, 0};
 
     const char *state = device_state_to_string(g_device.state, g_device.type);
 
@@ -119,17 +132,51 @@ void getinfo_hub_command(const char** args, size_t n_args){
     sprintf(info_string, "id=%d|type=%s|state=%s|connected devices=%d", g_device.id,
             device_type_to_string(g_device.type), state_str, g_children_devices.size);
 
+    //Se sto controllando dispositivi prendo anche i loro registri
+    if(g_children_devices.size > 0){
+        getrecords(tmp);
+        strcat(info_string, tmp);
+    }
+
+    send_response("%s", info_string);
+}
+
+void getrecords(char *buffer){
+
+    //Prende i registri del figlio
+    char* substrings[3];
     if(g_children_devices.size > 0)
         if(send_command_to_child(0, "getinfo") == 0){
             read_child_response(0, &line_buffer);
-            char* substrings[3];
             divide_string(line_buffer.buffer, substrings, 3, "|");
-            sprintf(tmp, "|%s", substrings[2]);
-            strcat(info_string, tmp);
         }
 
-    send_response("%s", info_string);
+    //Calcola il massimo usage time tra i figli
+    if(strstr(substrings[2], "usage time") != NULL){
+        int maxtime = 0, tmptime = 0;
+        int trovato = divide_string(substrings[2], substrings, 1, "=");
+        sscanf(substrings[0], "%d", &maxtime);
+        print_error("Trovato %d\n",trovato);
+        print_error("MAX:TIME: %d\n",maxtime);
+        int i;
+        for(i=1; i<g_children_devices.size; i++){
+            if(send_command_to_child(i, "getinfo") == 0){
+                read_child_response(i, &line_buffer);
 
-    if(line_buffer.length > 0) free(line_buffer.buffer);
+                divide_string(line_buffer.buffer, substrings, 3, "|");
+                divide_string(substrings[2], substrings, 1, "=");
+                sscanf(substrings[0], "%d", &tmptime);
+                if(tmptime > maxtime)
+                    maxtime = tmptime;
+            }
+            else
+                i--;
+        }
+        char secocnds_str[20];
+        seconds_to_string(maxtime, secocnds_str);
+        sprintf(buffer, "|max usage time=%s", secocnds_str);
+    }
+    else
+        sprintf(buffer, "|%s", substrings[2]);
 
 }

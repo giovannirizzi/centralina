@@ -3,7 +3,11 @@
 #include "utils.h"
 #include "iteration_device.h"
 
+//Viene chiamata quando si agisce sull' interruttore power
 void switch_power_action(int state);
+
+/* Viene chiamata quando si riceve il segnale SIG_TICK inviato
+ * ogni secondo se il timer è attivo */
 void tick_signal(int a);
 
 timer_t timer;
@@ -25,9 +29,9 @@ int main(int argc, char *argv[]){
             -1, //ID
             0, //STATE
             (Registry*)&records,
-            sizeof(records) / sizeof(Registry), //NUM RECORDS
+            sizeof(records) / sizeof(Registry),
             (Switch*)&switches,
-            sizeof(switches) / sizeof(Switch) //NUM SWITCHES
+            sizeof(switches) / sizeof(Switch)
     };
 
     g_device = bulb;
@@ -37,7 +41,6 @@ int main(int argc, char *argv[]){
     
     device_loop(signal_bindings, sizeof(signal_bindings)/ sizeof(SignalBind),
             NULL, 0);
-
 
     delete_timer(timer);
     clean_base_device();

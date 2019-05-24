@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "control_device.h"
 
-void switch_power_action(int state);
 void tick_signal(int a);
 void set_begin_action(int state);
 void set_end_action(int state);
@@ -35,10 +34,7 @@ int main(int argc, char *argv[]){
             {"action", "timer action", 2, &string_to_action, &action_to_string, true}
     };
 
-    Switch switches[] = {"power", &switch_power_action};
-
     SignalBind signal_bindings[] = {
-            {SIG_POWER, &switch_power_action},
             {SIG_TICK, &tick_signal},
             {SIG_BEGIN, &set_begin_action},
             {SIG_END, &set_end_action}
@@ -49,9 +45,9 @@ int main(int argc, char *argv[]){
             -1, //ID
             0, //STATE
             (Registry*)&records,
-            sizeof(records) / sizeof(Registry), //NUM RECORDS
-            (Switch*)&switches,
-            sizeof(switches) / sizeof(Switch) //NUM SWITCHES
+            sizeof(records) / sizeof(Registry),
+            NULL,
+            0
     };
 
     g_device = timer;
@@ -97,28 +93,31 @@ void tick_signal(int a){
                     send_command_to_child(0,"switch power on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch power off");
+                    read_child_response(0, &line_buffer);
                     update_state();
                     break;
                 case 1:
                     send_command_to_child(0,"switch power off");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch power on");
+                    read_child_response(0, &line_buffer);
                     update_state();
                     break;
                 case 2:
                     send_command_to_child(0,"switch open on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch close on");
+                    read_child_response(0, &line_buffer);
                     update_state();
                     break;
                 case 3:
                     send_command_to_child(0,"switch close on");
                     if(diff_end == 0.0)
                         send_command_to_child(0,"switch open on");
+                    read_child_response(0, &line_buffer);
                     update_state();
                     break;
             }
-            read_child_response(0, &line_buffer);
         }
     }
 }
@@ -148,7 +147,6 @@ void canadd_command(const char** args, size_t n_args) {
         send_response("yes");
     else
         send_response("timer can control only one device");
-
 }
 
 void set_begin_action(int state){
