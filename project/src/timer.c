@@ -28,6 +28,7 @@ int main(int argc, char *argv[]){
             {"canadd", &canadd_command}
     };
 
+    //Tempi begin e end di default da settare nei registri
     int default_begin, default_end;
     string_to_time("23:00",&default_begin);
     string_to_time("7:00",&default_end);
@@ -76,6 +77,7 @@ int main(int argc, char *argv[]){
 
 void tick_signal(int a){
 
+    //Conversione di tempo corrente, begin e end in time_t
     time_t t_now,t_begin,t_end;
     char temp[80];
     t = time(NULL);
@@ -99,12 +101,14 @@ void tick_signal(int a){
         is_in_range = false;
     }
 
+    //Calcolo se tempo corrente è minore/maggiore di tempo begin e end
     double diff_begin = difftime(t_now,t_begin);
     double diff_end = difftime(t_now,t_end);
 
     if(diff_begin>=0 && diff_end<=0){
         if(g_children_devices.size != 0){
             if(!is_in_range && diff_end != 0.0){
+                //Se tempo corrente è tra begin e end invio comando presente nel registro action
                 switch(g_device.records[2].value){
                 case 0:
                     send_command_to_child(0,"switch power on");
@@ -121,10 +125,10 @@ void tick_signal(int a){
                 }
                 is_in_range = true;
                 read_child_response(0, &line_buffer);
-                print_error("1: %s\n",line_buffer.buffer);
                 update_state();
             }
             if(is_in_range && diff_end == 0.0){
+                //Se tempo corrente coincide con end invio azione contraria a quella del registro action
                 switch(g_device.records[2].value){
                 case 0:
                     send_command_to_child(0,"switch power off");
@@ -141,7 +145,6 @@ void tick_signal(int a){
                 }
                 is_in_range = false;
                 read_child_response(0, &line_buffer);
-                print_error("2: %s\n",line_buffer.buffer);
                 update_state();
             }
         }
