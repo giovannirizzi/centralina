@@ -14,6 +14,7 @@ timer_t tim;
 time_t t;
 struct tm tm;
 LineBuffer line_buffer = {NULL, 0};
+_Bool is_in_range = false;
 
 void update_state();
 void canadd_command(const char** args, size_t n_args);
@@ -26,7 +27,7 @@ int main(int argc, char *argv[]){
 
     int default_begin, default_end;
     string_to_time("8:00",&default_begin);
-    string_to_time("18:00",&default_end);
+    string_to_time("10:49",&default_end);
 
     Registry records[] = {
             {"begin", "starting time", default_begin, &string_to_time, &time_to_string, true},
@@ -88,35 +89,45 @@ void tick_signal(int a){
 
     if(diff_begin>=0 && diff_end<=0){
         if(g_children_devices.size != 0){
-            switch(g_device.records[2].value){
+            if(!is_in_range && diff_end != 0.0){
+                switch(g_device.records[2].value){
                 case 0:
                     send_command_to_child(0,"switch power on");
-                    if(diff_end == 0.0)
-                        send_command_to_child(0,"switch power off");
-                    read_child_response(0, &line_buffer);
-                    update_state();
                     break;
                 case 1:
                     send_command_to_child(0,"switch power off");
-                    if(diff_end == 0.0)
-                        send_command_to_child(0,"switch power on");
-                    read_child_response(0, &line_buffer);
-                    update_state();
                     break;
                 case 2:
                     send_command_to_child(0,"switch open on");
-                    if(diff_end == 0.0)
-                        send_command_to_child(0,"switch close on");
-                    read_child_response(0, &line_buffer);
-                    update_state();
                     break;
                 case 3:
                     send_command_to_child(0,"switch close on");
-                    if(diff_end == 0.0)
-                        send_command_to_child(0,"switch open on");
-                    read_child_response(0, &line_buffer);
-                    update_state();
                     break;
+                }
+                is_in_range = true;
+                read_child_response(0, &line_buffer);
+                print_error("1: %s\n",line_buffer.buffer);
+                update_state();
+            }
+            if(is_in_range && diff_end == 0.0){
+                switch(g_device.records[2].value){
+                case 0:
+                    send_command_to_child(0,"switch power off");
+                    break;
+                case 1:
+                    send_command_to_child(0,"switch power on");
+                    break;
+                case 2:
+                    send_command_to_child(0,"switch close on");
+                    break;
+                case 3:
+                    send_command_to_child(0,"switch open on");
+                    break;
+                }
+                is_in_range = false;
+                read_child_response(0, &line_buffer);
+                print_error("2: %s\n",line_buffer.buffer);
+                update_state();
             }
         }
     }
@@ -151,10 +162,12 @@ void canadd_command(const char** args, size_t n_args) {
 
 void set_begin_action(int state){
     g_device.records[0].value = state;
+    is_in_range = false;
 }
 
 void set_end_action(int state){
     g_device.records[1].value = state;
+    is_in_range = false;
 }
 
 int string_to_action(const char* string, int *id){
