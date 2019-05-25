@@ -26,6 +26,7 @@ typedef enum{
     SIG_CLOSE,
     SIG_BEGIN,
     SIG_END,
+    SIG_ACTION,
     SIG_DELAY,
     SIG_PERC,
     SIG_TEMP,
@@ -62,8 +63,8 @@ typedef struct{
 /*Astrazione che viene utilizzata alla base dalla funzione
 * getline(), funzione utilizzata in tutto il progetto per
 * leggere una linea da un qualsiasi stream.
-* Un line buffere deve essere sempre inizzializzato a {NULL, 0} prima
-* di utilizzarlo per la lettura.
+* Un line buffere deve essere sempre inizzializzato la prima volta
+* a {NULL, 0}.
 */
 typedef struct{
     char* buffer;

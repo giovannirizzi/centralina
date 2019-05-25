@@ -92,5 +92,5 @@ help:
 	@echo "    - <binary file> : builds only the identified binary file: "
 	@echo "          controller, hub, bulb, fridge, window, timer, manualcontrol"
 	@echo "    - clean: deletes all the executables file"
-	@echo "    - help: shows info and commands available"
+	@echo "    - help: shows this info"
 

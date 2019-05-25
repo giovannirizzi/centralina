@@ -52,12 +52,12 @@ int main(int argc, char *argv[]){
         FD_SET(whois_request_fd, &rfds);
         FD_SET(stdin_fd, &rfds);
 
+        //Rimango in attesa di input da stdin e dalla FIFO per il whois
         if(pselect(whois_request_fd+1, &rfds, NULL, NULL, NULL, &emptyset) == -1){
 
+            //Se la chiamata è stata iterrotta da un segnale non faccio nulla
             if(errno != EINTR)
                 perror("pselect");
-            else {
-            }
         }
         else {
 
@@ -109,6 +109,9 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
     int parent_id;
 
     do{
+        /*Costruisco e mando il comando "add" al device con id <parent>
+         * *curr contiene l'argomento del comando add (<id>|<type>|...)
+         */
         sprintf(command, "add %s", *curr);
         send_command_to_device(parent, command);
         read_device_response(buffer);
@@ -117,6 +120,7 @@ void add_child_devices_recursive(int parent, char **start, char **end, LineBuffe
         char** tmp_start = ++curr;
         int counter = 1;
 
+        //Scorro curr finché arrivo alla conf del suo ultimo figlio
         do{
             if(*curr[0] == '#')
                 counter--;
@@ -183,9 +187,9 @@ int add_device(DeviceType device){
         freopen("/dev/null", "w", stderr);
         execv("/usr/bin/xterm", argv);
 #else
-        fclose(stdin);
+        fclose(stdin); //dopo la exec stdin diverrà la fifo
         fclose(stdout);
-        freopen("/dev/null", "w", stderr);
+        freopen("/dev/null", "w", stderr); //sostituisco stderr con /dev/null
 
         char *argv[] = {exec_path, device_id_str, 0};
         execv(exec_path, argv);
@@ -232,24 +236,28 @@ int link_device(device_id device1, device_id device2){
 
     DeviceType type = device_string_to_type(g_buffer.buffer);
 
+    //Controllo voglio linkare ad un interaction device
     if(type >= 0){
         printf(RED "[-] can't link to an iteraction device\n" RESET);
         return -1;
     }
 
+    //Chiedo il realtype del dispositivo, un hub e un timer senza figli ha type invalid
     if(send_command_to_device(device1, "getrealtype") == 0){
         read_device_response(&g_buffer);
     } else
         return -1;
 
-    char command[40];
+    char command[100];
     sprintf(command, "canadd %s", g_buffer.buffer);
 
+    //Chiedo al device2 se posso aggiungere un dispositivo di un tale tipo
     if(send_command_to_device(device2, command) == 0)
         read_device_response(&g_buffer);
     else
         return -1;
 
+    //Se il device2 mi ha risposto con un errore
     if(strcmp(g_buffer.buffer, "yes") != 0 &&
             strcmp(g_buffer.buffer, INV_COMMAND) != 0){
 
@@ -259,9 +267,8 @@ int link_device(device_id device1, device_id device2){
     else{
 
         char *devices[100];
-        char command[100];
-        int i;
 
+        //Chiedo la sua configurazione al device1, può essere un intero albero di dispositivi
         if(send_command_to_device(device1, "getconf")==0)
             read_device_response(&g_buffer);
         else
@@ -269,10 +276,17 @@ int link_device(device_id device1, device_id device2){
 
         send_command_to_device(device1, "del");
 
+        /* Una configurazione hai il formato: id|type|state|registry1=value
+         * la getconf su un control device mi restituisce l'albero con il formato
+         * <conf> <conf_figlio1> # <conf_figlio2> <conf_nipote1> # # #
+         */
+
         int num_devices = divide_string(g_buffer.buffer, devices+1, 100-1, " ");
         devices[0] = g_buffer.buffer;
 
         LineBuffer buffer = {NULL, 0};
+
+        //Aggiungo il primo dispositivo al device 2
 
         sprintf(command, "add %s", devices[0]);
         if(send_command_to_device(device2, command)==0)
@@ -283,10 +297,12 @@ int link_device(device_id device1, device_id device2){
         int parent_id;
         sscanf(devices[0], "%d|", &parent_id);
 
+        //Ricorsivamente aggiungo tutti gli altri per ricostruire l'albero dei processi corretto
         add_child_devices_recursive(parent_id, devices + 1, devices + num_devices-1, &buffer);
 
         if(buffer.length > 0) free(buffer.buffer);
     }
+    return 0;
 }
 
 void init_controller(){
@@ -296,6 +312,7 @@ void init_controller(){
      * su una read end di una pipe chiusa.
      */
     signal(SIGPIPE, SIG_IGN);
+    //Registro l'handler per fare la wait sui figli terminati
     signal(SIGCHLD, sigchild_handler);
 
     set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
@@ -307,6 +324,7 @@ void init_controller(){
     int whois_request_fd = open_fifo(FIFO_WHOIS_REQUEST, O_RDWR | O_NONBLOCK | O_CLOEXEC);
     g_whois_request_stream = fdopen(whois_request_fd, "r");
 
+    //Creo il processo per il dispositivo controller
     pid_t pid = fork();
     if(pid == -1){
         perror_and_exit("error, init_controller: fork\n");
@@ -317,10 +335,12 @@ void init_controller(){
         fclose(stdout);
         freopen("/dev/null", "w", stderr);
 
-        Switch switches[] = {"power", &switch_state_controller};
+        Switch switches[] = {
+                {"power", &switch_state_controller}
+        };
 
         SignalBind signal_bindings[] = {
-                {SIG_POWER, &switch_state_controller},
+                {SIG_POWER, &switch_state_controller}
         };
 
         DeviceData controller = {
@@ -576,10 +596,12 @@ void list_shell_command(const char** args, const size_t n_args){
         if(retval>0)
             print_tree(g_buffer.buffer);
     }
+    //Stampo la foresta dei dispositivi attivi
     for(i=1; i<MAX_DEVICES; i++){
         if(g_devices_request_stream[i] != NULL){
             if(send_command_to_device(i, "iscontrolled\n")==0){
                 retval = read_device_response(&g_buffer);
+                    //Se il dispositivo non è controllato
                     if(retval>0 && (strcmp(g_buffer.buffer, "no") == 0)){
                         if(send_command_to_device(i, "gettree\n") == 0){
                             retval = read_device_response(&g_buffer);
@@ -606,21 +628,21 @@ void switch_shell_command(const char** args, const size_t n_args){
         else{
 
             char command[100];
-            _Bool success = false;
-
+            //Se è il controller
             if(id == 0){
                 sprintf(command, "switch %s %s", args[1], args[2]);
                 if(send_command_to_device(0, command)==0){
                     read_device_response(&g_buffer);
                     pretty_print(g_buffer.buffer);
                 }
-                return;
             }
-
-            sprintf(command, "devicecommand switch %d %s %s", id, args[1], args[2]);
-            if(send_command_to_device(0, command)==0){
-                read_device_response(&g_buffer);
-                pretty_print(g_buffer.buffer);
+            else {
+                //Mando al controller per fare la switch del dispositivo
+                sprintf(command, "devicecommand switch %d %s %s", id, args[1], args[2]);
+                if(send_command_to_device(0, command)==0){
+                    read_device_response(&g_buffer);
+                    pretty_print(g_buffer.buffer);
+                }
             }
         }
     }
@@ -637,6 +659,7 @@ void set_shell_command(const char** args, const size_t n_args){
         else{
 
             char command[100];
+            //Mando al controller per fare la set del dispositivo
             sprintf(command, "devicecommand set %d %s %s", id, args[1], args[2]);
             if(send_command_to_device(0, command)==0){
                 read_device_response(&g_buffer);
@@ -666,7 +689,7 @@ void info_shell_command(const char** args, const size_t n_args){
             int retval = read_device_response(&g_buffer);
             if(retval>0){
                 char* pipe_str[10], *substrings[1];
-                int i, num_pipe, num_sub;
+                int i, num_pipe;
                 num_pipe=divide_string(g_buffer.buffer, pipe_str, 10, "|");
                 for(i=0; i<num_pipe; i++){
                     divide_string(pipe_str[i], substrings, 1, "=");
@@ -713,6 +736,9 @@ void exit_shell_command(const char** args, const size_t n_args){
 
 void devicecommand_controller_command(const char **args, size_t n_args){
 
+    //Formato comando: devicecommand <set/switch> <id> <registro/interruttore> <valore>
+
+    //Se sono spento
     if(g_device.state == 0){
         send_response(ERR_CONTROLLER_OFF);
         return;
@@ -725,9 +751,11 @@ void devicecommand_controller_command(const char **args, size_t n_args){
 
     sprintf(command, "%s %s %s", args[0], args[2], args[3]);
 
+    //Controllo se ho un dispositivo figlio con tale id
     for(i=0; i<g_children_devices.size; i++){
         if(send_command_to_child(i, "getid") == 0){
             if(read_child_response(i, &buffer) > 0){
+                //Se l'ho trovato
                 if(strcmp(buffer.buffer, args[1]) == 0){
                     if(send_command_to_child(i, command) == 0){
                         read_child_response(i, &buffer);
@@ -779,6 +807,7 @@ void switch_controller_command(const char** args, const size_t n_args){
 }
 
 void switch_state_controller(int state){
+
     if(state == g_device.state){
         send_response(OK_NO_CHANGES);
         return;

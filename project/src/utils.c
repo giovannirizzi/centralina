@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 500 //per strptime
 #define _POSIX_C_SOURCE 200809L
 #define  _DEFAULT_SOURCE
 #include <stdio.h>
@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <linux/limits.h> //per PATH MAX
 #include "utils.h"
@@ -170,7 +172,7 @@ char* get_absolute_executable_dir(){
 
     if(*path == 0){
 
-        ssize_t  pra = readlink("/proc/self/exe", path, PATH_MAX - 1);
+        readlink("/proc/self/exe", path, PATH_MAX - 1);
         const char ch = '/';
         char *last_slash = strrchr(path, ch);
         if (last_slash)
@@ -210,6 +212,31 @@ int string_to_time(const char* string_time, int* time){
     return 0;
 }
 
+int seconds_to_string(int seconds, char* string){
+    sprintf(string, "%d sec", seconds);
+    return 0;
+}
+
+int string_to_temperature(const char* string, int *id){
+    int retval = string_to_int(string,id);
+    if(retval == -1 || *id>20 || *id<-20)
+        return -1;
+    return 0;
+}
+
+int string_to_action(const char* string, int *id){
+    if(strcmp(string,"power-on") == 0)
+        *id = 0;
+    else if(strcmp(string,"power-off") == 0)
+        *id = 1;
+    else if(strcmp(string,"open-on") == 0)
+        *id = 2;
+    else if(strcmp(string,"close-on") == 0)
+        *id = 3;
+    else
+        return -1;
+    return -1;
+}
 
 int create_timer(timer_t *timer){
 
@@ -249,10 +276,6 @@ int delete_timer(timer_t timer){
         return -1;
     }
     return 0;
-}
-
-int seconds_to_string(int seconds, char* string){
-    sprintf(string, "%d sec", seconds);
 }
 
 void print_tree(char *tree){

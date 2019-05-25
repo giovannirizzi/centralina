@@ -75,9 +75,8 @@ void canadd_command(const char** args, size_t n_args){
     else if(g_children_devices.size <= 0){
         send_response("yes");
     }
-    else{
+    else{ //Calcolo il mio tipo in base ai figli
         DeviceType my_type;
-
         _Bool done = false;
 
         int child = 0;
@@ -144,17 +143,18 @@ void getinfo_hub_command(const char** args, size_t n_args){
 void getrecords(char *buffer){
 
     //Prende i registri del figlio
-    char* substrings[3];
+    int last = 3;
+    char* substrings[6];
     if(g_children_devices.size > 0)
         if(send_command_to_child(0, "getinfo") == 0){
             read_child_response(0, &line_buffer);
-            divide_string(line_buffer.buffer, substrings, 3, "|");
+            last = divide_string(line_buffer.buffer, substrings, 6, "|");
         }
 
     //Calcola il massimo usage time tra i figli
-    if(strstr(substrings[2], "usage time") != NULL){
+    if(strstr(substrings[last-1], "usage time") != NULL){
         int maxtime = 0, tmptime = 0;
-        int trovato = divide_string(substrings[2], substrings, 1, "=");
+        int trovato = divide_string(substrings[last-1], substrings, 1, "=");
         sscanf(substrings[0], "%d", &maxtime);
         print_error("Trovato %d\n",trovato);
         print_error("MAX:TIME: %d\n",maxtime);
@@ -163,8 +163,8 @@ void getrecords(char *buffer){
             if(send_command_to_child(i, "getinfo") == 0){
                 read_child_response(i, &line_buffer);
 
-                divide_string(line_buffer.buffer, substrings, 3, "|");
-                divide_string(substrings[2], substrings, 1, "=");
+                last = divide_string(line_buffer.buffer, substrings, 5, "|");
+                divide_string(substrings[last-1], substrings, 1, "=");
                 sscanf(substrings[0], "%d", &tmptime);
                 if(tmptime > maxtime)
                     maxtime = tmptime;

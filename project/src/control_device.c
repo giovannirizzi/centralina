@@ -7,8 +7,8 @@
 #include "control_device.h"
 #include "utils.h"
 
-//I control devices implementano tutti un comando add per aggiungere un figlio
-const const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command}};
+//I control devices implementano tutti il comando add per aggiungere un figlio
+const CommandBind CONTROL_DEVICE_COMMANDS[] = {{"add", &add_command}};
 
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
@@ -26,7 +26,7 @@ int handle_device_command(const Command *c, const CommandBind extra_commands[], 
 
 void getinfo_command(const char **args, size_t n_args){
 
-    char info_string[200], tmp[100], value_str[50], state_str[50];
+    char info_string[200], tmp[200], value_str[50], state_str[50];
     _Bool override = false;
     LineBuffer line_buffer = {NULL, 0};
 
@@ -73,7 +73,7 @@ void getinfo_command(const char **args, size_t n_args){
 
 void getconf_command(const char** args, const size_t n_args){
 
-    char conf_str[200], records[150];
+    char records[150];
     memset(records, 0, sizeof(records) / sizeof(char));
 
     fprintf(g_curr_out_stream, "%d|%d|%d|", g_device.id, g_device.type, g_device.state);
@@ -139,6 +139,8 @@ void add_command(const char** args, const size_t n_args){
     read_child_response(pos_child, &line_buffer);
 
     if(line_buffer.length > 0) free(line_buffer.buffer);
+
+    print_error("RICEVUTO ADD: %d\n", g_device.state);
     send_response(OK_DONE);
 }
 
@@ -272,8 +274,9 @@ int add_child_device(const int id, const DeviceType d_type){
 
         char *argv1[] = {exec_path, device_id_str, 0};
         char *argv2[] = {exec_path, NULL};
+
         if(g_device.id < 0)
-            execv(exec_path, argv2);
+            execv(exec_path, argv2); //per debug senza id
         else
             execv(exec_path, argv1);
 
@@ -302,6 +305,7 @@ int send_command_to_child(int child, const char* command){
     if(child < g_children_devices.size){
         int n_write;
         n_write = fprintf(g_children_devices.children[child].in, "%s", command);
+        //Se il comando non include uno \n finale lo invia
         if(command[strlen(command)-1] != '\n')
             n_write = fprintf(g_children_devices.children[child].in,"\n");
         if(n_write == -1){
@@ -343,7 +347,7 @@ int read_child_response(int child, LineBuffer *buffer){
     else if(retval) {
         return read_line(g_children_devices.children[child].out, buffer);
     }
-    else
+    else //timeout
         return 0;
 }
 
@@ -352,6 +356,7 @@ void getrealtype_command(const char** args, const size_t n_args) {
     int child = 0;
     _Bool done = false;
     LineBuffer line_buffer = {NULL, 0};
+    //Ciclo finché ho un figlio che mi ha dato la risposta
     while(child < g_children_devices.size && !done){
 
         if(send_command_to_child(child, "getrealtype") == 0){
@@ -363,10 +368,11 @@ void getrealtype_command(const char** args, const size_t n_args) {
         else
             child++;
     }
-    if(line_buffer.length > 0) free(line_buffer.buffer);
 
     if(!done)
         send_response("%d", INVALID_TYPE);
+
+    if(line_buffer.length > 0) free(line_buffer.buffer);
 }
 
 void delete_child_device(int child){
@@ -392,6 +398,20 @@ void clean_control_device(){
 void sigchild_handler(int signum) {
 
     while (waitpid(-1, NULL, WNOHANG) > 0);
+
+    LineBuffer buffer = {NULL, 0};
+
+    //Elimino i dispositivi che sono terminati
+    int i;
+    for(i=0; i<g_children_devices.size; i++){
+        //
+        if(send_command_to_child(i, "isalive") == 0)
+            read_child_response(i, &buffer);
+        else
+            i--;
+    }
+
+    free(buffer.buffer);
 }
 
 void gettree_command(const char** args, size_t n_args){

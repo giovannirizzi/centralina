@@ -5,10 +5,14 @@
 
 void switch_power_action(int state);
 void tick_signal(int a);
+
+//Implementano le azioni per i segnali
 void set_delay_action(int state);
 void set_percentage_action(int state);
 void set_temperature_action(int state);
-int string_to_temperature(const char* string, int *id);
+
+int percentage_to_string(int percentage, char* string);
+int temperature_to_string(int temperature, char* string);
 
 timer_t timer;
 
@@ -38,9 +42,9 @@ int main(int argc, char *argv[]){
             -1, //ID
             0, //STATE
             (Registry*)&records,
-            sizeof(records) / sizeof(Registry), //NUM RECORDS
+            sizeof(records) / sizeof(Registry),
             (Switch*)&switches,
-            sizeof(switches) / sizeof(Switch) //NUM SWITCHES
+            sizeof(switches) / sizeof(Switch)
     };
 
     g_device = fridge;
@@ -96,17 +100,12 @@ void set_temperature_action(int state){
         g_device.records[0].value = state;
 }
 
-int string_to_temperature(const char* string, int *id){
-    int retval = string_to_int(string,id);
-    if(retval == -1 || *id>20 || *id<-20)
-        return -1;
-    return 0;
-}
-
 int percentage_to_string(int percentage, char* string){
     sprintf(string, "%d%%", percentage);
+    return 0;
 }
 
 int temperature_to_string(int temperature, char* string){
     sprintf(string, "%d°", temperature);
+    return 0;
 }

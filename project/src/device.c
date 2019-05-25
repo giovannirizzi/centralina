@@ -69,12 +69,13 @@ void init_base_device(char *args[], size_t n_args){
      */
 
     set_signal_mask(SIG_POWER, SIG_OPEN, SIG_CLOSE, SIG_BEGIN, SIG_END,
-                    SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
+                    SIG_ACTION, SIG_DELAY, SIG_PERC, SIG_TEMP, SIG_TICK);
 
     device_id id;
     g_running = true;
+    g_curr_signal.type = -1;
     g_curr_out_stream = stdout;
-    setlinebuf(stdout);
+    setlinebuf(stdout); //flush automatico ad ogni \n
 
     if(n_args >= 2 && string_to_int(args[1], &id) == 0 && id >= 0){
 
@@ -97,9 +98,8 @@ void init_base_device(char *args[], size_t n_args){
         g_fifo_out_stream = NULL;
         g_fifo_in_stream = NULL;
         g_device.id = -1;
+        print_error("Debug mode, id: %d\n", g_device.id);
     }
-
-    print_error("Debug mode, id: %d\n", g_device.id);
 }
 
 void getpid_command(const char** args, const size_t n_args){
@@ -131,8 +131,27 @@ void setconf_command(const char** args, const size_t n_args){
     int num = divide_string((char*)args[0], records, 1, "|");
     if(num == 1){
         string_to_int(args[0], &value);
-        g_device.state = value;
-        int n_records = set_records_from_string(records[0]);
+        FILE *tmp_curr_out = g_curr_out_stream;
+        //Non voglio una risposta, dalle azioni degli switch
+        g_curr_out_stream = NULL;
+        switch(g_device.type){
+            case BULB:
+                g_device.switches[0].action(value);
+                break;
+            case WINDOW:
+                if(value)
+                    g_device.switches[0].action(1);
+                else
+                    g_device.switches[1].action(1);
+                break;
+            case FRIDGE:
+                g_device.switches[0].action(value);
+                break;
+            default:
+                g_device.state = value;
+        }
+        g_curr_out_stream = tmp_curr_out;
+        set_records_from_string(records[0]);
         send_response(OK_DONE);
     }
     else
@@ -150,7 +169,6 @@ void device_loop(const SignalBind signal_bindings[], const size_t n_sb,
 
     LineBuffer line_buffer = {NULL, 0};
     Command input_command;
-    RTSignal input_signal;
 
     fd_set rfds;
     sigset_t emptyset;
@@ -268,7 +286,6 @@ int set_records_from_string(char *records){
         }
 
     for (i = 0; i < num_registry; i++) {
-
         divide_string(registry[i], value_str, 1, "=");
         string_to_int(value_str[0], &value);
         for (j = 0; j < g_device.num_records; j++)

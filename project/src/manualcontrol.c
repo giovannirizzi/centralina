@@ -9,35 +9,19 @@
 #include "utils.h"
 #include "manualcontrol.h"
 
-/*
- * Possibile utilizzo:
- *
- * manualcontrol whois <id> (Se usiamo gli id e non i PID)
- * per restituire il PID dato un id
- *
- * manaulcontrol set <id/PID> <label> <value>
- * per inviare un segnale...
- *
- */
-
+//Associa ad ogni switch un segnale
 SignalMapping switch_names_mappings[] = {{"open", SIG_OPEN, NULL},
                                         {"power", SIG_POWER, NULL},
                                         {"close", SIG_CLOSE, NULL}};
 
+/*Associa un segnale e una funzione per convertire il valore
+ * da string a intero da inviare con esso ad un registro*/
 SignalMapping registry_names_mappings[] = {{"begin", SIG_BEGIN, &string_to_time},
                                            {"end", SIG_END, &string_to_time},
+                                           {"action", SIG_ACTION, &string_to_action},
                                            {"delay", SIG_DELAY, &string_to_int},
                                            {"percentage", SIG_PERC, &string_to_int},
-                                           {"temperature", SIG_TEMP, &string_to_int}};
-                    
-//./manualcontrol switch 14 power on
-//./manualcontrol set 15 temperature 45
-
-// aggiungere a SignalMapping una puntatore a funzione int func(char*, *int) (come string_to_int) che converte il secondo argomento 
-// del comando set e switch ad un intero, il valore di ritorno serve per controllare se la conversione è andata a buon fine.
-// I switch label mappings avranno tutti la funzione &string_to_switch_state
-
-
+                                           {"temperature", SIG_TEMP, &string_to_temperature}};
 
 CommandBind command_bindings[] = {{"whois", &whois_command},
                                   {"switch", &switch_command},
@@ -50,21 +34,23 @@ int main(int argc, char *argv[]){
 
     if(argc>=2){
         input_command.name = argv[1];
+        //Costruisco il comando in base agli argomenti
         size_t i;
         for(i=0; i<argc-2 && i<MAX_COMMAND_ARGS; i++){
             input_command.args[i] = argv[i+2];
         }
         input_command.n_args = i;
+
         int code = handle_command(&input_command, command_bindings,
                                   sizeof(command_bindings)/sizeof(CommandBind));
 
-        if(code == -1){
-            print_error(RED "[-] uknown command\n" RESET);
+        if(code == -1){ //Il comando non è stato trovato
+            printf(RED "[-] uknown command\n" RESET);
             help_command(NULL, 0);
             exit(EXIT_FAILURE);
         }
     }
-    else{
+    else{ //Argomenti non validi
         help_command(NULL, 0);
         exit(EXIT_FAILURE);
     }
@@ -82,7 +68,7 @@ void send_signal(pid_t pid, RTSignalType signal, int val){
 void set_command(const char** args, const size_t n_args){
 
     if(n_args !=3)
-        print_error(YLW "usage: <set> <id> <registry> <value>\n" RESET);
+        print_error_and_exit(YLW "usage: <set> <id> <registry> <value>\n" RESET);
     else {
         device_id id;
         int value;
@@ -100,7 +86,7 @@ void set_command(const char** args, const size_t n_args){
             if(code != 0)
                 print_error_and_exit(RED "[-] %s not a valid value for the registry %s\n" RESET, args[2], args[1]);
 
-            pid_t pid = whois(id);
+            pid_t pid = whois(id); //Risolvo il pid del dispositivo per inviare il segnale
             if(pid > 0)
                 send_signal(pid, registry_names_mappings[retval].signal, value);
             else
@@ -111,7 +97,7 @@ void set_command(const char** args, const size_t n_args){
 
 void switch_command(const char** args, const size_t n_args){
     if(n_args !=3)
-        print_error(YLW "usage: <switch> <id> <label> <state>\n" RESET);
+        print_error_and_exit(YLW "usage: <switch> <id> <label> <state>\n" RESET);
     else {
         device_id id;
         int device_state;
@@ -138,7 +124,7 @@ void switch_command(const char** args, const size_t n_args){
 
 void whois_command(const char** args, const size_t n_args){
     if(n_args !=1)
-        print_error("usage: <whois> <id>\n");
+        print_error_and_exit("usage: <whois> <id>\n");
     else{
         device_id id;
         if(string_to_int(args[0], &id) != 0){
@@ -162,7 +148,6 @@ void whois_command(const char** args, const size_t n_args){
 
 pid_t whois(device_id id){
 
-    int device_id;
     int whois_request_fd, whois_response_fd;
     fd_set rfds;
 
@@ -174,13 +159,14 @@ pid_t whois(device_id id){
         return -2;
     FILE* whois_request_stream = fdopen(whois_request_fd, "w");
 
-    fprintf(whois_request_stream, "whois %d\n", id);
+    fprintf(whois_request_stream, "whois %d\n", id); //Invio il comando
     fclose(whois_request_stream);
 
     FD_ZERO(&rfds);
     FD_SET(whois_response_fd, &rfds);
 
     struct timeval timeout = {2, 0};
+    //Aspetto la risposta con un timeout
     int retval = select(whois_response_fd+1, &rfds, NULL, NULL, &timeout);
 
     if (retval == -1){
@@ -190,20 +176,21 @@ pid_t whois(device_id id){
         if(FD_ISSET(whois_response_fd, &rfds)){
 
             LineBuffer line_buffer  = {NULL, 0};
-            ssize_t nread = read_line(whois_response_stream, &line_buffer);
+            read_line(whois_response_stream, &line_buffer);
 
             pid_t pid;
-            int retval = string_to_int(line_buffer.buffer, &pid);
+            retval = string_to_int(line_buffer.buffer, &pid);
             free(line_buffer.buffer);
             fclose(whois_response_stream);
 
+            //Se la risposta non è un intero
             if(retval != 0)
                 return -1;
             else
                 return pid;
         }
     }
-    else
+    else //timeout
         fclose(whois_response_stream);
 
     return -1;

@@ -1,18 +1,21 @@
+#define _XOPEN_SOURCE 500 //per strptime
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include "utils.h"
 #include "control_device.h"
 
 void tick_signal(int a);
 void set_begin_action(int state);
 void set_end_action(int state);
-int string_to_action(const char* string, int *id);
+void set_action_action(int value);
 int action_to_string(int action, char* string);
 
 timer_t tim;
 time_t t;
 struct tm tm;
+int last_begin, last_end;
 LineBuffer line_buffer = {NULL, 0};
 _Bool is_in_range = false;
 
@@ -26,19 +29,22 @@ int main(int argc, char *argv[]){
     };
 
     int default_begin, default_end;
-    string_to_time("8:00",&default_begin);
-    string_to_time("10:49",&default_end);
+    string_to_time("23:00",&default_begin);
+    string_to_time("7:00",&default_end);
+    last_begin = default_begin;
+    last_end = default_end;
 
     Registry records[] = {
             {"begin", "starting time", default_begin, &string_to_time, &time_to_string, true},
             {"end", "ending time", default_end, &string_to_time, &time_to_string, true},
-            {"action", "timer action", 2, &string_to_action, &action_to_string, true}
+            {"action", "timer action", 1, &string_to_action, &action_to_string, true}
     };
 
     SignalBind signal_bindings[] = {
             {SIG_TICK, &tick_signal},
             {SIG_BEGIN, &set_begin_action},
-            {SIG_END, &set_end_action}
+            {SIG_END, &set_end_action},
+            {SIG_ACTION, &set_action_action}
     };
 
     DeviceData timer = {
@@ -83,6 +89,15 @@ void tick_signal(int a){
     time_to_string(g_device.records[1].value,temp);
     strptime(temp, "%H:%M", &tm);
     t_end = mktime(&tm);
+
+    //Se sono stati cambiati i registri di end o begin
+    if(last_begin != g_device.records[0].value ||
+        last_end != g_device.records[1].value){
+
+        last_begin = g_device.records[0].value;
+        last_end = g_device.records[1].value;
+        is_in_range = false;
+    }
 
     double diff_begin = difftime(t_now,t_begin);
     double diff_end = difftime(t_now,t_end);
@@ -133,10 +148,6 @@ void tick_signal(int a){
     }
 }
 
-void switch_power_action(int state){
-    g_device.state = state;
-}
-
 void canadd_command(const char** args, size_t n_args) {
 
     if(n_args != 1){
@@ -170,18 +181,8 @@ void set_end_action(int state){
     is_in_range = false;
 }
 
-int string_to_action(const char* string, int *id){
-    if(strcmp(string,"power-on") == 0)
-        *id = 0;
-    else if(strcmp(string,"power-off") == 0)
-        *id = 1;
-    else if(strcmp(string,"open-on") == 0)
-        *id = 2;
-    else if(strcmp(string,"close-on") == 0)
-        *id = 3;
-    else 
-        return -1;
-    return 0;
+void set_action_action(int value){
+    g_device.records[2].value = value;
 }
 
 int action_to_string(int action, char* string){
@@ -201,6 +202,7 @@ int action_to_string(int action, char* string){
         default:
             return -1;
     }
+    return 0;
 }
 
 void update_state(){
@@ -210,5 +212,4 @@ void update_state(){
         if(read_child_response(0, &line_buffer)>0)
             if(string_to_int(line_buffer.buffer, &g_device.state)!=0)
                 g_device.state = 0;
-
 }

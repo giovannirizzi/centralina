@@ -1,18 +1,33 @@
 #ifndef CONTROL_DEVICES_H
 #define CONTROL_DEVICES_H
 
-#include <linux/limits.h>
+#include <linux/limits.h> //per PATH_MAX
 #include "device.h"
+
+typedef struct{
+    FILE* in;
+    FILE* out;
+} ChildDevice;
+
+typedef struct{
+    ChildDevice children[MAX_CHILDREN];
+    int size;
+} ChildrenDevices;
+
+/* Ogni control device ha un vettore "di dispositivi figli",
+ * per ogni dispositivo figlio si memorizza solo il canale
+ * di comunicazione per inviare comandi e leggerne la risposta
+ */
+ChildrenDevices g_children_devices;
 
 /*
  * Implementazione del comando add comune a tutti i control devices.
  * Aggiunge un dispositivo figlio e ne setta la configurazione
- * add <id>|<type>|<state>|<registry>=<value>
+ * formato comando: add <id>|<type>|<state>|<registry>=<value>&<registry2>..
  */
 void add_command(const char** args, size_t n_args);
 
 /**
- * /*
  * Fa la fork e la exec di un nuovo dispositivo e lo aggiunge
  * al vettore dei dispositivi figli
  * @param id l'id da assegnare al nuovo dispositivo
@@ -59,24 +74,6 @@ int send_command_to_child(int child, const char* command);
  * @return il numero di byte letti, se < 0 si è verificato un errore
  */
 int read_child_response(int child, LineBuffer *buffer);
-
-
-
-typedef struct{
-    FILE* in;
-    FILE* out;
-} ChildDevice;
-
-typedef struct{
-    ChildDevice children[MAX_CHILDREN];
-    int size;
-} ChildrenDevices;
-
-/* Vettore dei dispositivi figli, per ogni dispositivo si ha
- * un canale di comunicazione per inviare comandi ed uno per
- * ricevere la risposta
- */
-ChildrenDevices g_children_devices;
 
 //Funzioni per gestire l'array
 int add_child(ChildrenDevices* c, ChildDevice d);

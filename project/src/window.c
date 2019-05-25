@@ -33,9 +33,9 @@ int main(int argc, char *argv[]){
             -1, //ID
             0, //STATE
             (Registry*)&records,
-            sizeof(records) / sizeof(Registry), //NUM RECORDS
+            sizeof(records) / sizeof(Registry),
             (Switch*)&switches,
-            sizeof(switches) / sizeof(Switch) //NUM SWITCHES
+            sizeof(switches) / sizeof(Switch)
     };
 
     g_device = window;

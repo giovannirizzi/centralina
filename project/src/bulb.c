@@ -18,7 +18,9 @@ int main(int argc, char *argv[]){
             {"time", "usage time", 0, &string_to_int, &seconds_to_string, false}
     };
 
-    Switch switches[] = {"power", &switch_power_action};
+    Switch switches[] = {
+            {"power", &switch_power_action}
+    };
 
     SignalBind signal_bindings[] = {
             {SIG_POWER, &switch_power_action},
