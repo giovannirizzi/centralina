@@ -9,7 +9,6 @@
 #include "utils.h"
 #include "manualcontrol.h"
 
-
 /*
  * Possibile utilizzo:
  *

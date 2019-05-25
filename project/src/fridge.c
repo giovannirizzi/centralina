@@ -5,10 +5,10 @@
 
 void switch_power_action(int state);
 void tick_signal(int a);
-void set_delay_action();
+void set_delay_action(int state);
 void set_percentage_action(int state);
 void set_temperature_action(int state);
-int string_to_temperature();
+int string_to_temperature(const char* string, int *id);
 
 timer_t timer;
 
@@ -20,6 +20,7 @@ int main(int argc, char *argv[]){
             {"delay", "delay time", 30, &string_to_int, &seconds_to_string, true},
             {"time", "time open", 0, &string_to_int, &seconds_to_string, false},
     };
+
     Switch switches[] = {
             {"power", &switch_power_action}
     };
@@ -46,13 +47,10 @@ int main(int argc, char *argv[]){
 
     create_timer(&timer);
 
-    //Inizializzo il device in base agli argomenti passaati
     init_base_device(argv, argc);
 
     device_loop(signal_bindings, sizeof(signal_bindings)/ sizeof(SignalBind),
                 NULL, 0);
-
-    print_error("Device %d: sto terminando\n", g_device.id);
 
     delete_timer(timer);
     clean_base_device();
@@ -62,7 +60,8 @@ int main(int argc, char *argv[]){
 
 void tick_signal(int a){
     g_device.records[3].value++;
-    if(g_device.records[3].value == g_device.records[2].value || g_device.records[2].value == 0)
+    if(g_device.records[3].value == g_device.records[2].value ||
+        g_device.records[2].value == 0)
         switch_power_action(0);
 }
 
@@ -83,7 +82,7 @@ void switch_power_action(int state){
     send_response(OK_DONE);
 }
 
-void set_delay_action(int state){
+void set_delay_action(const int state){
     g_device.records[2].value = state;
 }
 
@@ -102,4 +101,12 @@ int string_to_temperature(const char* string, int *id){
     if(retval == -1 || *id>20 || *id<-20)
         return -1;
     return 0;
+}
+
+int percentage_to_string(int percentage, char* string){
+    sprintf(string, "%d%%", percentage);
+}
+
+int temperature_to_string(int temperature, char* string){
+    sprintf(string, "%d°", temperature);
 }

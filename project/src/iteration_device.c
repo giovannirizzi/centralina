@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "iteration_device.h"
 #include "utils.h"
+#include "iteration_device.h"
 
 int handle_device_command(const Command *c, const CommandBind extra_commands[], const size_t n){
 

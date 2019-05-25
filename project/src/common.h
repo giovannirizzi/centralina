@@ -20,7 +20,6 @@
  * Per ogni segnale si utilizza anche il valore intero associato
  * ad esso (sival_int) inviato con la syscall sigqueue().
 */
-
 typedef enum{
     SIG_POWER = 0,
     SIG_OPEN,
@@ -33,27 +32,39 @@ typedef enum{
     SIG_TICK
 } RTSignalType;
 
-typedef int (*string_to_int_func_ptr)(const char* label, int* n);
-typedef int (*int_to_string_func_ptr)(const int value, char* formatted_value);
+/**
+ * Definisce la firma di una funzione che converte un intero nella sua rappresentazione in caratteri
+ * e anche la sua inversa. Il valore di ritorno è usato per indicare se la conversione ha avuto successo o meno
+ */
+typedef int (*string_to_int_func_ptr)(const char* value_str, int* value);
+typedef int (*int_to_string_func_ptr)(const int value, char* value_str);
 
 typedef struct{
     RTSignalType type;
     int value;
 } RTSignal;
 
+//Mapping di un tipo di segnale con una funzione che implementa l'azione da eseguire
 typedef void (*action_func_ptr)(const int value);
 typedef struct{
     RTSignalType type;
     action_func_ptr exec_command;
 } SignalBind;
 
-
+//Definisce la firma delle funzioni che implementano i comandi
 typedef void (*command_func_ptr)(const char** args, const size_t n_args);
 typedef struct{
     char command_name[MAX_COMMAND_NAME_LENGTH];
     command_func_ptr validate_and_exec_command;
 } CommandBind;
+//Associazione di un nome di comando alla funzione che lo implementa
 
+/*Astrazione che viene utilizzata alla base dalla funzione
+* getline(), funzione utilizzata in tutto il progetto per
+* leggere una linea da un qualsiasi stream.
+* Un line buffere deve essere sempre inizzializzato a {NULL, 0} prima
+* di utilizzarlo per la lettura.
+*/
 typedef struct{
     char* buffer;
     size_t length;

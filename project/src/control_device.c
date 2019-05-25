@@ -113,7 +113,7 @@ void add_command(const char** args, const size_t n_args){
     int num_var = sscanf(args[0], "%d|%d|", &id, &type);
     device_str = device_type_to_string(type);
     type = device_string_to_type(device_str);
-    if(num_var != 2 || id < 0 || type == INVALID_TYPE || type == CENTRALINA){
+    if(num_var != 2 || id < 0 || type == INVALID_TYPE || type == CONTROLLER){
         send_response(INV_ARGS);
         return;
     }

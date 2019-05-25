@@ -128,4 +128,7 @@ int set_timer_tick(timer_t timer, _Bool tick);
 
 int delete_timer(timer_t timer);
 
+void print_tree(char* tree);
+_Bool is_last_sibling(char* node[], int n);
+
 #endif // UTILS_H
