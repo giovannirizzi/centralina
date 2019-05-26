@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "iteration_device.h"
 
-void switch_power_action(int state);
+void switch_open_action(int state);
 void tick_signal(int a);
 
 //Implementano le azioni per i segnali
@@ -26,11 +26,11 @@ int main(int argc, char *argv[]){
     };
 
     Switch switches[] = {
-            {"power", &switch_power_action}
+            {"open", &switch_open_action}
     };
 
     SignalBind signal_bindings[] = {
-            {SIG_OPEN, &switch_power_action},
+            {SIG_OPEN, &switch_open_action},
             {SIG_TICK, &tick_signal},
             {SIG_DELAY, &set_delay_action},
             {SIG_PERC, &set_percentage_action},
@@ -66,10 +66,10 @@ void tick_signal(int a){
     g_device.records[3].value++;
     if(g_device.records[3].value == g_device.records[2].value ||
         g_device.records[2].value == 0)
-        switch_power_action(0);
+        switch_open_action(0);
 }
 
-void switch_power_action(int state){
+void switch_open_action(int state){
 
     if(state == g_device.state){
         send_response(OK_NO_CHANGES);

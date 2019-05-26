@@ -133,6 +133,7 @@ void getinfo_hub_command(const char** args, size_t n_args){
 
     //Se sto controllando dispositivi prendo anche i loro registri
     if(g_children_devices.size > 0){
+        memset(tmp, 0, sizeof(tmp)/ sizeof(char));
         getrecords(tmp);
         strcat(info_string, tmp);
     }
@@ -144,11 +145,11 @@ void getrecords(char *buffer){
 
     //Prende i registri del figlio
     int last = 3;
-    char* substrings[6];
+    char* substrings[10];
     if(g_children_devices.size > 0)
         if(send_command_to_child(0, "getinfo") == 0){
             read_child_response(0, &line_buffer);
-            last = divide_string(line_buffer.buffer, substrings, 6, "|");
+            last = divide_string(line_buffer.buffer, substrings, 10, "|");
         }
 
     //Calcola il massimo usage time tra i figli
@@ -176,7 +177,14 @@ void getrecords(char *buffer){
         seconds_to_string(maxtime, secocnds_str);
         sprintf(buffer, "|max usage time=%s", secocnds_str);
     }
-    else
-        sprintf(buffer, "|%s", substrings[2]);
+    else{
+        int i;
+        char registry[100];
+        for(i=2; i<last; i++){
+            sprintf(registry, "|%s", substrings[i]);
+            strcat(buffer, registry);
+        }
+    }
+
 
 }

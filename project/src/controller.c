@@ -565,7 +565,7 @@ void list_shell_command(const char** args, const size_t n_args){
             switch open: opens the window\n\
             switch close: closes the window\n\
     - fridge:\n\
-            switch power: opens/closes the fridge\n\
+            switch open: opens/closes the fridge\n\
             register delay: closes automatically the fridge after the time set\n\
                 accepted value: <seconds> e.g. <20>\n\
             register percentage: (only manually) add/remove content from the fridge\n\
